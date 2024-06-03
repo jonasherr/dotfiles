@@ -34,22 +34,16 @@ declare -A e1_windows=(
     [server]="/Users/jonas/Projects/e1-series-apps/local_backup"
 )
 
-declare -A settings_windows=(
-    [tmux]="/Users/jonas"
-    [nvim]="/Users/jonas/.config/nvim"
+declare -A private_windows=(
+    [dotfiles]="$DOTFILES"
     [notes]="/Users/jonas/Library/Mobile Documents/iCloud~md~obsidian/Documents/Bear"
     [paperless]="/Users/jonas/Projects/paperless-ngx"
-    [karabiner]="/Users/jonas/Projects/karabiner"
-)
-
-declare -A nextjsexample_windows=(
-    [nextjs]="/Users/jonas/WebstormProjects/nextjs-example"
+    [nextjs_example]="/Users/jonas/WebstormProjects/nextjs-example"
 )
 
 # Create the sessions
 create_session_with_windows "orh" orh_windows
 create_session_with_windows "e1" e1_windows
-create_session_with_windows "settings" settings_windows
-create_session_with_windows "nextjs example" nextjsexample_windows
+create_session_with_windows "private" private_windows
 
 tmux attach -t "orh"

@@ -228,3 +228,19 @@ export const homeRowKey = (fromKeys: { key: KeyCode, modifier?: KeyCode }[], to:
     type: "basic"
   }))
 }
+
+export const createCombinedKey = (fromKeys: KeyCode[], to: KeyCode): Manipulator => ({
+  from: {
+    simultaneous: fromKeys.map(k => ({ key_code: k })),
+    modifiers: {
+      optional: ["any"]
+    }
+  },
+  to: [
+    {
+      key_code: to,
+    }
+  ],
+  type: "basic"
+}
+)

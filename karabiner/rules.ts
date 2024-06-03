@@ -8,6 +8,7 @@ import { Layers, layerSwitcher } from "./rules/layers/layerSwitcher";
 import { specialLayer } from "./rules/layers/special";
 import { numberLayer } from "./rules/layers/numbers";
 import { arrowsLayer } from "./rules/layers/arrows";
+import { simultaneous } from "./rules/simultaneous";
 
 const rules: KarabinerRules[] = [
   layerSwitcher,
@@ -17,6 +18,7 @@ const rules: KarabinerRules[] = [
   homeRow,
   meh,
   hyperKey,
+  simultaneous,
   ...hyperSubLayers
 ];
 
