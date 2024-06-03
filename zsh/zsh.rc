@@ -1,0 +1,61 @@
+source_if_exists () {
+    if test -r "$1"; then
+        source "$1"
+    fi
+}
+
+
+# See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
+
+source_if_exists $HOME/.env.sh
+source_if_exists $DOTFILES/zsh/history.zsh
+source_if_exists $DOTFILES/zsh/git.zsh
+source_if_exists ~/.fzf.zsh
+source_if_exists /usr/local/etc/profile.d/z.sh
+source_if_exists /opt/homebrew/etc/profile.d/z.sh
+
+plugins=(git vi-mode aliases httpie macos zsh-autosuggestions fzf)
+# Bundles from the default repo (robbyrussell's oh-my-zsh).
+
+source $ZSH/oh-my-zsh.sh
+
+precmd() {
+    source $DOTFILES/zsh/aliases.zsh
+}
+
+MODE_INDICATOR="%F{white}+%f"
+INSERT_MODE_INDICATOR="%F{yellow}i%f"
+NORMAL_MODE_INDICATOR="%F{yellow}n%f"
+
+# Generated for envman. Do not edit.
+[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+
+# pnpm
+export PNPM_HOME="/Users/jonas/Library/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+# pnpm end
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+
+# bun completions
+[ -s "/Users/jonas/.bun/_bun" ] && source "/Users/jonas/.bun/_bun"
+
+# bun
+export BUN_INSTALL="$HOME/.bun"
+export PATH="$BUN_INSTALL/bin:$PATH"
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+export PYENV_ROOT="$HOME/.pyenv"
+[[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+export VISUAL=nvim
+export EDITOR=nvim
+export PATH="$PATH:/usr/local/sbin:$DOTFILES/bin:$HOME/.local/bin:$DOTFILES/scripts/"
+
+. "$HOME/.cargo/env"
+
+eval "$(starship init zsh)"

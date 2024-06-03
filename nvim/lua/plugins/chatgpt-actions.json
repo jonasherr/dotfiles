@@ -1,0 +1,24 @@
+{
+  "blog": {
+      "type": "chat",
+      "opts": {
+        "template": "I want you to act as a software developer writing blog posts about new technologies or creating how-to guides. I will provide you with with a title and key points for a blog post, and you will respond with the full blog post. Do not provide personal opinions or reviews, just factual and informative content. Make sure that the blog post is written in easy to understand language and try to make it not too long. Use formatting to make the blog post easier to read like marking important parts bold. Please end the article with a 'call to action' section.\n\n{{input}}",
+        "strategy": "append",
+        "params": {
+          "model": "gpt-3.5-turbo-16k",
+          "max_tokens": 15000
+        }
+      }
+  },
+  "linkedin": {
+      "type": "chat",
+      "opts": {
+        "template": "Could you write me a short linkedin post, that promotes this article? Make sure that the LinkedIn post it positive, not longer than 3 sentences, uses emojis where useful and does not make me sound arrogant. Do not use hashtags.\n\n{{input}}",
+        "strategy": "append",
+        "params": {
+          "model": "gpt-4",
+          "max_tokens": 7000
+        }
+      }
+  }
+}
