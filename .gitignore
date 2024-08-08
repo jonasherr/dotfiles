@@ -7,4 +7,4 @@ job-specific.sh
 scripts/dark-mode-notify
 bin/format-transactions.js
 node_modules
-karabiner/automatic_backups/
+/karabiner/automatic_backups/
