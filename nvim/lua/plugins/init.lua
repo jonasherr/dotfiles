@@ -1,6 +1,6 @@
 return {
 	-- Setup neovim lua configuration
-	'neodev',
+	-- 'neodev',
 	-- NOTE: First, some plugins that don't require any configuration
 	{ import = 'plugins.external' },
 	{ import = 'plugins.files' },

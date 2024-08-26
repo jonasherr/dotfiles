@@ -4,7 +4,7 @@ return {
     branch = "harpoon2",
     dependencies = { "nvim-lua/plenary.nvim", "nvim-telescope/telescope.nvim" },
     keys = {
-      { "<leader>hn", function() require("harpoon"):list():append() end,                                 desc = "Add File" },
+      { "<leader>hn", function() require("harpoon"):list():add() end,                                    desc = "Add File" },
       { "<leader>he", function() require("harpoon").ui:toggle_quick_menu(require("harpoon"):list()) end, desc = "File Menu" },
       { "<leader>ha", function() require("harpoon"):list():select(1) end,                                desc = "File 1" },
       { "<leader>hs", function() require("harpoon"):list():select(2) end,                                desc = "File 2" },
