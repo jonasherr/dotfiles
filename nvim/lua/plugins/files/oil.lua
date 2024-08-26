@@ -4,8 +4,11 @@ return {
 	keys = {
 		{ "<leader>ll", "<CMD>Oil<CR>", desc = "Open parent directory", mode = "n" },
 	},
+	lazy = false,
 	-- Optional dependencies
-	dependencies = { "nvim-tree/nvim-web-devicons" },
+	dependencies = {
+		"nvim-tree/nvim-web-devicons",
+	},
 	config = function()
 		require("oil").setup({
 			-- Oil will take over directory buffers (e.g. `vim .` or `:e src/`)
@@ -72,7 +75,13 @@ return {
 				["<C-t>"] = "actions.select_tab",
 				["<C-p>"] = "actions.preview",
 				["<C-c>"] = "actions.close",
-				["<C-l>"] = "actions.refresh",
+				["<C-l>"] = false,
+				["<C-n>"] = "actions.refresh",
+				["<C-s>"] = {
+					function()
+						require("oil").save()
+					end
+				},
 				["-"] = "actions.parent",
 				["_"] = "actions.open_cwd",
 				["`"] = "actions.cd",
@@ -81,6 +90,22 @@ return {
 				["gx"] = "actions.open_external",
 				["g."] = "actions.toggle_hidden",
 				["g\\"] = "actions.toggle_trash",
+				["cp"] = "actions.yank_entry",
+				["of"] = {
+					function()
+						local cwd = require("oil").get_current_dir()
+						print("Directory:")
+						print(cwd)
+
+						if cwd == nil or cwd == "" then
+							print("Current directory is not available.")
+							return
+						end
+
+						-- Use vim.api.nvim_command to run a shell command
+						vim.api.nvim_command('silent !open ' .. vim.fn.shellescape(cwd))
+					end
+				}
 			},
 			-- Set to false to disable all of the above keymaps
 			use_default_keymaps = true,
