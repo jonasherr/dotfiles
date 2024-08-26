@@ -7,6 +7,7 @@ return {
 		-- refer to the configuration section below
 		mode = "workspace_diagnostics",
 		severity = "ERROR",
-		vim.keymap.set("n", "<leader>xw", function() require("trouble").toggle("workspace_diagnostics") end)
+		vim.keymap.set("n", "<leader>xw",
+			function() require("lua.plugins.lsp.trouble").toggle("workspace_diagnostics") end)
 	}
 }
