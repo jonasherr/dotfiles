@@ -12,7 +12,7 @@ alias python="python3"
 alias mouse="bash /Users/jonas/Projects/dotfiles/scripts/mouse.sh"
 alias summary="pbpaste | llm --system 'summary bullet points' -s"
 alias article="pbpaste | llm --system 'You are an expert technical writer. I will give you a title and some bulletpoints. You will will write a friendly and engaging article in simple language.' -s"
-alias windows="bash /Users/jonas/.dotfiles/tmux-windows.sh"
+alias windows="bash /Users/jonas/Projects/dotfiles/scripts/tmux-windows.sh"
 alias ld="lazydocker"
 
 # LOCATION ALIASES -----------------------------------------------------------------
