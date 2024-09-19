@@ -13,6 +13,7 @@ return {
 				typescript = { { "prettierd", "prettier" } },
 				javascript = { { "prettierd", "prettier" } },
 				javascriptreact = { { "prettierd", "prettier" } },
+				json = { { "prettierd", "prettier" } },
 			},
 		},
 	},
