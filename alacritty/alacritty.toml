@@ -3,7 +3,10 @@ import = [
 ]
 
 [font]
+# for normal use
 size = 18
+# for screen sharing
+# size = 26
 
 [font.normal]
 family = "JetBrainsMono Nerd Font Mono"
