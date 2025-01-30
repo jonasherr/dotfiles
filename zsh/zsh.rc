@@ -13,8 +13,9 @@ source_if_exists $DOTFILES/zsh/git.zsh
 source_if_exists ~/.fzf.zsh
 source_if_exists /usr/local/etc/profile.d/z.sh
 source_if_exists /opt/homebrew/etc/profile.d/z.sh
+source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `brew info chruby` to find out installed directory
 
-plugins=(git vi-mode aliases httpie macos zsh-autosuggestions fzf)
+plugins=(git vi-mode aliases macos zsh-autosuggestions fzf)
 # Bundles from the default repo (robbyrussell's oh-my-zsh).
 
 source $ZSH/oh-my-zsh.sh
@@ -58,4 +59,23 @@ export PATH="$PATH:/usr/local/sbin:$DOTFILES/bin:$HOME/.local/bin:$DOTFILES/scri
 
 . "$HOME/.cargo/env"
 
+# better truncating for psql
+export PAGER="less -S"
+
+# Shell wrapper
+# We suggest using this y shell wrapper that provides the ability to change the current working directory when exiting Yazi.
+
+# Then use y instead of yazi to start, and press q to quit, you'll see the CWD changed. Sometimes, you don't want to change, press Q to quit.
+
+function y() {
+	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+	yazi "$@" --cwd-file="$tmp"
+	if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+		builtin cd -- "$cwd"
+	fi
+	rm -f -- "$tmp"
+}
+
+
+# needs to be at the end
 eval "$(starship init zsh)"

@@ -2,7 +2,10 @@
 #
 # ALIASES ---------------------------------------------------------------------
 alias vim="nvim"
-alias zshconfig="nvim ~/.zshrc"
+alias v="nvim ."
+alias zshconfig="nvim /Users/jonas/Projects/dotfiles/zsh/zsh.rc"
+alias zshalias="nvim /Users/jonas/Projects/dotfiles/zsh/aliases.zsh"
+alias tmuxconf="nvim /Users/jonas/Projects/dotfiles/tmux/tmux.conf"
 alias arm="env /usr/bin/arch -arm64 /bin/zsh"
 alias intel="env /usr/bin/arch -x86_64 /bin/zsh"
 alias ip="ipconfig getifaddr en0"
@@ -28,3 +31,4 @@ alias e1="cd /Users/jonas/WebstormProjects/e1-series-apps"
 alias e1f="cd /Users/jonas/WebstormProjects/e1-series-apps/apps/frontend"
 alias e1b="cd /Users/jonas/WebstormProjects/e1-series-apps/apps/backend"
 alias link-dotfiles="bash /Users/jonas/Projects/dotfiles/install/bootstrap.sh"
+alias ssh="export TERM=xterm-256color; ssh"
