@@ -1,0 +1,33 @@
+{
+  "Next.js Page": {
+    "prefix": "njp",
+    "body": [
+      "export default function $1Page() {",
+      "\treturn (",
+      "\t\t<div>",
+      "\t\t\t<h1>$2</h1>",
+      "\t\t</div>",
+      "\t);",
+      "}"
+    ],
+    "description": "Next.js Page Component"
+  },
+  "Next.js Layout": {
+    "prefix": "njl",
+    "body": [
+      "export default function $1Layout({",
+      "\tchildren,",
+      "}: {",
+      "\tchildren: React.ReactNode;",
+      "}) {",
+      "\treturn (",
+      "\t\t<section>",
+      "$2",
+      "\t\t\t{children}",
+      "\t\t</section>",
+      "\t);",
+      "}"
+    ],
+    "description": "Next.js Layout"
+  }
+}

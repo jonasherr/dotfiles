@@ -1,8 +1,8 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
-vim.g.VimuxOrientation = "h"
-vim.g.VimuxHeight = "40"
+vim.g.VimuxOrientation = 'h'
+vim.g.VimuxHeight = '40'
 
 -- Set highlight on search
 vim.o.hlsearch = false
@@ -35,10 +35,14 @@ vim.wo.signcolumn = 'yes'
 -- Decrease update time
 vim.o.updatetime = 250
 vim.o.timeout = true
-vim.o.timeoutlen = 300
+-- I increased this from 300 to 1000, because otherwise surround was not working
+vim.o.timeoutlen = 1000
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
+
+-- for obsidian
+vim.o.conceallevel = 2
 
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
