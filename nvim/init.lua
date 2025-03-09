@@ -1,4 +1,4 @@
-require('settings')
+require 'settings'
 
 -- Install package manager
 --    https://github.com/folke/lazy.nvim
@@ -21,8 +21,6 @@ vim.opt.rtp:prepend(lazypath)
 --
 --  You can also configure plugins after the setup call,
 --    as they will be available in your neovim runtime.
-require('lazy').setup('plugins')
+require('lazy').setup 'plugins'
 
-require('keymap')
-
-require('ts-errors')
+require 'keymap'
