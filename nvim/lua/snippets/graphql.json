@@ -1,0 +1,45 @@
+{
+  "GraphQL Fragment Document": {
+    "prefix": "gfd",
+    "body": [
+      "const ${TM_FILENAME_BASE}FragmentDocument = graphql(`",
+      "\tfragment ${TM_FILENAME_BASE}Fragment on Query {",
+      "\t\t\tprofiles(where: $profilesWhere, options: $profilesOptions) {",
+      "\t\t\t}",
+      "\t}",
+      "`);"
+    ],
+    "description": "GraphQL Fragment Document"
+  },
+  "GraphQL Fragment Type": {
+    "prefix": "gft",
+    "body": [
+      "query: FragmentType<typeof ${TM_FILENAME_BASE}FragmentDocument> | undefined;"
+    ],
+    "description": "GraphQL Fragment Type"
+  },
+  "GraphQL Fragment Value": {
+    "prefix": "gfv",
+    "body": [
+      "const fragment = getFragmentData(${TM_FILENAME_BASE}FragmentDocument, query);"
+    ],
+    "description": "GraphQL Fragment Type"
+  },
+  "GraphQL Page Query": {
+    "prefix": "gpq",
+    "body": [
+      "const ${TM_FILENAME_BASE}PageQueryDocument = graphql(`",
+      "\t\tquery ${TM_FILENAME_BASE}PageQuery() {",
+      "\t\t}",
+      "`);",
+      "",
+      "const [{ data }] = useQuery({",
+      "\t\tquery: ${TM_FILENAME_BASE}PageQueryDocument,",
+      "\t\tvariables: {",
+      "\t\t},",
+      "\t\tcontext,",
+      "});"
+    ],
+    "description": "GraphQL Page Quyer"
+  }
+}

@@ -12,6 +12,14 @@
           "typescriptreact"
         ],
         "path": "./nextjs.json"
+      },
+      {
+        "language": [
+          "javascriptreact",
+          "typescript",
+          "typescriptreact"
+        ],
+        "path": "./graphql.json"
       }
     ]
   }
