@@ -4,6 +4,7 @@ source_if_exists () {
     fi
 }
 
+export BIN_PATH="/opt/homebrew/bin"
 
 # See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
 
@@ -79,3 +80,4 @@ function y() {
 
 # needs to be at the end
 eval "$(starship init zsh)"
+export PATH="/opt/homebrew/opt/ruby/bin:$PATH"

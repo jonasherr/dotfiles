@@ -1,7 +1,5 @@
-# BEGIN_KITTY_THEME
-# One Dark
-include current-theme.conf
-# END_KITTY_THEME
+# dracula theme
+include ./theme.conf
 # reload: ctrl + cmd + ,
 
 # vim:fileencoding=utf-8:foldmethod=marker
@@ -12,10 +10,11 @@ include current-theme.conf
 #: individual font faces and even specify special fonts for particular
 #: characters.
 
-font_family      family="JetBrainsMono Nerd Font Mono"
-bold_font        auto
-italic_font      auto
-bold_italic_font auto
+# TODO: fix this, doesnt load, check keyboard debug mode
+font_family       "JetBrainsMono Nerd Font Mono"
+# bold_font        auto
+# italic_font      auto
+# bold_italic_font auto
 
 #: You can specify different fonts for the bold/italic/bold-italic
 #: variants. The easiest way to select fonts is to run the `kitten
@@ -340,7 +339,6 @@ font_size 18.0
 #: one which means fully opaque, aka visible. Set to a value between
 #: zero and one to make the indicator less visible.
 
-# Could also try: https://github.com/mikesmithgh/kitty-scrollback.nvim
 # scrollback_pager less --chop-long-lines --RAW-CONTROL-CHARS +INPUT_LINE_NUMBER
 scrollback_pager nvim -c 'set ft=man' -
 
@@ -1020,7 +1018,7 @@ hide_window_decorations yes
 
 #: Tab bar {{{
 
-tab_bar_edge bottom
+# tab_bar_edge bottom
 
 #: The edge to show the tab bar on, top or bottom.
 
@@ -1035,7 +1033,7 @@ tab_bar_edge bottom
 #: The second number is the margin between the tab bar and the
 #: contents of the current tab.
 
-tab_bar_style powerline
+# tab_bar_style fade
 
 #: The tab bar style, can be one of:
 
@@ -1093,7 +1091,7 @@ tab_bar_style powerline
 #: The separator between tabs in the tab bar when using separator as
 #: the tab_bar_style.
 
-tab_powerline_style angled
+# tab_powerline_style angled
 
 #: The powerline separator style between tabs in the tab bar when
 #: using powerline as the tab_bar_style, can be one of: angled,
@@ -1111,7 +1109,7 @@ tab_powerline_style angled
 #: The maximum number of cells that can be used to render the text in
 #: a tab. A value of zero means that no limit is applied.
 
-tab_title_template "{fmt.fg.red}{bell_symbol}{activity_symbol}{fmt.fg.tab}{title}"
+# tab_title_template "{fmt.fg.red}{bell_symbol}{activity_symbol}{fmt.fg.tab}{title}"
 
 #: A template to render the tab title. The default just renders the
 #: title with optional symbols for bell and activity. If you wish to
@@ -1160,16 +1158,16 @@ tab_title_template "{fmt.fg.red}{bell_symbol}{activity_symbol}{fmt.fg.tab}{title
 #: Template to use for active tabs. If not specified falls back to
 #: tab_title_template.
 
-active_tab_foreground   #000
-active_tab_background   #BC93F9
+# active_tab_foreground   #000
+# active_tab_background   #eee
 # active_tab_font_style   bold-italic
 # inactive_tab_foreground #444
-inactive_tab_background #454759
+# inactive_tab_background #999
 # inactive_tab_font_style normal
 
 #: Tab bar colors and styles.
 
-tab_bar_background #454759
+# tab_bar_background none
 
 #: Background color for the tab bar. Defaults to using the terminal
 #: background color.
@@ -2623,3 +2621,7 @@ map super+shift+p kitten meow/projects.py load --dir ~/Projects/customers/ --dir
 # map ctrl+p kitten meow/project.py load --dir /Users/jonas/Projects --user <you> --org <github_org>
 
 
+# BEGIN_KITTY_THEME
+# One Dark
+include current-theme.conf
+# END_KITTY_THEME
