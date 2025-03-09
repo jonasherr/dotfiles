@@ -27,7 +27,7 @@ return {
   ---@type YaziConfig
   opts = {
     -- the floating window scaling factor. 1 means 100%, 0.9 means 90%, etc.
-    floating_window_scaling_factor = 1.0,
+    floating_window_scaling_factor = 0.8,
     -- if you want to open yazi instead of netrw, see below for more info
     open_for_directories = true,
     keymaps = {

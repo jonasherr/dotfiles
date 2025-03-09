@@ -54,6 +54,16 @@ run  = "cd ~/Projects/dotfiles"
 desc = "Cd to ~/Projects/dotfiles"
 
 [[manager.prepend_keymap]]
+on   = [ "g", "v" ]
+run  = "cd ~/Projects/dotfiles/nvim"
+desc = "Cd to ~/Projects/dotfiles/nvim"
+
+[[manager.prepend_keymap]]
+on   = [ "g", "n" ]
+run  = "cd ~/Library/'Mobile Documents'/iCloud~md~obsidian/Documents/Bear"
+desc = "Cd to notes"
+
+[[manager.prepend_keymap]]
 on   = [ "g", "i" ]
 run  = "cd ~/Library/'Mobile Documents'/com~apple~CloudDocs"
 desc = "Cd to ~/Library/'Mobile Documents'/com~apple~CloudDocs"
