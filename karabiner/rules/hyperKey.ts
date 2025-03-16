@@ -13,32 +13,28 @@ export const hyperKey: KarabinerRules = {
       },
       to: [
         {
-          // set_variable: {
-          //   name: "hyper",
-          //   value: 1,
-          // },
           key_code: "left_shift",
-          modifiers: [
-            "left_control",
-            "left_option",
-            "left_command"
-          ]
+          modifiers: ["left_control", "left_option", "left_command"],
         },
       ],
-      // to_after_key_up: [
-      //   {
-      //     set_variable: {
-      //       name: "hyper",
-      //       value: 0,
-      //     },
-      //   },
-      // ],
       to_if_alone: [
         {
           key_code: "escape",
+        },
+        {
+          set_variable: {
+            name: "sublayer",
+            value: "",
+          },
+        },
+        {
+          set_notification_message: {
+            id: "karabiner",
+            text: "",
+          },
         },
       ],
       type: "basic",
     },
   ],
-}
+};

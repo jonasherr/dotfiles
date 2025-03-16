@@ -10,7 +10,41 @@ import { numberLayer } from "./rules/layers/numbers";
 import { arrowsLayer } from "./rules/layers/arrows";
 import { simultaneous } from "./rules/simultaneous";
 
+const profileParameters = {
+  "basic.simultaneous_threshold_milliseconds": 50,
+  "basic.to_delayed_action_delay_milliseconds": 1000,
+  "basic.to_if_alone_timeout_milliseconds": 1000,
+  "basic.to_if_held_down_threshold_milliseconds": 500,
+  "mouse_motion_to_scroll.speed": 100,
+};
+
+const resetLayerWithEscape: KarabinerRules = {
+  description: "Reset layer with Escape",
+  manipulators: [
+    {
+      type: "basic",
+      from: { key_code: "escape" },
+      to: [
+        { key_code: "escape" },
+        {
+          set_variable: {
+            name: "sublayer",
+            value: "",
+          },
+        },
+        {
+          set_notification_message: {
+            id: "karabiner",
+            text: "",
+          },
+        },
+      ],
+    },
+  ],
+};
+
 const rules: KarabinerRules[] = [
+  resetLayerWithEscape,
   layerSwitcher,
   specialLayer,
   arrowsLayer,
@@ -19,7 +53,7 @@ const rules: KarabinerRules[] = [
   meh,
   hyperKey,
   simultaneous,
-  ...hyperSubLayers
+  ...hyperSubLayers,
 ];
 
 fs.writeFileSync(
@@ -31,34 +65,23 @@ fs.writeFileSync(
       },
       variables: [
         {
-          layer: Layers.text
-        }
+          layer: Layers.text,
+          sublayer: Layers.text,
+        },
       ],
       profiles: [
         {
           name: "Default",
-          parameters: {
-            "basic.simultaneous_threshold_milliseconds": 50,
-            "basic.to_delayed_action_delay_milliseconds": 500,
-            "basic.to_if_alone_timeout_milliseconds": 1000,
-            "basic.to_if_held_down_threshold_milliseconds": 500,
-            "mouse_motion_to_scroll.speed": 100
-          },
+          parameters: profileParameters,
           complex_modifications: {
             rules,
           },
         },
         {
           name: "Aurora",
-          parameters: {
-            "basic.simultaneous_threshold_milliseconds": 50,
-            "basic.to_delayed_action_delay_milliseconds": 500,
-            "basic.to_if_alone_timeout_milliseconds": 1000,
-            "basic.to_if_held_down_threshold_milliseconds": 500,
-            "mouse_motion_to_scroll.speed": 100
-          },
+          parameters: profileParameters,
           complex_modifications: {
-            rules: hyperSubLayers,
+            rules: [...hyperSubLayers, resetLayerWithEscape],
           },
         },
       ],

@@ -2,7 +2,7 @@
   "name": "karabiner",
   "version": "1.0.0",
   "main": "index.js",
-  "author": "Max Stoiber <contact@mxstbr.com>",
+  "author": "Jonas Herrmannsdörfer",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^18.7.19",

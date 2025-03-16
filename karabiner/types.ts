@@ -35,10 +35,10 @@ type FrontMostApplicationCondition = {
 
 type DeviceCondition = {
   type:
-  | "device_if"
-  | "device_unless"
-  | "device_exists_if"
-  | "device_exists_unless";
+    | "device_if"
+    | "device_unless"
+    | "device_exists_if"
+    | "device_exists_unless";
   identifiers: Identifiers[];
   description?: string;
 };
@@ -115,6 +115,10 @@ export interface To {
   };
   mouse_key?: MouseKey;
   pointing_button?: string;
+  set_notification_message?: {
+    id: string;
+    text: string;
+  };
   /**
    * Power Management plugin
    * @example: sleep system
@@ -142,7 +146,7 @@ export type ModifierKeyCode =
   | "right_control"
   | "right_shift"
   | "right_option"
-  | "right_command"
+  | "right_command";
 
 export type KeyCode =
   | ModifierKeyCode

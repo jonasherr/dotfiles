@@ -7,7 +7,10 @@ export const homeRow: KarabinerRules = {
   manipulators: [
     // second row left
     homeRowKey([{ key: "a" }], "left_control"),
-    homeRowKey([{ key: "s" }, { key: "5", modifier: "left_shift" }], "left_option"),
+    homeRowKey(
+      [{ key: "s" }, { key: "5", modifier: "left_shift" }],
+      "left_option"
+    ),
     homeRowKey([{ key: "d" }], "left_command"),
     homeRowKey([{ key: "f" }], "left_shift"),
 
@@ -16,5 +19,5 @@ export const homeRow: KarabinerRules = {
     homeRowKey([{ key: "k" }], "right_command"),
     homeRowKey([{ key: "l" }], "right_option"),
     homeRowKey([{ key: "semicolon" }], "right_control"),
-  ].flat()
-}
+  ].flat(),
+};

@@ -9,18 +9,32 @@ export interface LayerCommand {
   description?: string;
 }
 
+type HyperLayerInput = {
+  [keyCode in KeyCode]?: {
+    [subKeyCode in KeyCode]?: LayerCommand;
+  };
+};
+
 /**
  * Create all hyper sublayers. This needs to be a single function, as well need to
  * have all the hyper variable names in order to filter them and make sure only one
  * activates at a time
  */
-export const createHyperSubLayers = (input: { [keyCode in KeyCode]?: { [subKeyCode in KeyCode]?: LayerCommand } }) => {
-  const layerKeyCodes = Object.keys(input)
+export const createHyperSubLayers = (input: HyperLayerInput) => {
+  const layerKeyCodes = Object.keys(input);
 
-  return layerKeyCodes.map(layerKeycode => {
-    const description = `Hyper Key sublayer ${layerKeycode}`
-    const subLayerKeyCodes = Object.keys(input[layerKeycode])
-    return ({
+  return layerKeyCodes.map((layerKeycode) => {
+    const description = `Hyper Key sublayer ${layerKeycode}`;
+    const subLayerKeyCodes = Object.keys(input[layerKeycode]);
+    const subLayerOptions = Object.entries<LayerCommand | undefined>(
+      input[layerKeycode]
+    )
+      .map(
+        ([key, value]) =>
+          `${key}: ${value?.description ?? "No description provided"}`
+      )
+      .join("\n");
+    return {
       description,
       manipulators: [
         {
@@ -32,33 +46,28 @@ export const createHyperSubLayers = (input: { [keyCode in KeyCode]?: { [subKeyCo
                 "left_shift",
                 "left_control",
                 "left_option",
-                "left_command"
-              ]
-            }
+                "left_command",
+              ],
+            },
           },
           to: [
             {
               set_variable: {
                 name: "sublayer",
-                value: layerKeycode
-              }
-            }
+                value: layerKeycode,
+              },
+            },
           ],
-          parameters: {
-            "basic.to_delayed_action_delay_milliseconds": 500
-          },
-          to_delayed_action: {
-            "to_if_invoked": [
-              {
-                set_variable: {
-                  name: "sublayer",
-                  value: ""
-                }
-              }
-            ],
-          }
+          to_after_key_up: [
+            {
+              set_notification_message: {
+                id: "karabiner",
+                text: subLayerOptions,
+              },
+            },
+          ],
         },
-        ...subLayerKeyCodes.map(subLayerKeyCode => ({
+        ...subLayerKeyCodes.map((subLayerKeyCode) => ({
           type: "basic",
           from: {
             key_code: subLayerKeyCode,
@@ -67,180 +76,168 @@ export const createHyperSubLayers = (input: { [keyCode in KeyCode]?: { [subKeyCo
             {
               type: "variable_if",
               name: "sublayer",
-              value: layerKeycode
-            }
+              value: layerKeycode,
+            },
           ],
-          to: [
-            ...input[layerKeycode][subLayerKeyCode].to,
-            {
-              set_variable: {
-                name: "sublayer",
-                value: ""
-              }
-            }
-          ],
-        }))
-      ]
-    }) as KarabinerRules
-  })
-}
+          to: [...input[layerKeycode][subLayerKeyCode].to],
+        })),
+      ],
+    } as KarabinerRules;
+  });
+};
 
 /**
  * Shortcut for "open" shell command
  */
-export function open(what: string): LayerCommand {
+export function open(what: string, description?: string): LayerCommand {
   return {
     to: [
       {
         shell_command: `open ${what}`,
       },
     ],
-    description: `Open ${what}`,
+    description: description ?? `Open ${what}`,
   };
 }
 
 /**
  * Shortcut for "window" raycast command
  */
-export function window(position: string): LayerCommand {
+export function window(position: string, description?: string): LayerCommand {
   return {
     to: [
       {
-        shell_command: `open -g "raycast://extensions/raycast/window-management/${position}"`,
+        shell_command: `open -g 'raycast://extensions/raycast/window-management/${position}'`,
       },
     ],
-    description: `Open ${position}`,
+    description: description ?? `Open ${position}`,
   };
 }
 
-export const createLayerConverter = (layer: Layers) => (from: KeyCode, to: KeyCode, modifiers?: string[]): Manipulator => ({
-  type: "basic",
-  from: {
-    key_code: from,
-    modifiers: {
-      optional: ["any"]
-    }
-  },
-  conditions: [
-    {
-      type: "variable_if",
-      name: "layer",
-      value: layer
+export const createLayerConverter =
+  (layer: Layers) =>
+  (from: KeyCode, to: KeyCode, modifiers?: string[]): Manipulator => ({
+    type: "basic",
+    from: {
+      key_code: from,
+      modifiers: {
+        optional: ["any"],
+      },
     },
-    {
-      type: "device_if",
-      identifiers: [
-        {
-          vendor_id: 1452,
-          product_id: 834
-        }
-      ]
-    }
-  ],
-  to: [
-    {
-      key_code: to,
-      modifiers
-    }
-  ]
-})
+    conditions: [
+      {
+        type: "variable_if",
+        name: "layer",
+        value: layer,
+      },
+    ],
+    to: [
+      {
+        key_code: to,
+        modifiers,
+      },
+    ],
+  });
 
-export const convertToSpecialLayer = createLayerConverter(Layers.special)
-export const convertToNumbersLayer = createLayerConverter(Layers.number)
-export const convertToArrowsLayer = createLayerConverter(Layers.arrows)
+export const convertToSpecialLayer = createLayerConverter(Layers.special);
+export const convertToNumbersLayer = createLayerConverter(Layers.number);
+export const convertToArrowsLayer = createLayerConverter(Layers.arrows);
 
 export function layer(key_code: KeyCode, layerInput: Layers): Manipulator[] {
-  return ([
+  return [
     {
       type: "basic",
       from: {
-        key_code: key_code
+        key_code: key_code,
       },
       conditions: [
         {
           type: "variable_unless",
           name: "layer",
-          value: layerInput
-        }
+          value: layerInput,
+        },
       ],
       to: [
         {
           set_variable: {
             name: "layer",
-            value: layerInput
-          }
-        }
-      ]
+            value: layerInput,
+          },
+        },
+      ],
     },
     {
       type: "basic",
       from: {
-        key_code: key_code
+        key_code: key_code,
       },
       conditions: [
         {
           type: "variable_if",
           name: "layer",
-          value: layerInput
-        }
+          value: layerInput,
+        },
       ],
       to: [
         {
           set_variable: {
             name: "layer",
-            value: Layers.text
-          }
-        }
-      ]
-    }
-  ])
+            value: Layers.text,
+          },
+        },
+      ],
+    },
+  ];
 }
 
-export const homeRowKey = (fromKeys: { key: KeyCode, modifier?: KeyCode }[], to: KeyCode): Manipulator[] => {
+export const homeRowKey = (
+  fromKeys: { key: KeyCode; modifier?: KeyCode }[],
+  to: KeyCode
+): Manipulator[] => {
   return fromKeys.map(({ key, modifier }) => ({
-    // conditions: [
-    //   {
-    //     type: "variable_if",
-    //     name: "sublayer",
-    //     value: ""
-    //   }
-    // ],
+    conditions: [
+      {
+        type: "variable_if",
+        name: "sublayer",
+        value: "",
+      },
+    ],
     from: {
       key_code: key,
       modifiers: {
-        optional: [
-          "any"
-        ],
-        mandatory: modifier ? [modifier] : undefined
-      }
+        optional: ["any"],
+        mandatory: modifier ? [modifier] : undefined,
+      },
     },
     to: [
       {
         key_code: to,
-        modifiers: ["any"]
-      }
+        modifiers: ["any"],
+      },
     ],
     to_if_alone: [
       {
-        key_code: key
-      }
+        key_code: key,
+      },
     ],
-    type: "basic"
-  }))
-}
+    type: "basic",
+  }));
+};
 
-export const createCombinedKey = (fromKeys: KeyCode[], to: KeyCode): Manipulator => ({
+export const createCombinedKey = (
+  fromKeys: KeyCode[],
+  to: KeyCode
+): Manipulator => ({
   from: {
-    simultaneous: fromKeys.map(k => ({ key_code: k })),
+    simultaneous: fromKeys.map((k) => ({ key_code: k })),
     modifiers: {
-      optional: ["any"]
-    }
+      optional: ["any"],
+    },
   },
   to: [
     {
       key_code: to,
-    }
+    },
   ],
-  type: "basic"
-}
-)
+  type: "basic",
+});
