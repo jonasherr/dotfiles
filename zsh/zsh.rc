@@ -22,7 +22,7 @@ source_if_exists /usr/local/etc/profile.d/z.sh
 source_if_exists /opt/homebrew/etc/profile.d/z.sh
 source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `brew info chruby` to find out installed directory
 
-plugins=(git vi-mode aliases macos zsh-autosuggestions fzf)
+plugins=(git vi-mode aliases macos zsh-autosuggestions fzf z)
 # Bundles from the default repo (robbyrussell's oh-my-zsh).
 
 # See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
