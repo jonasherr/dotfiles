@@ -114,6 +114,21 @@ export function window(position: string, description?: string): LayerCommand {
   };
 }
 
+export function simpleTo(
+  key_code: KeyCode,
+  description?: string
+): LayerCommand {
+  return {
+    to: [
+      {
+        key_code,
+        modifiers: ["any"],
+      },
+    ],
+    description: description ?? `${key_code}`,
+  };
+}
+
 export const createLayerConverter =
   (layer: Layers) =>
   (from: KeyCode, to: KeyCode, modifiers?: string[]): Manipulator => ({

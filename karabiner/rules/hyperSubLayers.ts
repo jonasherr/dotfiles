@@ -1,4 +1,4 @@
-import { createHyperSubLayers, open, window } from "../utils";
+import { createHyperSubLayers, media, open, simpleTo, window } from "../utils";
 
 export const hyperSubLayers = [
   ...createHyperSubLayers({
@@ -18,6 +18,7 @@ export const hyperSubLayers = [
         "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes",
         "Search Notes"
       ),
+      l: open("raycast://extensions/thomas/elgato-key-light/toggle"),
     },
 
     // w = "Window"
@@ -26,7 +27,33 @@ export const hyperSubLayers = [
       j: window("bottom-half"),
       k: window("top-half"),
       l: window("right-half"),
-      f: window("maximize"),
+      m: window("maximize"),
+      i: window("make-larger"),
+      d: window("make-smaller"),
+    },
+
+    // m = "Media"
+    m: {
+      // n next song
+      n: simpleTo("fastforward"),
+      // m mute
+      m: simpleTo("mute"),
+      // p previous song
+      p: simpleTo("rewind"),
+      // u volume up
+      u: simpleTo("volume_up"),
+      // d volume down
+      d: simpleTo("volume_down"),
+      // space play/pause
+      s: simpleTo("play_or_pause"),
+    },
+
+    // b = "brightness"
+    b: {
+      // u brightness up
+      u: simpleTo("apple_display_brightness_increment"),
+      // d brightness down
+      d: simpleTo("apple_display_brightness_decrement"),
     },
   }),
 ];

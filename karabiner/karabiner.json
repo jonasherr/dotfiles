@@ -1384,7 +1384,7 @@
                                     {
                                         "set_notification_message": {
                                             "id": "karabiner",
-                                            "text": "a: Create new Note\nc: Open Camera\ne: Emojis\np: Confetti\nn: Search Notes"
+                                            "text": "a: Create new Note\nc: Open Camera\ne: Emojis\np: Confetti\nn: Search Notes\nl: Open raycast://extensions/thomas/elgato-key-light/toggle"
                                         }
                                     }
                                 ],
@@ -1449,6 +1449,18 @@
                                 "from": { "key_code": "n" },
                                 "to": [{ "shell_command": "open raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes" }],
                                 "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "r"
+                                    }
+                                ],
+                                "from": { "key_code": "l" },
+                                "to": [{ "shell_command": "open raycast://extensions/thomas/elgato-key-light/toggle" }],
+                                "type": "basic"
                             }
                         ]
                     },
@@ -1472,7 +1484,7 @@
                                     {
                                         "set_notification_message": {
                                             "id": "karabiner",
-                                            "text": "h: Open left-half\nj: Open bottom-half\nk: Open top-half\nl: Open right-half\nf: Open maximize"
+                                            "text": "h: Open left-half\nj: Open bottom-half\nk: Open top-half\nl: Open right-half\nm: Open maximize\ni: Open make-larger\nd: Open make-smaller"
                                         }
                                     }
                                 ],
@@ -1534,14 +1546,241 @@
                                         "value": "w"
                                     }
                                 ],
-                                "from": { "key_code": "f" },
+                                "from": { "key_code": "m" },
                                 "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/maximize'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "w"
+                                    }
+                                ],
+                                "from": { "key_code": "i" },
+                                "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/make-larger'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "w"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/make-smaller'" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper Key sublayer m",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "m",
+                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "sublayer",
+                                            "value": "m"
+                                        }
+                                    }
+                                ],
+                                "to_after_key_up": [
+                                    {
+                                        "set_notification_message": {
+                                            "id": "karabiner",
+                                            "text": "n: fastforward\nm: mute\np: rewind\nu: volume_up\nd: volume_down\ns: play_or_pause"
+                                        }
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "n" },
+                                "to": [
+                                    {
+                                        "key_code": "fastforward",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "m" },
+                                "to": [
+                                    {
+                                        "key_code": "mute",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "p" },
+                                "to": [
+                                    {
+                                        "key_code": "rewind",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "u" },
+                                "to": [
+                                    {
+                                        "key_code": "volume_up",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [
+                                    {
+                                        "key_code": "volume_down",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "s" },
+                                "to": [
+                                    {
+                                        "key_code": "play_or_pause",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper Key sublayer b",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "b",
+                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "sublayer",
+                                            "value": "b"
+                                        }
+                                    }
+                                ],
+                                "to_after_key_up": [
+                                    {
+                                        "set_notification_message": {
+                                            "id": "karabiner",
+                                            "text": "u: apple_display_brightness_increment\nd: apple_display_brightness_decrement"
+                                        }
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "b"
+                                    }
+                                ],
+                                "from": { "key_code": "u" },
+                                "to": [
+                                    {
+                                        "key_code": "apple_display_brightness_increment",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "b"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [
+                                    {
+                                        "key_code": "apple_display_brightness_decrement",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
                                 "type": "basic"
                             }
                         ]
                     }
                 ]
             },
+            "devices": [
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "is_pointing_device": true,
+                        "product_id": 24926,
+                        "vendor_id": 7504
+                    },
+                    "ignore": false
+                }
+            ],
             "name": "Default",
             "parameters": {
                 "basic.simultaneous_threshold_milliseconds": 50,
@@ -1575,7 +1814,7 @@
                                     {
                                         "set_notification_message": {
                                             "id": "karabiner",
-                                            "text": "a: Create new Note\nc: Open Camera\ne: Emojis\np: Confetti\nn: Search Notes"
+                                            "text": "a: Create new Note\nc: Open Camera\ne: Emojis\np: Confetti\nn: Search Notes\nl: Open raycast://extensions/thomas/elgato-key-light/toggle"
                                         }
                                     }
                                 ],
@@ -1640,6 +1879,18 @@
                                 "from": { "key_code": "n" },
                                 "to": [{ "shell_command": "open raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes" }],
                                 "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "r"
+                                    }
+                                ],
+                                "from": { "key_code": "l" },
+                                "to": [{ "shell_command": "open raycast://extensions/thomas/elgato-key-light/toggle" }],
+                                "type": "basic"
                             }
                         ]
                     },
@@ -1663,7 +1914,7 @@
                                     {
                                         "set_notification_message": {
                                             "id": "karabiner",
-                                            "text": "h: Open left-half\nj: Open bottom-half\nk: Open top-half\nl: Open right-half\nf: Open maximize"
+                                            "text": "h: Open left-half\nj: Open bottom-half\nk: Open top-half\nl: Open right-half\nm: Open maximize\ni: Open make-larger\nd: Open make-smaller"
                                         }
                                     }
                                 ],
@@ -1725,8 +1976,224 @@
                                         "value": "w"
                                     }
                                 ],
-                                "from": { "key_code": "f" },
+                                "from": { "key_code": "m" },
                                 "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/maximize'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "w"
+                                    }
+                                ],
+                                "from": { "key_code": "i" },
+                                "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/make-larger'" }],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "w"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [{ "shell_command": "open -g 'raycast://extensions/raycast/window-management/make-smaller'" }],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper Key sublayer m",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "m",
+                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "sublayer",
+                                            "value": "m"
+                                        }
+                                    }
+                                ],
+                                "to_after_key_up": [
+                                    {
+                                        "set_notification_message": {
+                                            "id": "karabiner",
+                                            "text": "n: fastforward\nm: mute\np: rewind\nu: volume_up\nd: volume_down\ns: play_or_pause"
+                                        }
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "n" },
+                                "to": [
+                                    {
+                                        "key_code": "fastforward",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "m" },
+                                "to": [
+                                    {
+                                        "key_code": "mute",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "p" },
+                                "to": [
+                                    {
+                                        "key_code": "rewind",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "u" },
+                                "to": [
+                                    {
+                                        "key_code": "volume_up",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [
+                                    {
+                                        "key_code": "volume_down",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "m"
+                                    }
+                                ],
+                                "from": { "key_code": "s" },
+                                "to": [
+                                    {
+                                        "key_code": "play_or_pause",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            }
+                        ]
+                    },
+                    {
+                        "description": "Hyper Key sublayer b",
+                        "manipulators": [
+                            {
+                                "from": {
+                                    "key_code": "b",
+                                    "modifiers": { "mandatory": ["left_shift", "left_control", "left_option", "left_command"] }
+                                },
+                                "to": [
+                                    {
+                                        "set_variable": {
+                                            "name": "sublayer",
+                                            "value": "b"
+                                        }
+                                    }
+                                ],
+                                "to_after_key_up": [
+                                    {
+                                        "set_notification_message": {
+                                            "id": "karabiner",
+                                            "text": "u: apple_display_brightness_increment\nd: apple_display_brightness_decrement"
+                                        }
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "b"
+                                    }
+                                ],
+                                "from": { "key_code": "u" },
+                                "to": [
+                                    {
+                                        "key_code": "apple_display_brightness_increment",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
+                                "type": "basic"
+                            },
+                            {
+                                "conditions": [
+                                    {
+                                        "name": "sublayer",
+                                        "type": "variable_if",
+                                        "value": "b"
+                                    }
+                                ],
+                                "from": { "key_code": "d" },
+                                "to": [
+                                    {
+                                        "key_code": "apple_display_brightness_decrement",
+                                        "modifiers": ["any"]
+                                    }
+                                ],
                                 "type": "basic"
                             }
                         ]
