@@ -51,20 +51,24 @@ return {
       end,
     })
 
+    local function current_session_name()
+      return require('auto-session.lib').current_session_name(true)
+    end
+
     require('lualine').setup {
       options = {
         icons_enabled = true,
-        theme = 'dracula',
+        theme = 'catppuccin',
         component_separators = '|',
-        section_separators = '',
+        section_separators = { left = '', right = '' },
       },
       sections = {
-        lualine_a = { 'mode' },
-        lualine_b = { 'diagnostics', 'branch' },
+        lualine_a = { { 'mode', separator = { left = '' }, right_padding = 2 } },
+        lualine_b = { 'diagnostics', 'branch', current_session_name },
         lualine_c = { 'diff' },
-        lualine_x = { count_tokens, 'encoding', 'filetype' },
+        lualine_x = { 'g:obsidian', count_tokens, 'encoding', 'filetype' },
         lualine_y = { 'progress', 'location' },
-        lualine_z = { 'filename' },
+        lualine_z = { { 'filename', separator = { right = '' }, left_padding = 2 } },
       },
     }
   end,
