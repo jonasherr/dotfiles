@@ -51,3 +51,9 @@ vim.keymap.set('n', 'ge', vim.diagnostic.goto_next, { desc = 'Go to next diagnos
 map('n', '<S-h>', '<cmd>bprevious<cr>', { desc = 'Prev buffer' })
 map('n', '<S-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
 map('n', '<leader>bb', '<cmd>e #<cr>', { desc = 'Switch to Other Buffer' })
+
+map('n', '<leader>ca', vim.lsp.buf.code_action, { desc = '[C]ode [A]ction' })
+
+-- Markdown
+map('n', '<A-j>', '/^#\\+ <CR>', { desc = 'Next Heading' })
+map('n', '<A-k>', '?^#\\+ <CR>', { desc = 'Previous Heading' })
