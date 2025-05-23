@@ -12,7 +12,6 @@ end, { silent = true, desc = 'Save' })
 
 -- Open Commands
 map({ 'n', 'v' }, '<leader>ou', ':UndotreeToggle<CR>', { silent = true, desc = 'Open Undotree' })
-map({ 'n', 'v' }, '<leader>od', ":lua require('dbee').open()<CR>", { silent = true, desc = 'Open dbee' })
 
 map({ 'n', 'v' }, '<leader>qn', ':cnext<CR>', { silent = true, desc = 'Next Quick List Item' })
 map({ 'n', 'v' }, '<leader>qp', ':cprevious<CR>', { silent = true, desc = 'Previous Quick List Item' })
@@ -45,8 +44,14 @@ vim.keymap.set('n', 'k', "v:count == 0 ? 'gk' : 'k'", { expr = true, silent = tr
 vim.keymap.set('n', 'j', "v:count == 0 ? 'gj' : 'j'", { expr = true, silent = true })
 
 -- Diagnostic keymaps
-vim.keymap.set('n', 'gE', vim.diagnostic.goto_prev, { desc = 'Go to previous diagnostic message' })
-vim.keymap.set('n', 'ge', vim.diagnostic.goto_next, { desc = 'Go to next diagnostic message' })
+local function goToPreviousDiagnosticMessage()
+  vim.diagnostic.jump { count = -1, float = true }
+end
+vim.keymap.set('n', 'gE', goToPreviousDiagnosticMessage, { desc = 'Go to previous diagnostic message' })
+local function goToNextDiagnosticMessage()
+  vim.diagnostic.jump { count = 1, float = true }
+end
+vim.keymap.set('n', 'ge', goToNextDiagnosticMessage, { desc = 'Go to next diagnostic message' })
 
 map('n', '<S-h>', '<cmd>bprevious<cr>', { desc = 'Prev buffer' })
 map('n', '<S-l>', '<cmd>bnext<cr>', { desc = 'Next buffer' })
@@ -57,3 +62,9 @@ map('n', '<leader>ca', vim.lsp.buf.code_action, { desc = '[C]ode [A]ction' })
 -- Markdown
 map('n', '<A-j>', '/^#\\+ <CR>', { desc = 'Next Heading' })
 map('n', '<A-k>', '?^#\\+ <CR>', { desc = 'Previous Heading' })
+
+-- Rename
+map({ 'n', 'v' }, '<leader>rn', vim.lsp.buf.rename, { desc = '[R]e[n]ame' })
+
+-- See `:help K` for why this keymap
+map({ 'n', 'v' }, 'K', vim.lsp.buf.hover, { desc = 'Hover Documentation' })

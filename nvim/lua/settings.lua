@@ -1,9 +1,6 @@
 vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
-vim.g.VimuxOrientation = 'h'
-vim.g.VimuxHeight = '40'
-
 -- Set highlight on search
 vim.o.hlsearch = false
 
@@ -40,9 +37,6 @@ vim.o.timeoutlen = 1000
 
 -- Set completeopt to have a better completion experience
 vim.o.completeopt = 'menuone,noselect'
-
--- for obsidian
-vim.o.conceallevel = 2
 
 -- NOTE: You should make sure your terminal supports this
 vim.o.termguicolors = true
