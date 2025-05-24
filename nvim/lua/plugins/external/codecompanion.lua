@@ -71,13 +71,14 @@ return {
     },
   },
   keys = {
-    { '<C-a>', ':CodeCompanionActions<cr>', desc = 'CodeCompanionChat', mode = { 'n', 'v' } },
-    { '<leader>a', ':CodeCompanionChat Toggle<cr>', desc = 'CodeCompanion Actions', mode = { 'n', 'v' } },
+    { '<leader>aa', ':CodeCompanionActions<cr>', desc = 'CodeCompanionChat', mode = { 'n', 'v' } },
+    { '<leader>at', ':CodeCompanionChat Toggle<cr>', desc = 'CodeCompanion Actions', mode = { 'n', 'v' } },
     { 'ga', ':CodeCompanionChat Add<cr>', noremap = true, silent = true, mode = 'v' },
   },
   dependencies = {
     'nvim-lua/plenary.nvim',
     'nvim-treesitter/nvim-treesitter',
     'ravitemer/codecompanion-history.nvim',
+    'folke/snacks.nvim',
   },
 }
