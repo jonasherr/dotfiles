@@ -52,4 +52,12 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   pattern = '*',
 })
 
-require 'folding'
+-- folding
+vim.o.foldenable = true -- Enable folding.
+vim.o.foldcolumn = '1' -- Show folding signs.
+vim.o.foldexpr = 'v:lua.vim.treesitter.foldexpr()' -- Use treesitter for folding.
+vim.o.foldlevel = 999 -- Close all folds.
+vim.o.foldlevelstart = 99 -- Start with all folds closed.
+vim.o.foldmethod = 'expr' -- Use expr to determine fold level.
+vim.o.foldopen = 'insert,mark,search,tag' -- Which commands open folds if the cursor moves into a closed fold.
+--
