@@ -10,6 +10,7 @@ return {
       drag_and_drop = {
         insert_mode = true,
       },
+      dir_path = 'attachments',
       -- required for Windows users
       use_absolute_path = true,
       only_render_image_at_cursor = true,
