@@ -9,20 +9,17 @@
     "omarshahine"
   ],
   "license": "MIT",
-  "preferences": [
-    {
-      "name": "keyLights_count",
-      "title": "Number of Key Lights",
-      "description": "Enter the number of Key Lights on your network that you wish to control",
-      "type": "textfield",
-      "required": true,
-      "default": "1"
-    }
-  ],
   "commands": [
     {
+      "name": "discoverLights",
+      "title": "Discover Lights",
+      "subtitle": "Elgato Key Light",
+      "description": "Force a fresh discovery of Key Lights on your network",
+      "mode": "no-view"
+    },
+    {
       "name": "toggle",
-      "title": "Toggle On/Off",
+      "title": "Toggle Lights",
       "subtitle": "Elgato Key Light",
       "description": "Toggles all connected Key Lights on or off",
       "mode": "no-view"
@@ -43,16 +40,16 @@
     },
     {
       "name": "increaseTemperature",
-      "title": "Increase Color Temperature",
+      "title": "Warmer Color Temperature",
       "subtitle": "Elgato Key Light",
-      "description": "Increase color temperature of Key Light by 5%",
+      "description": "Make light color warmer (lower Kelvin)",
       "mode": "no-view"
     },
     {
       "name": "decreaseTemperature",
-      "title": "Decrease Color Temperature",
+      "title": "Cooler Color Temperature",
       "subtitle": "Elgato Key Light",
-      "description": "Decrease color temperature of Key Light by 5%",
+      "description": "Make light color cooler (higher Kelvin)",
       "mode": "no-view"
     },
     {
@@ -65,35 +62,18 @@
   ],
   "tools": [
     {
-      "name": "turn-on",
-      "title": "Turn On",
-      "description": "Turns on the Elgato Key Lights",
-      "confirmation": false
-    },
-    {
-      "name": "turn-off",
-      "title": "Turn Off",
-      "description": "Turns off the Elgato Key Lights",
-      "confirmation": false
-    },
-    {
-      "name": "update-settings",
-      "title": "Update Settings",
-      "description": "Update brightness, temperature, or power state of Elgato Key Lights",
+      "name": "apply-preset",
+      "title": "Apply Preset",
+      "description": "Apply a preset to your Elgato Key Lights",
+      "instructions": "Tool to apply a preset to all connected Key Lights\n\n@example // Apply the night preset by name\napply-preset({ presetName: \"night\" })\n@example // Apply the warm preset by name\napply-preset({ presetName: \"warm\" })\n@example // Apply by ID\napply-preset({ presetId: \"default\" })\n@param input.presetName, ,- The name of the preset (case-insensitive), e.g., \"night\", \"day\", \"warm\", \"cold\", \"default\"\n@param input.presetId, ,- The ID of the preset, e.g., \"night\", \"day\", \"warm\", \"cold\", \"default\"\n\nWhen a user asks to apply a preset like \"switch to night mode\" or \"apply the warm preset\",\nextract the preset name and pass it to this tool.",
       "input": {
         "type": "object",
         "properties": {
-          "brightness": {
-            "type": "number",
-            "description": "The brightness of the key light.\n\n@default 20\n@min 0\n@max 100"
+          "presetId": {
+            "type": "string"
           },
-          "temperature": {
-            "type": "number",
-            "description": "The temperature of the key light.\n\n@default 200\n@min 143\n@max 344"
-          },
-          "on": {
-            "type": "boolean",
-            "description": "Whether the key light is on.\n\n@default true"
+          "presetName": {
+            "type": "string"
           }
         },
         "required": []
@@ -101,62 +81,28 @@
       "confirmation": false
     },
     {
-      "name": "get-settings",
-      "title": "Get Settings",
-      "description": "Get the brightness, temperature, and power state of all Elgato Key Lights",
-      "confirmation": false
-    },
-    {
       "name": "create-preset",
       "title": "Create Preset",
       "description": "Create a new preset for your Elgato Key Lights",
+      "instructions": "Tool to create a new preset for Key Lights",
       "input": {
         "type": "object",
         "properties": {
-          "icon": {
-            "type": "string",
-            "description": "An emoji as the preset icon."
-          },
           "name": {
-            "type": "string",
-            "description": "The name of the preset."
-          },
-          "settings": {
-            "type": "object",
-            "properties": {
-              "brightness": {
-                "type": "number",
-                "description": "The brightness (percentage) of the key light.\n\n@default 20\n@min 0\n@max 100"
-              },
-              "temperature": {
-                "type": "number",
-                "description": "The temperature (percentage) of the key light.\n\n@default 20\n@min 0 (cold, ~2000K)\n@max 100 (warm, ~7000K)"
-              }
-            },
-            "required": [],
-            "description": "The settings of the preset."
-          }
-        },
-        "required": [
-          "name",
-          "settings"
-        ]
-      },
-      "confirmation": false
-    },
-    {
-      "name": "apply-preset",
-      "title": "Apply Preset",
-      "description": "Apply a preset to your Elgato Key Lights",
-      "input": {
-        "type": "object",
-        "properties": {
-          "presetId": {
             "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "brightness": {
+            "type": "number"
+          },
+          "temperature": {
+            "type": "number"
           }
         },
         "required": [
-          "presetId"
+          "name"
         ]
       },
       "confirmation": false
@@ -165,10 +111,75 @@
       "name": "get-presets",
       "title": "Get Presets",
       "description": "Get all presets for your Elgato Key Lights",
+      "instructions": "Tool to get all saved presets",
+      "confirmation": false
+    },
+    {
+      "name": "get-lights",
+      "title": "Get Lights",
+      "description": "Get information about your connected Elgato Key Lights",
+      "instructions": "Tool to get information about discovered Key Lights\n\nNote: Due to API limitations, this tool can only return basic information\nabout the lights (name, address) rather than their full settings.",
+      "confirmation": false
+    },
+    {
+      "name": "turn-on",
+      "title": "Turn On",
+      "description": "Turn on your Elgato Key Lights",
+      "instructions": "Tool to turn on all connected Key Lights",
+      "confirmation": false
+    },
+    {
+      "name": "turn-off",
+      "title": "Turn Off",
+      "description": "Turn off your Elgato Key Lights",
+      "instructions": "Tool to turn off all connected Key Lights",
+      "confirmation": false
+    },
+    {
+      "name": "update-settings",
+      "title": "Update Settings",
+      "description": "Update the settings of your Elgato Key Lights",
+      "instructions": "Tool to update the settings of all connected Key Lights",
+      "input": {
+        "type": "object",
+        "properties": {
+          "brightness": {
+            "type": "number",
+            "description": "Brightness percentage (0-100)"
+          },
+          "temperature": {
+            "type": "number",
+            "description": "Temperature percentage (0-100)\n0 = cool (high Kelvin), 100 = warm (low Kelvin)"
+          },
+          "on": {
+            "type": "boolean",
+            "description": "Power state"
+          }
+        },
+        "required": [],
+        "description": "Input parameters for updating Key Light settings"
+      },
       "confirmation": false
     }
   ],
+  "dependencies": {
+    "@raycast/api": "1.95.0",
+    "@raycast/utils": "1.19.1",
+    "axios": "^1.6.2",
+    "bonjour-service": "^1.1.1"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.0",
+    "@types/node": "^20.10.5",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
+  },
   "ai": {
+    "instructions": "You are a helpful assistant that can help with tasks related to the Elgato Key Light. You can do things like turn the lights on and off, apply a preset or make new presets. When creating presets, use these guidelines for common scenarios: - Sunny day: brightness 90%, temperature 80% (warm) - Night: brightness 10%, temperature 10% (very warm) - Day: brightness 80%, temperature 60% (moderately warm) - Cold/Cool: brightness 50%, temperature 20% (cool white) - Warm: brightness 50%, temperature 80% (warm white). When creating presets, always convert the preset name to Title Case (e.g., 'sunny day' becomes 'Sunny Day'). When applying presets, use the 'presetName' parameter with the lowercase preset name (e.g., 'night' not 'Night'). Match these standard values for consistent lighting presets.",
     "evals": [
       {
         "input": "@elgato-key-light turn lights on",
@@ -238,14 +249,8 @@
         "expected": [
           {
             "callsTool": {
-              "arguments": {},
-              "name": "get-presets"
-            }
-          },
-          {
-            "callsTool": {
               "arguments": {
-                "presetId": "night"
+                "presetName": "night"
               },
               "name": "apply-preset"
             }
@@ -255,14 +260,26 @@
       {
         "input": "@elgato-key-light create me a new preset for a sunny day",
         "mocks": {
-          "create-preset": "Successfully called \"create-preset\""
+          "create-preset": {
+            "data": {
+              "id": "09f87aee-b4fa-4b86-94e7-a4bc8f59fe8d",
+              "name": "Sunny Day",
+              "settings": {
+                "brightness": 90,
+                "temperature": 80
+              }
+            },
+            "message": "Created preset \"Sunny Day\"",
+            "success": true
+          }
         },
         "expected": [
           {
             "callsTool": {
               "arguments": {
-                "icon": "☀️",
-                "name": "Sunny Day"
+                "brightness": 90,
+                "name": "Sunny Day",
+                "temperature": 80
               },
               "name": "create-preset"
             }
@@ -270,31 +287,5 @@
         ]
       }
     ]
-  },
-  "dependencies": {
-    "@raycast/api": "^1.94.0",
-    "@raycast/utils": "^1.19.1",
-    "axios": "^1.2.0",
-    "bonjour": "^3.5.0",
-    "emojilib": "^4.0.1",
-    "prettier": "^3.5.3"
-  },
-  "devDependencies": {
-    "@raycast/eslint-config": "^1.0.11",
-    "@types/bonjour": "^3.5.9",
-    "@types/node": "^22.13.10",
-    "@types/react": "^19.0.10",
-    "eslint": "^8.57.1",
-    "react": "^18.2.0",
-    "react-devtools": "^6.1.1",
-    "typescript": "^5.4.5"
-  },
-  "scripts": {
-    "build": "ray build",
-    "dev": "ray develop",
-    "fix-lint": "ray lint --fix",
-    "lint": "ray lint",
-    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
-    "publish": "npx @raycast/api@latest publish"
   }
 }
