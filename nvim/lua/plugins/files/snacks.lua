@@ -69,6 +69,13 @@ return {
       desc = 'Smart Find Files',
     },
     {
+      '<leader>oe',
+      function()
+        Snacks.explorer.open()
+      end,
+      desc = 'Smart Find Files',
+    },
+    {
       '<leader>sb',
       function()
         Snacks.picker.lines()
@@ -175,7 +182,7 @@ return {
       desc = 'Git Stash',
     },
     {
-      '<leader>gd',
+      '<leader>sgd',
       function()
         Snacks.picker.git_diff()
       end,
