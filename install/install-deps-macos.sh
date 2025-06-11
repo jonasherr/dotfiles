@@ -15,3 +15,4 @@ brew install rust
 
 brew install zoxide
 
+brew install orbstack
