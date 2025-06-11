@@ -51,6 +51,10 @@ return {
         auto_scroll = false,
       },
       action_palette = {
+        width = 95,
+        height = 100,
+        prompt = 'Prompt ', -- Prompt used for interactive LLM calls
+        provider = 'default', -- Can be "default", "telescope", "fzf_lua", "mini_pick" or "snacks". If not specified, the plugin will autodetect installed providers.
         opts = {
           show_default_actions = true, -- Show the default actions in the action palette?
           show_default_prompt_library = true, -- Show the default prompt library in the action palette?
@@ -71,8 +75,8 @@ return {
     },
   },
   keys = {
-    { '<leader>aa', ':CodeCompanionActions<cr>', desc = 'CodeCompanionChat', mode = { 'n', 'v' } },
-    { '<leader>at', ':CodeCompanionChat Toggle<cr>', desc = 'CodeCompanion Actions', mode = { 'n', 'v' } },
+    { '<leader>aa', ':CodeCompanionActions<cr>', desc = 'CodeCompanion Actions', mode = { 'n', 'v' } },
+    { '<leader>at', ':CodeCompanionChat Toggle<cr>', desc = 'CodeCompanionChat', mode = { 'n', 'v' } },
     { 'ga', ':CodeCompanionChat Add<cr>', noremap = true, silent = true, mode = 'v' },
   },
   dependencies = {
