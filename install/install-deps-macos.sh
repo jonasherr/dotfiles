@@ -16,3 +16,7 @@ brew install rust
 brew install zoxide
 
 brew install orbstack
+
+brew install pngpaste
+
+brew install uv
