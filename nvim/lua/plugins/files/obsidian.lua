@@ -27,7 +27,7 @@ return {
     workspaces = {
       {
         name = 'personal',
-        path = '/Users/jonas/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes',
+        path = '$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes',
       },
     },
     attachments = {
