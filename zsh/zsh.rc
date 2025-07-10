@@ -25,10 +25,14 @@ source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `br
 plugins=(git vi-mode aliases macos zsh-autosuggestions fzf z)
 # Bundles from the default repo (robbyrussell's oh-my-zsh).
 
+ZSH_CUSTOM="$DOTFILES/zsh/custom/"
 # See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
+export ZSH="$HOME/Projects/dotfiles/zsh/.oh-my-zsh"
 source $ZSH/oh-my-zsh.sh
+
+export NOTES="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
 
 precmd() {
     source $DOTFILES/zsh/aliases.zsh
@@ -42,10 +46,6 @@ NORMAL_MODE_INDICATOR="%F{yellow}n%f"
 export PNPM_HOME="/Users/jonas/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
 # pnpm end
-
-export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 export VISUAL=nvim
 export EDITOR=nvim
@@ -81,3 +81,10 @@ export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 #/Users/jonas/Projects/dotfiles/zsh/.p10k.zsh
 
 eval "$(zoxide init zsh)"
+
+# fnm
+FNM_PATH="/Users/jonasherrmansdsoerfer/Library/Application Support/fnm"
+if [ -d "$FNM_PATH" ]; then
+  export PATH="/Users/jonasherrmansdsoerfer/Library/Application Support/fnm:$PATH"
+fi
+eval "$(fnm env --use-on-cd --shell zsh)"
