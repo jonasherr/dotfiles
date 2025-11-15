@@ -1,51 +1,4 @@
-local prompt_library = {
-  ['Code Expert'] = {
-    strategy = 'chat',
-    description = 'Get some special advice from an LLM',
-    opts = {
-      short_name = 'expert',
-      stop_context_insertion = true,
-      user_prompt = true,
-      is_slash_cmd = true,
-      is_default = true,
-    },
-    prompts = {
-      {
-        role = 'system',
-        content = function(context)
-          return 'I want you to act as a senior '
-            .. context.filetype
-            .. ' developer. I will ask you specific questions and I want you to return concise explanations and codeblock examples.'
-        end,
-      },
-      {
-        role = 'user',
-        content = function(context)
-          local text = require('codecompanion.helpers.actions').get_code(context.start_line, context.end_line)
-
-          return 'I have the following code:\n\n```' .. context.filetype .. '\n' .. text .. '\n```\n\n'
-        end,
-        opts = {
-          contains_code = true,
-        },
-      },
-    },
-  },
-  ['My New Prompt'] = {
-    strategy = 'chat',
-    description = 'Some cool custom prompt you can do',
-    prompts = {
-      {
-        role = 'system',
-        content = 'You are an experienced developer with Lua and Neovim',
-      },
-      {
-        role = 'user',
-        content = 'Can you explain why ...',
-      },
-    },
-  },
-}
+local prompt_library = require 'prompt_library'
 
 return {
   'olimorris/codecompanion.nvim',
@@ -81,44 +34,19 @@ return {
           enable_logging = false,
         },
       },
-      vectorcode = {
-        ---@type VectorCode.CodeCompanion.ExtensionOpts
+      mcphub = {
+        callback = 'mcphub.extensions.codecompanion',
         opts = {
-          tool_group = {
-            -- this will register a tool group called `@vectorcode_toolbox` that contains all 3 tools
-            enabled = true,
-            -- a list of extra tools that you want to include in `@vectorcode_toolbox`.
-            -- if you use @vectorcode_vectorise, it'll be very handy to include
-            -- `file_search` here.
-            extras = {},
-            collapse = false, -- whether the individual tools should be shown in the chat
-          },
-          tool_opts = {
-            ---@type VectorCode.CodeCompanion.ToolOpts
-            ['*'] = {},
-            ---@type VectorCode.CodeCompanion.LsToolOpts
-            ls = {},
-            ---@type VectorCode.CodeCompanion.VectoriseToolOpts
-            vectorise = {},
-            ---@type VectorCode.CodeCompanion.QueryToolOpts
-            query = {
-              max_num = { chunk = -1, document = -1 },
-              default_num = { chunk = 50, document = 10 },
-              include_stderr = false,
-              use_lsp = false,
-              no_duplicate = true,
-              chunk_mode = false,
-              ---@type VectorCode.CodeCompanion.SummariseOpts
-              summarise = {
-                ---@type boolean|(fun(chat: CodeCompanion.Chat, results: VectorCode.QueryResult[]):boolean)|nil
-                enabled = false,
-                adapter = nil,
-                query_augmented = true,
-              },
-            },
-            files_ls = {},
-            files_rm = {},
-          },
+          -- MCP Tools
+          make_tools = true, -- Make individual tools (@server__tool) and server groups (@server) from MCP servers
+          show_server_tools_in_chat = true, -- Show individual tools in chat completion (when make_tools=true)
+          add_mcp_prefix_to_tool_names = false, -- Add mcp__ prefix (e.g `@mcp__github`, `@mcp__neovim__list_issues`)
+          show_result_in_chat = true, -- Show tool results directly in chat buffer
+          format_tool = nil, -- function(tool_name:string, tool: CodeCompanion.Agent.Tool) : string Function to format tool names to show in the chat buffer
+          -- MCP Resources
+          make_vars = true, -- Convert MCP resources to #variables for prompts
+          -- MCP Prompts
+          make_slash_commands = true, -- Add MCP prompts as /slash commands
         },
       },
     },
@@ -157,12 +85,12 @@ return {
     },
     display = {
       chat = {
-        auto_scroll = false,
+        auto_scroll = true,
         show_settings = false,
       },
       action_palette = {
-        width = 95,
-        height = 100,
+        width = 200,
+        height = 400,
         prompt = 'Prompt ', -- Prompt used for interactive LLM calls
         provider = 'snacks', -- Can be "default", "telescope", "fzf_lua", "mini_pick" or "snacks". If not specified, the plugin will autodetect installed providers.
         opts = {
@@ -176,6 +104,20 @@ return {
         show_defaults = false,
         show_model_choices = true,
       },
+      anthropic = function()
+        return require('codecompanion.adapters').extend('anthropic', {
+          env = {
+            api_key = 'cmd:op read op://Private/AnthropicApiKey/credential --no-newline',
+          },
+        })
+      end,
+      ollama = function()
+        return require('codecompanion.adapters').extend('ollama', {
+          parameters = {
+            sync = true,
+          },
+        })
+      end,
       v0 = function()
         return require('codecompanion.adapters').extend('openai_compatible', {
           roles = {
