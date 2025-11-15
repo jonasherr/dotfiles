@@ -1,0 +1,27 @@
+{
+	"today": {
+		"prefix": "today",
+		"body": ["${CURRENT_DATE}-${CURRENT_MONTH}-${CURRENT_YEAR}"],
+		"description": "Insert today's date"
+	},
+
+	"today time": {
+		"prefix": "todayt",
+		"body": [
+			"${CURRENT_DATE}-${CURRENT_MONTH}-${CURRENT_YEAR} ${CURRENT_HOUR}:${CURRENT_MINUTE}"
+		],
+		"description": "Insert today's date with time"
+	},
+
+	"regular link": {
+		"prefix": "link",
+		"body": ["[$1]($2)"],
+		"description": "Create a new link"
+	},
+
+	"link in new tab": {
+		"prefix": "linkt",
+		"body": ["[$1]($2){:target=\"_blank\"}"],
+		"description": "Open a link in a new tab (chirpy theme)"
+	}
+}

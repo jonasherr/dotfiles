@@ -1,26 +1,33 @@
 {
-  "name": "custom-snippets",
-  "engines": {
-    "vscode": "^1.11.0"
-  },
-  "contributes": {
-    "snippets": [
-      {
-        "language": [
-          "javascriptreact",
-          "typescript",
-          "typescriptreact"
-        ],
-        "path": "./nextjs.json"
-      },
-      {
-        "language": [
-          "javascriptreact",
-          "typescript",
-          "typescriptreact"
-        ],
-        "path": "./graphql.json"
-      }
-    ]
-  }
+	"name": "custom-snippets",
+	"engines": {
+		"vscode": "^1.11.0"
+	},
+	"contributes": {
+		"snippets": [
+			{
+				"language": [
+					"javascriptreact",
+					"typescript",
+					"typescriptreact"
+				],
+				"path": "./nextjs.json"
+			},
+			{
+				"language": [
+					"javascriptreact",
+					"typescript",
+					"typescriptreact"
+				],
+				"path": "./graphql.json"
+			},
+			{
+				"language": [
+					"markdown",
+					"codecompanion"
+				],
+				"path": "./markdown.json"
+			}
+		]
+	}
 }
