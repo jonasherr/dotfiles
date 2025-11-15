@@ -19,6 +19,13 @@ return {
       desc = 'Diff Index',
     },
     {
+      '<leader>gp',
+      function()
+        toggle_diffview 'DiffviewOpen HEAD~1'
+      end,
+      desc = 'Diff to previous commit',
+    },
+    {
       '<leader>gD',
       function()
         toggle_diffview 'DiffviewOpen master..HEAD'
