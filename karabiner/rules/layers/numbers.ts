@@ -29,5 +29,5 @@ export const numberLayer: KarabinerRules = {
     convertToNumbersLayer("t", "comma"),
     convertToNumbersLayer("g", "keypad_plus"),
     convertToNumbersLayer("b", "period"),
-  ]
-}
+  ],
+};

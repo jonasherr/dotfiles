@@ -5,7 +5,7 @@ export enum Layers {
   "text" = "text",
   "special" = "special",
   "number" = "number",
-  "arrows" = "arrows"
+  "arrows" = "arrows",
 }
 
 export const layerSwitcher: KarabinerRules = {
@@ -14,5 +14,5 @@ export const layerSwitcher: KarabinerRules = {
     layer("left_command", Layers.special),
     layer("right_command", Layers.number),
     layer("quote", Layers.arrows),
-  ].flat()
-}
+  ].flat(),
+};

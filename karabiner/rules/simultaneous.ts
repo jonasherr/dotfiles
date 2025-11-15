@@ -6,5 +6,5 @@ export const simultaneous: KarabinerRules = {
   manipulators: [
     createCombinedKey(["e", "r"], "delete_or_backspace"),
     createCombinedKey(["u", "i"], "return_or_enter"),
-  ].flat()
-}
+  ].flat(),
+};

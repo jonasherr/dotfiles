@@ -32,7 +32,9 @@ export const specialLayer: KarabinerRules = {
     convertToSpecialLayer("j", "open_bracket", ["left_shift"]),
     convertToSpecialLayer("k", "close_bracket", ["left_shift"]),
     convertToSpecialLayer("l", "backslash", ["left_shift"]), //
-    convertToSpecialLayer("semicolon", "grave_accent_and_tilde", ["left_shift"]),
+    convertToSpecialLayer("semicolon", "grave_accent_and_tilde", [
+      "left_shift",
+    ]),
 
     // third row left
     convertToSpecialLayer("z", "hyphen", ["left_shift"]),
@@ -47,5 +49,5 @@ export const specialLayer: KarabinerRules = {
     convertToSpecialLayer("comma", "0", ["left_shift"]),
     convertToSpecialLayer("period", "close_bracket"),
     convertToSpecialLayer("slash", "equal_sign", ["left_shift"]),
-  ]
-}
+  ],
+};

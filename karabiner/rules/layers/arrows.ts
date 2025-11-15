@@ -11,5 +11,5 @@ export const arrowsLayer: KarabinerRules = {
     convertToArrowsLayer("j", "down_arrow"),
     convertToArrowsLayer("k", "up_arrow"),
     convertToArrowsLayer("l", "right_arrow"),
-  ]
-}
+  ],
+};
