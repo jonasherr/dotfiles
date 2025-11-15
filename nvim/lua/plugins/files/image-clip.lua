@@ -10,7 +10,9 @@ return {
       drag_and_drop = {
         insert_mode = true,
       },
-      dir_path = 'attachments',
+      dir_path = (os.getenv 'NOTES' or vim.fn.expand '~') .. '/attachments',
+      use_absolute_path = false,
+      relative_to_current_file = false,
       only_render_image_at_cursor = true,
     },
   },

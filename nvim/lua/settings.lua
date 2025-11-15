@@ -52,6 +52,22 @@ vim.api.nvim_create_autocmd('TextYankPost', {
   pattern = '*',
 })
 
+vim.api.nvim_create_autocmd('BufEnter', {
+  callback = function()
+    if vim.b.workflow_step == nil then
+      vim.b.workflow_step = 0
+    end
+  end,
+})
+
+-- Keymap to increment the buffer-local workflow step variable
+vim.keymap.set('n', '<leader>ws', function()
+  local step = vim.b.workflow_step or 0
+  step = step + 1
+  vim.b.workflow_step = step
+  vim.notify('Workflow step updated to ' .. step, vim.log.levels.INFO)
+end, { desc = 'Increment workflow step (buffer-local)' })
+
 -- folding
 vim.o.foldenable = true -- Enable folding.
 vim.o.foldcolumn = '1' -- Show folding signs.

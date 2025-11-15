@@ -86,7 +86,10 @@ return {
       blink = true,
       -- Trigger completion at 2 chars.
       min_chars = 2,
+      -- Set to false to disable new note creation in the picker
+      create_new = true,
     },
+    -- https://github.com/rafamadriz/friendly-snippets/blob/main/snippets/markdown.json
     new_notes_location = 'notes_subdir',
 
     ui = {
