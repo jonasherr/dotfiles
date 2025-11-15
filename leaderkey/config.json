@@ -1,0 +1,370 @@
+{
+	"actions": [
+		{
+			"key": "r",
+			"label": "Raycast",
+			"type": "group",
+			"iconPath": "sparkles",
+			"actions": [
+				{
+					"key": "e",
+					"label": "Emoji",
+					"type": "url",
+					"iconPath": "face.smiling",
+					"value": "raycast://extensions/raycast/emoji-symbols/search-emoji-symbols"
+				},
+				{
+					"key": "p",
+					"label": "Confetti",
+					"type": "url",
+					"iconPath": "party.popper",
+					"value": "raycast://confetti"
+				},
+				{
+					"key": "c",
+					"label": "Camera",
+					"type": "url",
+					"iconPath": "camera",
+					"value": "raycast://extensions/raycast/system/open-camera"
+				},
+				{
+					"key": "a",
+					"label": "New Note",
+					"type": "url",
+					"iconPath": "note.text.badge.plus",
+					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/new-note"
+				},
+				{
+					"key": "n",
+					"label": "Search Notes",
+					"type": "url",
+					"iconPath": "magnifyingglass",
+					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
+				}
+			]
+		},
+		{
+			"key": "w",
+			"label": "Windows",
+			"type": "group",
+			"iconPath": "macwindow",
+			"actions": [
+				{
+					"key": "h",
+					"label": "Left Half",
+					"type": "url",
+					"iconPath": "rectangle.lefthalf.filled",
+					"value": "raycast://extensions/raycast/window-management/left-half"
+				},
+				{
+					"key": "l",
+					"label": "Right Half",
+					"type": "url",
+					"iconPath": "rectangle.righthalf.filled",
+					"value": "raycast://extensions/raycast/window-management/right-half"
+				},
+				{
+					"key": "k",
+					"label": "Maximize",
+					"type": "url",
+					"iconPath": "arrow.up.left.and.arrow.down.right",
+					"value": "raycast://extensions/raycast/window-management/maximize"
+				},
+				{
+					"key": "c",
+					"label": "Center",
+					"type": "url",
+					"iconPath": "circle.circle",
+					"value": "raycast://extensions/raycast/window-management/center"
+				},
+				{
+					"key": "f",
+					"label": "Fullscreen",
+					"type": "url",
+					"iconPath": "arrow.up.backward.and.arrow.down.forward",
+					"value": "raycast://extensions/raycast/window-management/make-fullscreen"
+				},
+				{
+					"key": "n",
+					"label": "Next Display",
+					"type": "url",
+					"iconPath": "display",
+					"value": "raycast://extensions/raycast/window-management/next-display"
+				}
+			]
+		},
+		{
+			"key": "d",
+			"label": "Dev Tools",
+			"type": "group",
+			"iconPath": "hammer",
+			"actions": [
+				{
+					"key": "k",
+					"label": "Kitty",
+					"type": "application",
+					"iconPath": "terminal",
+					"value": "/Applications/kitty.app"
+				},
+				{
+					"key": "n",
+					"label": "Neovim",
+					"type": "command",
+					"iconPath": "chevron.left.forwardslash.chevron.right",
+					"value": "kitty_launch --type=tab --cwd ~/Projects nvim"
+				},
+				{
+					"key": "g",
+					"label": "LazyGit",
+					"type": "command",
+					"iconPath": "arrow.triangle.branch",
+					"value": "kitty_launch --type=tab lazygit"
+				},
+				{
+					"key": "p",
+					"label": "Projects",
+					"type": "command",
+					"iconPath": "folder.badge.gearshape",
+					"value": "kitty_launch --type=tab --cwd ~/Projects"
+				},
+				{
+					"key": "d",
+					"label": "Dotfiles",
+					"type": "command",
+					"iconPath": "doc.text",
+					"value": "kitty_launch --type=tab --cwd ~/Projects/dotfiles"
+				}
+			]
+		},
+		{
+			"key": "c",
+			"label": "Capture",
+			"type": "group",
+			"iconPath": "camera.viewfinder",
+			"actions": [
+				{
+					"key": "a",
+					"label": "Area",
+					"type": "url",
+					"iconPath": "crop",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/capture-area"
+				},
+				{
+					"key": "f",
+					"label": "Fullscreen",
+					"type": "url",
+					"iconPath": "rectangle",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/capture-fullscreen"
+				},
+				{
+					"key": "w",
+					"label": "Window",
+					"type": "url",
+					"iconPath": "macwindow",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/capture-window"
+				},
+				{
+					"key": "r",
+					"label": "Record",
+					"type": "url",
+					"iconPath": "record.circle",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/record-screen"
+				},
+				{
+					"key": "o",
+					"label": "All in One",
+					"type": "url",
+					"iconPath": "square.grid.2x2",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/all-in-one"
+				},
+				{
+					"key": "n",
+					"label": "Annotate",
+					"type": "url",
+					"iconPath": "pencil.tip.crop.circle",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/annotate"
+				},
+				{
+					"key": "p",
+					"label": "Capture Previous Area",
+					"type": "url",
+					"iconPath": "arrow.counterclockwise",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/capture-previous-area"
+				},
+				{
+					"key": "t",
+					"label": "Capture Text (OCR)",
+					"type": "url",
+					"iconPath": "text.viewfinder",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/capture-text"
+				},
+				{
+					"key": "s",
+					"label": "Scrolling Capture",
+					"type": "url",
+					"iconPath": "arrow.down.doc",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/scrolling-capture"
+				},
+				{
+					"key": "h",
+					"label": "Open History",
+					"type": "url",
+					"iconPath": "clock.arrow.circlepath",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/open-history"
+				},
+				{
+					"key": "c",
+					"label": "Open from Clipboard",
+					"type": "url",
+					"iconPath": "doc.on.clipboard",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/open-from-clipboard"
+				},
+				{
+					"key": "u",
+					"label": "Restore Recently Closed",
+					"type": "url",
+					"iconPath": "arrow.uturn.backward",
+					"value": "raycast://extensions/Aayush9029/cleanshotx/restore-recently-closed"
+				}
+			]
+		},
+		{
+			"key": "t",
+			"label": "Text Tools",
+			"type": "group",
+			"iconPath": "doc.on.clipboard",
+			"actions": [
+				{
+					"key": "c",
+					"label": "Clipboard",
+					"type": "url",
+					"iconPath": "doc.on.doc",
+					"value": "raycast://extensions/raycast/clipboard-history/clipboard-history"
+				},
+				{
+					"key": "n",
+					"label": "Notes",
+					"type": "command",
+					"iconPath": "chevron.left.forwardslash.chevron.right",
+					"value": "kitty_launch --type=tab --cwd $NOTES nvim"
+				}
+			]
+		},
+		{
+			"key": "l",
+			"label": "Links",
+			"type": "group",
+			"iconPath": "link",
+			"actions": [
+				{
+					"key": "g",
+					"label": "GitHub",
+					"type": "url",
+					"iconPath": "chevron.left.forwardslash.chevron.right",
+					"value": "https://github.com"
+				},
+				{
+					"key": "g",
+					"label": "Gemini",
+					"type": "url",
+					"iconPath": "brain",
+					"value": "https://gemini.google.com/"
+				},
+				{
+					"key": "r",
+					"label": "Raycast Store",
+					"type": "url",
+					"iconPath": "bag",
+					"value": "https://raycast.com/store"
+				},
+				{
+					"key": "d",
+					"label": "Vercel Docs",
+					"type": "url",
+					"iconPath": "book",
+					"value": "https://vercel.com/docs"
+				},
+				{
+					"key": "n",
+					"label": "Next.js Docs",
+					"type": "url",
+					"iconPath": "book",
+					"value": "https://nextjs.org/docs"
+				}
+			]
+		},
+		{
+			"key": "f",
+			"label": "Files",
+			"type": "group",
+			"iconPath": "folder",
+			"actions": [
+				{
+					"key": "d",
+					"label": "Downloads",
+					"type": "folder",
+					"iconPath": "arrow.down.circle",
+					"value": "~/Downloads"
+				},
+				{
+					"key": "o",
+					"label": "Documents",
+					"type": "folder",
+					"iconPath": "doc.text",
+					"value": "~/Documents"
+				},
+				{
+					"key": "e",
+					"label": "Desktop",
+					"type": "folder",
+					"iconPath": "desktopcomputer",
+					"value": "~/Desktop"
+				},
+				{
+					"key": "i",
+					"label": "iCloud",
+					"type": "folder",
+					"iconPath": "icloud",
+					"value": "~/Library/Mobile Documents/com~apple~CloudDocs"
+				},
+				{
+					"key": "p",
+					"label": "Projects",
+					"type": "folder",
+					"iconPath": "folder.badge.gearshape",
+					"value": "~/Projects"
+				}
+			]
+		},
+		{
+			"key": "h",
+			"label": "Chat",
+			"type": "group",
+			"iconPath": "bubble.left.and.bubble.right",
+			"actions": [
+				{
+					"key": "s",
+					"label": "Slack",
+					"type": "application",
+					"iconPath": "number",
+					"value": "/Applications/Slack.app"
+				},
+				{
+					"key": "m",
+					"label": "Messages",
+					"type": "application",
+					"iconPath": "message",
+					"value": "/System/Applications/Messages.app"
+				},
+				{
+					"key": "w",
+					"label": "WhatsApp",
+					"type": "application",
+					"iconPath": "phone.bubble",
+					"value": "/Applications/WhatsApp.app"
+				}
+			]
+		}
+	],
+	"type": "group"
+}
