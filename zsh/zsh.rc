@@ -11,9 +11,6 @@ source_if_exists () {
     fi
 }
 
-export BIN_PATH="/opt/homebrew/bin"
-
-
 source_if_exists $HOME/.env.sh
 source_if_exists $DOTFILES/zsh/history.zsh
 source_if_exists $DOTFILES/zsh/git.zsh
@@ -32,8 +29,6 @@ ZSH_THEME="powerlevel10k/powerlevel10k"
 export ZSH="$HOME/Projects/dotfiles/zsh/.oh-my-zsh"
 source $ZSH/oh-my-zsh.sh
 
-export NOTES="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
-
 precmd() {
     source $DOTFILES/zsh/aliases.zsh
 }
@@ -42,17 +37,9 @@ MODE_INDICATOR="%F{white}+%f"
 INSERT_MODE_INDICATOR="%F{yellow}i%f"
 NORMAL_MODE_INDICATOR="%F{yellow}n%f"
 
-# pnpm
-export PNPM_HOME="/Users/jonas/Library/pnpm"
-export PATH="$PNPM_HOME:$PATH"
-# pnpm end
-
 export VISUAL=nvim
 export EDITOR=nvim
 export MANPAGER="nvim +Man!"
-export PATH="$PATH:/usr/local/sbin:$DOTFILES/bin:$HOME/.local/bin:$DOTFILES/scripts/"
-
-. "$HOME/.cargo/env"
 
 # better truncating for psql
 export PAGER="less -S"
@@ -70,8 +57,6 @@ function y() {
 	rm -f -- "$tmp"
 }
 
-export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
-
 # can be run when path has changed
 # should be commented out, because it makes starting a new session slow
 # ~/Projects/dotfiles/zsh/custom/update-kitty.sh
@@ -82,9 +67,5 @@ export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 
 eval "$(zoxide init zsh)"
 
-# fnm
-FNM_PATH="/Users/jonasherrmansdsoerfer/Library/Application Support/fnm"
-if [ -d "$FNM_PATH" ]; then
-  export PATH="/Users/jonasherrmansdsoerfer/Library/Application Support/fnm:$PATH"
-fi
+# fnm - use-on-cd feature for interactive shells
 eval "$(fnm env --use-on-cd --shell zsh)"

@@ -1,8 +1,10 @@
 # For a full list of active aliases, run `alias`.
-#
+
 # ALIASES ---------------------------------------------------------------------
 alias vim="nvim"
 alias v="nvim ."
+alias n="nvim"
+alias cc="claude"
 alias zshconfig="nvim ~/Projects/dotfiles/zsh/zsh.rc"
 alias zshalias="nvim ~/Projects/dotfiles/zsh/aliases.zsh"
 alias arm="env /usr/bin/arch -arm64 /bin/zsh"
@@ -17,6 +19,21 @@ alias article="pbpaste | llm --system 'You are an expert technical writer. I wil
 alias windows="bash ~/Projects/dotfiles/scripts/tmux-windows.sh"
 alias ld="lazydocker"
 alias lg="lazygit"
+alias ff="fzf --style full \
+    --preview 'fzf-preview.sh {}' --bind 'focus:transform-header:file --brief {}'"
+# alias cd="z"
+alias ls="eza --icons=always"
+alias lt="eza --icons=always -T -L 2 --ignore-glob=node_modules"
+alias lsa="eza --icons=always -a"
+alias lta="eza --icons=always -T -L 2 --ignore-glob=node_modules -a"
+
+# corepack
+alias yarn="corepack yarn"
+alias yarnpkg="corepack yarnpkg"
+alias pnpm="corepack pnpm"
+alias pnpx="corepack pnpx"
+alias npm="corepack npm"
+alias npx="corepack npx"
 
 # LOCATION ALIASES -----------------------------------------------------------------
 alias desktop="cd ~/Desktop"
