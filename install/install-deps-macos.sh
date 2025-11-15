@@ -14,6 +14,8 @@ brew install neovim
 brew install rust
 
 brew install zoxide
+brew install eza
+brew install btop
 
 brew install orbstack
 
