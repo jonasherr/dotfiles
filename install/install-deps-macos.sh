@@ -22,3 +22,5 @@ brew install orbstack
 brew install pngpaste
 
 brew install uv
+
+brew install fnm

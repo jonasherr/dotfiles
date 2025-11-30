@@ -26,9 +26,6 @@ ZSH_CUSTOM="$DOTFILES/zsh/custom/"
 # See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
-export ZSH="$HOME/Projects/dotfiles/zsh/.oh-my-zsh"
-source $ZSH/oh-my-zsh.sh
-
 precmd() {
     source $DOTFILES/zsh/aliases.zsh
 }
