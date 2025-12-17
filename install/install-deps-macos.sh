@@ -5,6 +5,7 @@ brew install docker
 brew install docker-compose
 brew install --cask slack
 brew install --cask git-credential-manager
+brew install oven-sh/bun/bun
 
 brew install jesseduffield/lazygit/lazygit
 brew install jesseduffield/lazydocker/lazydocker
