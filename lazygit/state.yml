@@ -1,22 +1,23 @@
 lastupdatecheck: 1756191368
 recentrepos:
     - /Users/jonasherrmansdsoerfer/Projects/dotfiles
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/vercel-theme
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/slidev-theme-vercel
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/front
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/onboarding-vercel
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/cms-graphql-fragments
+    - /Users/jonasherrmansdsoerfer/Projects/personal/nextjs-workshops
+    - /Users/jonasherrmansdsoerfer/Projects/personal/jonas-herrmannsdoerfer.de
+    - /Users/jonasherrmansdsoerfer/Projects/personal/fullstack-next-js-solutions
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/fullstack-nextjs-example
+    - /Users/jonasherrmansdsoerfer/Projects/personal/youngsters-wedding
+    - /Users/jonasherrmansdsoerfer/Projects/personal/nextjs-shareable-modal
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/isr-example
+    - /Users/jonasherrmansdsoerfer/Projects/vercel/article-saver
     - /Users/jonasherrmansdsoerfer/Projects/personal/graphql-one-roundtrip
     - /Users/jonasherrmansdsoerfer/Projects/slides
     - /Users/jonasherrmansdsoerfer/Projects/vercel/examples
     - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/isr-ssr-vdc-example
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/front
-    - /Users/jonasherrmansdsoerfer/Projects/personal/jonas-herrmannsdoerfer.de
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/query-params
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/mutlizone/multizone-rewrite
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/mutlizone/multizone-blog
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/cms-graphql-fragments
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/isr-example
     - /Users/jonasherrmansdsoerfer/Projects/writing
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/catch-all
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/article-saver
-    - /Users/jonasherrmansdsoerfer/Projects/vercel/customers/cache-test
     - /Users/jonasherrmansdsoerfer/Projects/vercel/ds-linear-metrics
     - /Users/jonasherrmansdsoerfer/Projects/personal/claude-test/FriendReminder
     - /Users/jonasherrmansdsoerfer/Projects/personal/claude-test/todo-app
