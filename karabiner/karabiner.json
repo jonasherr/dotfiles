@@ -1366,6 +1366,25 @@
                     }
                 ]
             },
+            "devices": [
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "is_pointing_device": true,
+                        "product_id": 4,
+                        "vendor_id": 18003
+                    },
+                    "ignore_vendor_events": true
+                },
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "product_id": 4,
+                        "vendor_id": 18003
+                    },
+                    "ignore": true
+                }
+            ],
             "name": "Default",
             "parameters": {
                 "basic.simultaneous_threshold_milliseconds": 50,
