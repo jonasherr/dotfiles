@@ -43,18 +43,14 @@ sketchybar --default "${default[@]}"
 
 sketchybar --add event aerospace_workspace_change
 
-for sid in $(aerospace list-workspaces --all); do
-  # Determine icon based on workspace ID
-  space_icon=""
-  case "$sid" in
-  a1) space_icon="↖" ;;
-  b1) space_icon="Q" ;;
-  b2) space_icon="W" ;;
-  b3) space_icon="E" ;;
-  b4) space_icon="R" ;;
-  *) space_icon="$sid" ;;
-  esac
+# Detect if external display is connected
+DISPLAY_COUNT=$(system_profiler SPDisplaysDataType | grep -c "Resolution:")
+IS_EXTERNAL_DISPLAY=$([[ $DISPLAY_COUNT -gt 1 ]] && echo "true" || echo "false")
 
+# Define workspace order
+WORKSPACES=(Q W E R A D F)
+
+for sid in "${WORKSPACES[@]}"; do
   sketchybar --add item space.$sid left \
     --subscribe space.$sid aerospace_workspace_change \
     --set space.$sid \
@@ -65,7 +61,7 @@ for sid in $(aerospace list-workspaces --all); do
     background.padding_left=6 \
     background.padding_right=6 \
     y_offset=1 \
-    icon="$space_icon" \
+    icon="$sid" \
     icon.font="SF Pro:Bold:16.0" \
     icon.highlight_color=$ACCENT \
     label.drawing=off \
