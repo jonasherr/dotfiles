@@ -242,6 +242,13 @@
 					"value": "raycast://extensions/raycast/clipboard-history/clipboard-history"
 				},
 				{
+					"key": "s",
+					"label": "Snippets",
+					"type": "url",
+					"iconPath": "doc.on.doc",
+					"value": "raycast://extensions/raycast/snippets/search-snippets"
+				},
+				{
 					"key": "n",
 					"label": "Notes",
 					"type": "command",
@@ -264,7 +271,7 @@
 					"value": "https://github.com"
 				},
 				{
-					"key": "g",
+					"key": "a",
 					"label": "Gemini",
 					"type": "url",
 					"iconPath": "brain",
