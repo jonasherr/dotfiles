@@ -1,5 +1,4 @@
-# Place a copy of this config to ~/.aerospace.toml
-# After that, you can edit ~/.aerospace.toml to your liking
+config-version = 2
 
 # You can use it to add commands that run after AeroSpace startup.
 # Available commands : https://nikitabobko.github.io/AeroSpace/commands
@@ -42,6 +41,8 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 # Also see: https://nikitabobko.github.io/AeroSpace/goodies#disable-hide-app
 automatically-unhide-macos-hidden-apps = true
 
+persistent-workspaces = ["Q", "W", "E", "A", "D", "F"]
+
 # Possible values: (qwerty|dvorak|colemak)
 # See https://nikitabobko.github.io/AeroSpace/guide#key-mapping
 [key-mapping]
@@ -65,6 +66,8 @@ automatically-unhide-macos-hidden-apps = true
     { monitor."main" = 36 },
     36
     ]
+    # For Screen Recording
+    # outer.top = 1
     outer.right =      1
 
 # 'main' binding mode declaration
