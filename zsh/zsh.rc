@@ -9,12 +9,6 @@ source_if_exists () {
 # confirmations, etc.) must go above this block; everything else may go below.
 source_if_exists "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
 
-source_if_exists $HOME/.env.sh
-source_if_exists <(fzf --zsh)
-source_if_exists /usr/local/etc/profile.d/z.sh
-source_if_exists /opt/homebrew/etc/profile.d/z.sh
-source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `brew info chruby` to find out installed directory
-
 # Oh-My-Zsh initialization
 export ZSH="$DOTFILES/zsh/.oh-my-zsh"
 
@@ -26,6 +20,12 @@ ZSH_CUSTOM="$DOTFILES/zsh/custom"
 ZSH_THEME="powerlevel10k/powerlevel10k"
 
 source $ZSH/oh-my-zsh.sh
+
+source_if_exists $HOME/.env.sh
+source_if_exists <(fzf --zsh)
+source_if_exists /usr/local/etc/profile.d/z.sh
+source_if_exists /opt/homebrew/etc/profile.d/z.sh
+source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `brew info chruby` to find out installed directory
 
 precmd() {
     source $DOTFILES/zsh/aliases.zsh
