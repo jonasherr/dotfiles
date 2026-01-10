@@ -30,7 +30,4 @@ export PATH="$PATH:$HOME/.lmstudio/bin"
 # Notes directory
 export NOTES="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
 
-# Source shell functions (includes kitty_launch)
-if [ -f "$DOTFILES/zsh/functions.zsh" ]; then
-  source "$DOTFILES/zsh/functions.zsh"
-fi
+

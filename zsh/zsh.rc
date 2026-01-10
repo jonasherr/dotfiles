@@ -1,68 +1,130 @@
-source_if_exists () {
-    if test -r "$1"; then
-        source "$1"
-    fi
-}
+# Minimal fast zsh config - no Oh-My-Zsh
+# Startup target: <300ms
 
-# Enable Powerlevel10k instant prompt. Should stay close to the top of ~/.zshrc.
-# Initialization code that may require console input (password prompts, [y/n]
-# confirmations, etc.) must go above this block; everything else may go below.
-source_if_exists "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+# Enable Powerlevel10k instant prompt (must be at the top)
+if [[ -r "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh" ]]; then
+  source "${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-${(%):-%n}.zsh"
+fi
 
-# Oh-My-Zsh initialization
-export ZSH="$DOTFILES/zsh/.oh-my-zsh"
+# ============================================================================
+# Core Settings
+# ============================================================================
 
-plugins=(git vi-mode aliases macos zsh-autosuggestions fzf z)
-# Bundles from the default repo (robbyrussell's oh-my-zsh).
+# History
+HISTFILE=~/.zsh_history
+HISTSIZE=10000
+SAVEHIST=10000
+setopt SHARE_HISTORY          # Share history between sessions
+setopt HIST_IGNORE_DUPS       # Don't record duplicates
+setopt HIST_IGNORE_SPACE      # Don't record commands starting with space
+setopt HIST_REDUCE_BLANKS     # Remove extra blanks
 
-ZSH_CUSTOM="$DOTFILES/zsh/custom"
-# See https://githubcom/ohmyzsh/ohmyzsh/wiki/Themes
-ZSH_THEME="powerlevel10k/powerlevel10k"
+# Directory navigation
+setopt AUTO_CD                # cd by typing directory name
+setopt AUTO_PUSHD             # Push directories onto stack
+setopt PUSHD_IGNORE_DUPS      # Don't push duplicates
+setopt PUSHD_SILENT           # Don't print directory stack
 
-source $ZSH/oh-my-zsh.sh
+# Completion
+autoload -Uz compinit
+# Only regenerate compinit cache once per day
+if [[ -n ~/.zcompdump(#qN.mh+24) ]]; then
+  compinit
+else
+  compinit -C  # Use cached completions (much faster)
+fi
 
-source_if_exists $HOME/.env.sh
-source_if_exists <(fzf --zsh)
-source_if_exists /usr/local/etc/profile.d/z.sh
-source_if_exists /opt/homebrew/etc/profile.d/z.sh
-source_if_exists $HOMEBREW_PREFIX/opt/chruby/share/chruby/chruby.sh # Or run `brew info chruby` to find out installed directory
+# Completion styling
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'  # Case insensitive
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 
-precmd() {
-    source $DOTFILES/zsh/aliases.zsh
-}
+# ============================================================================
+# Vi Mode
+# ============================================================================
 
+bindkey -v                    # Enable vi mode
+export KEYTIMEOUT=1           # Reduce mode switch delay (10ms)
+
+# Better vi mode bindings
+bindkey '^?' backward-delete-char   # Backspace works in insert mode
+bindkey '^h' backward-delete-char   # Ctrl+h = backspace
+bindkey '^w' backward-kill-word     # Ctrl+w = delete word
+bindkey '^a' beginning-of-line      # Ctrl+a = start of line
+bindkey '^e' end-of-line            # Ctrl+e = end of line
+bindkey '^k' kill-line              # Ctrl+k = kill to end
+bindkey '^u' backward-kill-line     # Ctrl+u = kill to start
+
+# Search history with arrows in normal mode
+bindkey '^[[A' history-search-backward
+bindkey '^[[B' history-search-forward
+
+# Mode indicators (optional - p10k handles this)
 MODE_INDICATOR="%F{white}+%f"
 INSERT_MODE_INDICATOR="%F{yellow}i%f"
 NORMAL_MODE_INDICATOR="%F{yellow}n%f"
 
+# ============================================================================
+# Plugins (minimal, direct sourcing)
+# ============================================================================
+
+# zsh-autosuggestions
+if [[ -f $DOTFILES/zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh ]]; then
+  source $DOTFILES/zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
+fi
+
+# fzf integration (pre-cached for speed)
+# Regenerate with: fzf --zsh > $DOTFILES/zsh/fzf-integration.zsh
+if [[ -f $DOTFILES/zsh/fzf-integration.zsh ]]; then
+  source $DOTFILES/zsh/fzf-integration.zsh
+fi
+
+# z - directory jumping
+# Install with: brew install z
+# Or use zoxide (faster): brew install zoxide && add "eval $(zoxide init zsh)"
+if [[ -f /opt/homebrew/etc/profile.d/z.sh ]]; then
+  source /opt/homebrew/etc/profile.d/z.sh
+elif [[ -f /usr/local/etc/profile.d/z.sh ]]; then
+  source /usr/local/etc/profile.d/z.sh
+elif (( $+commands[zoxide] )); then
+  eval "$(zoxide init zsh)"
+fi
+
+# ============================================================================
+# Powerlevel10k
+# ============================================================================
+
+# Load p10k theme
+source $DOTFILES/zsh/custom/themes/powerlevel10k/powerlevel10k.zsh-theme
+
+# Load p10k config
+[[ -f ~/.p10k.zsh ]] && source ~/.p10k.zsh
+
+# ============================================================================
+# Environment & Aliases
+# ============================================================================
+
+[[ -f $HOME/.env.sh ]] && source $HOME/.env.sh
+[[ -f $DOTFILES/zsh/aliases.zsh ]] && source $DOTFILES/zsh/aliases.zsh
+
 export VISUAL=nvim
 export EDITOR=nvim
 export MANPAGER="nvim +Man!"
-
-# better truncating for psql
 export PAGER="less -S"
 
-# Shell wrapper
-# We suggest using this y shell wrapper that provides the ability to change the current working directory when exiting Yazi.
-# Then use y instead of yazi to start, and press q to quit, you'll see the CWD changed. Sometimes, you don't want to change, press Q to quit.
+# ============================================================================
+# Tools
+# ============================================================================
 
-function y() {
-	local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
-	yazi "$@" --cwd-file="$tmp"
-	if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
-		builtin cd -- "$cwd"
-	fi
-	rm -f -- "$tmp"
-}
-
-# can be run when path has changed
-# should be commented out, because it makes starting a new session slow
-# ~/Projects/dotfiles/zsh/custom/update-kitty.sh
-
-# To customize prompt, run `p10k configure` or edit ~/.p10k.zsh.
-source_if_exists ~/.p10k.zsh
-
-eval "$(zoxide init zsh)"
-
-# fnm - use-on-cd feature for interactive shells
+# fnm (Node version manager)
 eval "$(fnm env --use-on-cd --shell zsh)"
+
+# Yazi shell wrapper
+function y() {
+  local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"
+  yazi "$@" --cwd-file="$tmp"
+  if cwd="$(cat -- "$tmp")" && [ -n "$cwd" ] && [ "$cwd" != "$PWD" ]; then
+    builtin cd -- "$cwd"
+  fi
+  rm -f -- "$tmp"
+}
