@@ -19,10 +19,12 @@ return {
   },
   opts = {
 
-    statusline = {
-      enabled = true, -- turn it off
-      format = '{{backlinks}} backlinks  {{properties}} properties  {{words}} words  {{chars}} chars', -- works like the template system
+    footer = {
+      enabled = true,
+      format = '{{backlinks}} backlinks  {{properties}} properties  {{words}} words  {{chars}} chars',
     },
+
+    legacy_commands = false,
 
     workspaces = {
       {
@@ -96,32 +98,6 @@ return {
       enable = false,
     },
 
-    mappings = {
-      -- Overrides the 'gf' mapping to work on markdown/wiki links within your vault.
-      ['gf'] = {
-        action = function()
-          return require('obsidian').util.gf_passthrough()
-        end,
-        opts = { noremap = false, expr = true, buffer = true },
-      },
-      -- Toggle check-boxes.
-      ['<leader>ch'] = {
-        action = function()
-          return require('obsidian').util.toggle_checkbox()
-        end,
-        opts = { buffer = true },
-      },
-      -- Smart action depending on context: follow link, show notes with tag, or toggle checkbox.
-      ['<cr>'] = {
-        action = function()
-          return require('obsidian').util.smart_action()
-        end,
-        opts = { buffer = true, expr = true },
-      },
-
-      vim.keymap.set({ 'n', 'v' }, '<leader>oqs', ':ObsidianQuickSwitch<CR>', { silent = true, desc = 'Open ObsidianQuickSwitch' }),
-    },
-
     -- Optional, by default when you use `:ObsidianFollowLink` on a link to an external
     -- URL it will be ignored but you can customize this behavior here.
     ---@param url string
@@ -142,8 +118,6 @@ return {
       -- vim.cmd(':silent exec "!start ' .. url .. '"') -- Windows
     end,
 
-    -- Optional, set to true if you use the Obsidian Advanced URI plugin.
-    -- https://github.com/Vinzent03/obsidian-advanced-uri
-    use_advanced_uri = true,
+
   },
 }
