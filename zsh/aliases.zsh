@@ -4,7 +4,23 @@
 alias vim="nvim"
 alias v="nvim ."
 alias n="nvim"
-alias cc="claude"
+# Claude Code with Vercel AI Gateway
+unalias cc 2>/dev/null
+cc() {
+  ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh" \
+  ANTHROPIC_API_KEY="" \
+  ANTHROPIC_AUTH_TOKEN="$(security find-generic-password -s 'ANTHROPIC_AUTH_TOKEN' -w)" \
+  claude "$@"
+}
+# Claude Code with Docker Sandbox and Vercel AI Gateway
+ccd() {
+  docker sandbox run \
+    -e ANTHROPIC_BASE_URL="https://ai-gateway.vercel.sh" \
+    -e ANTHROPIC_API_KEY="" \
+    -e ANTHROPIC_AUTH_TOKEN="$(security find-generic-password -s 'ANTHROPIC_AUTH_TOKEN' -w)" \
+    --credentials=none \
+    claude "$@"
+}
 alias oc="opencode"
 alias zshconfig="nvim ~/Projects/dotfiles/zsh/zsh.rc"
 alias zshalias="nvim ~/Projects/dotfiles/zsh/aliases.zsh"
