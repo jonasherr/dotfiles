@@ -1336,55 +1336,9 @@
                                 "type": "basic"
                             }
                         ]
-                    },
-                    {
-                        "description": "Simultaneous Keys",
-                        "manipulators": [
-                            {
-                                "from": {
-                                    "modifiers": { "optional": ["any"] },
-                                    "simultaneous": [
-                                        { "key_code": "e" },
-                                        { "key_code": "r" }
-                                    ]
-                                },
-                                "to": [{ "key_code": "delete_or_backspace" }],
-                                "type": "basic"
-                            },
-                            {
-                                "from": {
-                                    "modifiers": { "optional": ["any"] },
-                                    "simultaneous": [
-                                        { "key_code": "u" },
-                                        { "key_code": "i" }
-                                    ]
-                                },
-                                "to": [{ "key_code": "return_or_enter" }],
-                                "type": "basic"
-                            }
-                        ]
                     }
                 ]
             },
-            "devices": [
-                {
-                    "identifiers": {
-                        "is_keyboard": true,
-                        "is_pointing_device": true,
-                        "product_id": 4,
-                        "vendor_id": 18003
-                    },
-                    "ignore_vendor_events": true
-                },
-                {
-                    "identifiers": {
-                        "is_keyboard": true,
-                        "product_id": 4,
-                        "vendor_id": 18003
-                    },
-                    "ignore": true
-                }
-            ],
             "name": "Default",
             "parameters": {
                 "basic.simultaneous_threshold_milliseconds": 50,
@@ -1393,7 +1347,6 @@
                 "basic.to_if_held_down_threshold_milliseconds": 500,
                 "mouse_motion_to_scroll.speed": 100
             },
-            "selected": true,
             "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
         }
     ],

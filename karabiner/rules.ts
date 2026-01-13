@@ -6,7 +6,7 @@ import { Layers, layerSwitcher } from "./rules/layers/layerSwitcher";
 import { numberLayer } from "./rules/layers/numbers";
 import { specialLayer } from "./rules/layers/special";
 import { meh } from "./rules/meh";
-import { simultaneous } from "./rules/simultaneous";
+
 import { KarabinerRules } from "./types";
 
 const profileParameters = {
@@ -51,7 +51,6 @@ const rules: KarabinerRules[] = [
   homeRow,
   meh,
   hyperKey,
-  simultaneous,
 ];
 
 fs.writeFileSync(
