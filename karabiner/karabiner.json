@@ -1339,6 +1339,16 @@
                     }
                 ]
             },
+            "devices": [
+                {
+                    "identifiers": {
+                        "is_keyboard": true,
+                        "product_id": 4,
+                        "vendor_id": 18003
+                    },
+                    "ignore": true
+                }
+            ],
             "name": "Default",
             "parameters": {
                 "basic.simultaneous_threshold_milliseconds": 50,
