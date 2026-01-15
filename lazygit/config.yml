@@ -1,6 +1,6 @@
 git:
-  paging:
-    externalDiffCommand: difft --color=always --background=dark
+  pagers:
+    - externalDiffCommand: difft --color=always --background=dark
 gui:
   theme:
     selectedLineBgColor:
