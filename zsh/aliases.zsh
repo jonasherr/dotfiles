@@ -22,6 +22,9 @@ ccd() {
     claude "$@"
 }
 alias oc="opencode"
+och() {
+  cd /Users/jonasherrmansdsoerfer/Projects/vercel/agent-help && opencode "$@"
+}
 alias zshconfig="nvim ~/Projects/dotfiles/zsh/zsh.rc"
 alias zshalias="nvim ~/Projects/dotfiles/zsh/aliases.zsh"
 alias arm="env /usr/bin/arch -arm64 /bin/zsh"
