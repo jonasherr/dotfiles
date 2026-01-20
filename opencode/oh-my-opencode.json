@@ -3,5 +3,9 @@
   "sisyphus_agent": {
     "default_builder_enabled": true,
     "replace_plan": false
+  },
+  "git_master": {
+    "commit_footer": false,
+    "include_co_authored_by": false
   }
 }
