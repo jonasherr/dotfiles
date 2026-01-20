@@ -117,6 +117,8 @@
     }
   },
   "plugin": [
-    "./plugin/sound-notification.ts"
+    "./plugin/sound-notification.ts",
+    "@franlol/opencode-md-table-formatter@0.0.3",
+    "oh-my-opencode"
   ]
 }
