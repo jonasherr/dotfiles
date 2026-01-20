@@ -110,6 +110,13 @@
     "playwriter": {
       "type": "local",
       "command": ["npx", "-y", "playwriter@latest"]
+    },
+    "dev3000": {
+      "type": "local",
+      "command": ["npx", "-y", "dev3000@latest"]
     }
-  }
+  },
+  "plugin": [
+    "./plugin/sound-notification.ts"
+  ]
 }
