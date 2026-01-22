@@ -1,22 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "provider": {
-    "ollama": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "Ollama (local)",
-      "options": {
-        "baseURL": "http://localhost:11434/v1"
-      },
-      "models": {
-        "qwen3:8b": {
-          "name": "qwen3"
-        },
-        "gpt-oss:20b": {
-          "name": "gpt-oss"
-        }
-      }
-    }
-  },
   "keybinds": {
     "leader": "ctrl+x",
     "app_exit": "ctrl+c,ctrl+d,<leader>q",
@@ -106,6 +89,16 @@
     "terminal_title_toggle": "none",
     "tips_toggle": "<leader>h"
   },
+  "model": "vercel/anthropic/claude-sonnet-4.5",
+  "provider": {
+    "vercel": {
+      "models": {
+        "anthropic/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5" },
+        "anthropic/claude-opus-4.5": { "name": "Claude Opus 4.5" },
+        "anthropic/claude-haiku-4.5": { "name": "Claude Haiku 4.5" }
+      }
+    }
+  },
   "mcp": {
     "playwriter": {
       "type": "local",
@@ -119,6 +112,6 @@
   "plugin": [
     "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
-    "oh-my-opencode"
+    "/Users/jonasherrmansdsoerfer/Projects/dotfiles/opencode/oh-my-opencode/dist/index.js"
   ]
 }
