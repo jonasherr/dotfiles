@@ -117,7 +117,7 @@ export PAGER="less -S"
 # ============================================================================
 
 # fnm (Node version manager)
-eval "$(fnm env --use-on-cd --shell zsh)"
+eval "$(fnm env --use-on-cd --shell zsh --log-level=quiet)"
 
 # Yazi shell wrapper
 function y() {
