@@ -79,3 +79,8 @@ run = '''
   shell --confirm 'qlmanage -p "$@"'
 '''
 desc = "Show file with system quicklook."
+
+[[mgr.prepend_keymap]]
+on   = [ "g", "f" ]
+run  = "shell 'open -R \"$@\"'"
+desc = "Reveal in Finder"
