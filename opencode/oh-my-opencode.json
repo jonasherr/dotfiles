@@ -1,5 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "librarian": { "model": "vercel/anthropic/claude-sonnet-4.5" },
+    "explore": { "model": "vercel/anthropic/claude-sonnet-4.5" }
+  },
   "sisyphus_agent": {
     "default_builder_enabled": true,
     "replace_plan": false
