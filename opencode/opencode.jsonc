@@ -89,13 +89,16 @@
     "terminal_title_toggle": "none",
     "tips_toggle": "<leader>h"
   },
-  "model": "vercel/anthropic/claude-sonnet-4.5",
+  "model": "vercel/anthropic/claude-opus-4.5",
   "provider": {
     "vercel": {
       "models": {
         "anthropic/claude-sonnet-4.5": { "name": "Claude Sonnet 4.5" },
         "anthropic/claude-opus-4.5": { "name": "Claude Opus 4.5" },
-        "anthropic/claude-haiku-4.5": { "name": "Claude Haiku 4.5" }
+        "anthropic/claude-haiku-4.5": { "name": "Claude Haiku 4.5" },
+        "google/gemini-3-flash": { "name": "Gemini 3 Flash" },
+        "google/gemini-3-pro": { "name": "Gemini 3 Pro" },
+        "openai/gpt-5.2-codex": { "name": "GPT-5.2 Codex" }
       }
     }
   },
@@ -103,15 +106,11 @@
     "playwriter": {
       "type": "local",
       "command": ["npx", "-y", "playwriter@latest"]
-    },
-    "dev3000": {
-      "type": "local",
-      "command": ["npx", "-y", "dev3000@latest"]
     }
   },
   "plugin": [
     "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
-    "/Users/jonasherrmansdsoerfer/Projects/dotfiles/opencode/oh-my-opencode/dist/index.js"
+    "oh-my-opencode"
   ]
 }

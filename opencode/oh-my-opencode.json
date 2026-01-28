@@ -2,7 +2,17 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
     "librarian": { "model": "vercel/anthropic/claude-sonnet-4.5" },
-    "explore": { "model": "vercel/anthropic/claude-sonnet-4.5" }
+    "explore": { "model": "vercel/anthropic/claude-sonnet-4.5" },
+    "multimodal-looker": { "model": "vercel/google/gemini-3-flash" }
+  },
+  "categories": {
+    "visual-engineering": { "model": "vercel/google/gemini-3-pro" },
+    "ultrabrain": { "model": "vercel/openai/gpt-5.2-codex", "variant": "xhigh" },
+    "artistry": { "model": "vercel/google/gemini-3-pro", "variant": "max" },
+    "quick": { "model": "vercel/anthropic/claude-haiku-4.5" },
+    "unspecified-low": { "model": "vercel/anthropic/claude-sonnet-4.5" },
+    "unspecified-high": { "model": "vercel/anthropic/claude-opus-4.5", "variant": "max" },
+    "writing": { "model": "vercel/google/gemini-3-flash" }
   },
   "sisyphus_agent": {
     "default_builder_enabled": true,
