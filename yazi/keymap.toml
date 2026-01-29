@@ -84,3 +84,10 @@ desc = "Show file with system quicklook."
 on   = [ "g", "f" ]
 run  = "shell 'open -R \"$@\"'"
 desc = "Reveal in Finder"
+
+[[mgr.prepend_keymap]]
+on = "Y"
+run = '''
+  shell --confirm 'for f in "$@"; do osascript -e "set the clipboard to (POSIX file \"$f\")"; done && echo "Copied to clipboard"'
+'''
+desc = "Copy file to clipboard"
