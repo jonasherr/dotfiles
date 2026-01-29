@@ -371,6 +371,28 @@
 					"value": "/Applications/WhatsApp.app"
 				}
 			]
+		},
+		{
+			"key": "p",
+			"label": "Profiles",
+			"type": "group",
+			"iconPath": "rectangle.on.rectangle",
+			"actions": [
+				{
+					"key": "p",
+					"label": "Presenting Mode",
+					"type": "command",
+					"iconPath": "play.rectangle",
+					"value": "$DOTFILES/leaderkey/presenting.sh"
+				},
+				{
+					"key": "n",
+					"label": "Normal Mode",
+					"type": "command",
+					"iconPath": "desktopcomputer",
+					"value": "$DOTFILES/leaderkey/normal.sh"
+				}
+			]
 		}
 	],
 	"type": "group"
