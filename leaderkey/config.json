@@ -43,102 +43,117 @@
 				}
 			]
 		},
+	{
+		"key": "w",
+		"label": "Aerospace",
+		"type": "group",
+		"iconPath": "rectangle.3.group",
+		"actions": [
+			{
+				"key": "r",
+				"label": "Reset Layout",
+				"type": "command",
+				"iconPath": "arrow.counterclockwise",
+				"value": "$DOTFILES/leaderkey/scripts/aerospace-reset.sh"
+			},
+			{
+				"key": "f",
+				"label": "Toggle Floating",
+				"type": "command",
+				"iconPath": "rectangle.on.rectangle",
+				"value": "$DOTFILES/leaderkey/scripts/aerospace-toggle-floating.sh"
+			},
+			{
+				"key": "e",
+				"label": "Balance Sizes",
+				"type": "command",
+				"iconPath": "rectangle.split.3x1",
+				"value": "$DOTFILES/leaderkey/scripts/aerospace-balance.sh"
+			},
+			{
+				"key": "b",
+				"label": "Close Others",
+				"type": "command",
+				"iconPath": "xmark.circle",
+				"value": "$DOTFILES/leaderkey/scripts/aerospace-close-others.sh"
+			},
+			{
+				"key": "s",
+				"label": "Resize Mode",
+				"type": "command",
+				"iconPath": "arrow.up.left.and.arrow.down.right",
+				"value": "$DOTFILES/leaderkey/scripts/aerospace-resize-mode.sh"
+			}
+		]
+	},
+	{
+		"key": "a",
+		"label": "Apps",
+		"type": "group",
+		"iconPath": "app.badge",
+		"actions": [
+			{
+				"key": "n",
+				"label": "Notion Search",
+				"type": "url",
+				"iconPath": "doc.text.magnifyingglass",
+				"value": "raycast://extensions/notion/notion/search-page"
+			},
+			{
+				"key": "g",
+				"label": "Granola",
+				"type": "application",
+				"iconPath": "note.text",
+				"value": "/Applications/Granola.app"
+			},
+			{
+				"key": "l",
+				"label": "Linear Issues",
+				"type": "url",
+				"iconPath": "list.bullet.rectangle",
+				"value": "raycast://extensions/linear/linear/search-issues"
+			}
+		]
+	},
+	{
+		"key": "c",
+		"label": "Chrome",
+		"type": "group",
+		"iconPath": "globe",
+		"actions": [
+			{
+				"key": "n",
+				"label": "New Window",
+				"type": "command",
+				"iconPath": "macwindow.badge.plus",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-new-window.sh"
+			},
+			{
+				"key": "w",
+				"label": "Move to Window",
+				"type": "command",
+				"iconPath": "arrow.right.square",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-window.sh"
+			},
+			{
+				"key": "h",
+				"label": "Move Left",
+				"type": "command",
+				"iconPath": "arrow.left",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-move-tab-left.sh"
+			},
+			{
+				"key": "l",
+				"label": "Move Right",
+				"type": "command",
+				"iconPath": "arrow.right",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-move-tab-right.sh"
+			}
+		]
+	},
 		{
-			"key": "w",
-			"label": "Windows",
-			"type": "group",
-			"iconPath": "macwindow",
-			"actions": [
-				{
-					"key": "h",
-					"label": "Left Half",
-					"type": "url",
-					"iconPath": "rectangle.lefthalf.filled",
-					"value": "raycast://extensions/raycast/window-management/left-half"
-				},
-				{
-					"key": "l",
-					"label": "Right Half",
-					"type": "url",
-					"iconPath": "rectangle.righthalf.filled",
-					"value": "raycast://extensions/raycast/window-management/right-half"
-				},
-				{
-					"key": "k",
-					"label": "Maximize",
-					"type": "url",
-					"iconPath": "arrow.up.left.and.arrow.down.right",
-					"value": "raycast://extensions/raycast/window-management/maximize"
-				},
-				{
-					"key": "c",
-					"label": "Center",
-					"type": "url",
-					"iconPath": "circle.circle",
-					"value": "raycast://extensions/raycast/window-management/center"
-				},
-				{
-					"key": "f",
-					"label": "Fullscreen",
-					"type": "url",
-					"iconPath": "arrow.up.backward.and.arrow.down.forward",
-					"value": "raycast://extensions/raycast/window-management/make-fullscreen"
-				},
-				{
-					"key": "n",
-					"label": "Next Display",
-					"type": "url",
-					"iconPath": "display",
-					"value": "raycast://extensions/raycast/window-management/next-display"
-				}
-			]
-		},
-		{
-			"key": "d",
-			"label": "Dev Tools",
-			"type": "group",
-			"iconPath": "hammer",
-			"actions": [
-				{
-					"key": "k",
-					"label": "Kitty",
-					"type": "application",
-					"iconPath": "terminal",
-					"value": "/Applications/kitty.app"
-				},
-				{
-					"key": "n",
-					"label": "Neovim",
-					"type": "command",
-					"iconPath": "chevron.left.forwardslash.chevron.right",
-					"value": "kitty_launch --type=tab --cwd ~/Projects nvim"
-				},
-				{
-					"key": "g",
-					"label": "LazyGit",
-					"type": "command",
-					"iconPath": "arrow.triangle.branch",
-					"value": "kitty_launch --type=tab lazygit"
-				},
-				{
-					"key": "p",
-					"label": "Projects",
-					"type": "command",
-					"iconPath": "folder.badge.gearshape",
-					"value": "kitty_launch --type=tab --cwd ~/Projects"
-				},
-				{
-					"key": "d",
-					"label": "Dotfiles",
-					"type": "command",
-					"iconPath": "doc.text",
-					"value": "kitty_launch --type=tab --cwd ~/Projects/dotfiles"
-				}
-			]
-		},
-		{
-			"key": "c",
-			"label": "Capture",
+			"key": "s",
+			"label": "Screenshots",
 			"type": "group",
 			"iconPath": "camera.viewfinder",
 			"actions": [
@@ -264,27 +279,6 @@
 			"iconPath": "link",
 			"actions": [
 				{
-					"key": "g",
-					"label": "GitHub",
-					"type": "url",
-					"iconPath": "chevron.left.forwardslash.chevron.right",
-					"value": "https://github.com"
-				},
-				{
-					"key": "a",
-					"label": "Gemini",
-					"type": "url",
-					"iconPath": "brain",
-					"value": "https://gemini.google.com/"
-				},
-				{
-					"key": "r",
-					"label": "Raycast Store",
-					"type": "url",
-					"iconPath": "bag",
-					"value": "https://raycast.com/store"
-				},
-				{
 					"key": "d",
 					"label": "Vercel Docs",
 					"type": "url",
@@ -343,35 +337,7 @@
 				}
 			]
 		},
-		{
-			"key": "h",
-			"label": "Chat",
-			"type": "group",
-			"iconPath": "bubble.left.and.bubble.right",
-			"actions": [
-				{
-					"key": "s",
-					"label": "Slack",
-					"type": "application",
-					"iconPath": "number",
-					"value": "/Applications/Slack.app"
-				},
-				{
-					"key": "m",
-					"label": "Messages",
-					"type": "application",
-					"iconPath": "message",
-					"value": "/System/Applications/Messages.app"
-				},
-				{
-					"key": "w",
-					"label": "WhatsApp",
-					"type": "application",
-					"iconPath": "phone.bubble",
-					"value": "/Applications/WhatsApp.app"
-				}
-			]
-		},
+
 		{
 			"key": "p",
 			"label": "Profiles",
