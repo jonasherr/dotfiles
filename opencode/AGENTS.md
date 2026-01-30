@@ -110,6 +110,24 @@ When multiple valid approaches exist, choose based on:
 - Use same libraries/utilities when possible
 - Follow existing test patterns
 
+### Next.js Projects
+
+When working in a Next.js project, **always run this command first** to generate local documentation:
+
+```bash
+npx @next/codemod agents-md --output AGENTS.md
+```
+
+This creates a `.next-docs/` directory containing Next.js documentation tailored to the project's version. The generated `AGENTS.md` will reference these docs, giving you access to:
+- API references for App Router, Pages Router, and configuration
+- Migration guides and best practices
+- Version-specific features and deprecations
+
+**Run this command**:
+- On first interaction with any Next.js project
+- After upgrading Next.js version
+- If `.next-docs/` directory is missing
+
 ### Tooling
 
 - Use project's existing build system
@@ -149,3 +167,71 @@ When multiple valid approaches exist, choose based on:
 - Update plan documentation as you go
 - Learn from existing implementations
 - Stop after 3 failed attempts and reassess
+
+## Skills Management
+
+Skills extend agent capabilities with reusable instruction sets. This dotfiles repo tracks skills in `opencode/skills/`.
+
+### Installing New Skills
+
+Use **copy mode** to install skills directly into the dotfiles-tracked directory:
+
+```bash
+# Install a skill with copy mode (recommended for this setup)
+npx skills add <source> --skill <skill-name> -a opencode
+
+# When prompted for installation method, select "Copy"
+# This writes directly to ~/.config/opencode/skills/ (symlinked to dotfiles)
+
+# Examples:
+npx skills add vercel-labs/agent-skills --skill frontend-design -a opencode
+npx skills add anthropics/skills --skill pdf -a opencode
+```
+
+### Why Copy Mode?
+
+This dotfiles setup symlinks `~/.config/opencode/skills/` → `$DOTFILES/opencode/skills/`.
+
+The default "symlink" installation method creates relative symlinks to `~/.agents/skills/` which break with this setup. Copy mode writes files directly, which works correctly.
+
+### Updating Skills
+
+```bash
+# Check for available updates
+npx skills check
+
+# Update all installed skills
+npx skills update
+```
+
+Updates work because the lock file (`~/.agents/.skill-lock.json`) tracks skill sources independently of installation method.
+
+### Finding Skills
+
+```bash
+# Interactive skill search
+npx skills find
+
+# Search by keyword
+npx skills find typescript
+```
+
+### Creating Custom Skills
+
+```bash
+# Initialize a new skill in skills/ directory
+npx skills init my-skill
+```
+
+Skills are directories containing a `SKILL.md` file with YAML frontmatter:
+
+```markdown
+---
+name: my-skill
+description: What this skill does and when to use it
+---
+
+# My Skill
+
+Instructions for the agent...
+```
