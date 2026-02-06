@@ -1,17 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
-    "Sisyphus": {
-      "model": "vercel/anthropic/claude-opus-4.5"
+    "sisyphus": {
+      "model": "vercel/anthropic/claude-opus-4.6"
     },
     "atlas": {
       "model": "vercel/anthropic/claude-sonnet-4.5"
     },
     "prometheus": {
-      "model": "vercel/anthropic/claude-opus-4.5"
+      "model": "vercel/anthropic/claude-opus-4.6"
     },
     "oracle": {
-      "model": "vercel/anthropic/claude-opus-4.5"
+      "model": "vercel/anthropic/claude-opus-4.6"
     },
     "librarian": {
       "model": "vercel/anthropic/claude-sonnet-4.5"
@@ -42,7 +42,7 @@
       "model": "vercel/anthropic/claude-sonnet-4.5"
     },
     "unspecified-high": {
-      "model": "vercel/anthropic/claude-opus-4.5",
+      "model": "vercel/anthropic/claude-opus-4.6",
       "variant": "max"
     },
     "writing": {
