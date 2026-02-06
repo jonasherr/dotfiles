@@ -30,6 +30,7 @@ bash -n path/to/script.sh
 | Directory | Language | Formatter |
 |-----------|----------|-----------|
 | karabiner/ | TypeScript | Prettier (see .prettierrc) |
+| opencode/ | TypeScript (Bun) | - | See `opencode/AGENTS.md` |
 | opencode/plugin/ | TypeScript | Prettier |
 | nvim/lua/ | Lua | StyLua (see .stylua.toml) |
 | yazi/ | Lua | StyLua |

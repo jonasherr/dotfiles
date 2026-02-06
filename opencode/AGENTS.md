@@ -1,237 +1,149 @@
-# Development Guidelines
+# OpenCode Configuration — Agent Guidelines
 
-## Philosophy
+OpenCode AI agent configuration, symlinked to `~/.config/opencode/`. Part of a macOS dotfiles repo.
 
-### Core Beliefs
+## What This Is
 
-- **Incremental progress over big bangs** - Small changes that compile and pass tests
-- **Learning from existing code** - Study and plan before implementing
-- **Pragmatic over dogmatic** - Adapt to project reality
-- **Clear intent over clever code** - Be boring and obvious
+This directory configures [OpenCode](https://opencode.ai) with the [oh-my-opencode](https://github.com/code-yeongyu/oh-my-opencode) plugin for multi-model agent orchestration. It is **not** a standalone project — it's a dotfiles config directory.
 
-### Simplicity Means
+## Structure
 
-- Single responsibility per function/class
-- Avoid premature abstractions
-- No clever tricks - choose the boring solution
-- If you need to explain it, it's too complex
-
-## Process
-
-### 1. Planning & Staging
-
-Break complex work into 3-5 stages. Document in `IMPLEMENTATION_PLAN.md`:
-
-```markdown
-## Stage N: [Name]
-**Goal**: [Specific deliverable]
-**Success Criteria**: [Testable outcomes]
-**Tests**: [Specific test cases]
-**Status**: [Not Started|In Progress|Complete]
 ```
-- Update status as you progress
-- Remove file when all stages are done
+opencode/
+├── opencode.jsonc           # Main OpenCode config (keybinds, models, providers, permissions)
+├── oh-my-opencode.json      # Agent orchestration config (agents, categories, models)
+├── package.json             # Dependencies: oh-my-opencode, md-table-formatter, plugin SDK
+├── links.prop               # Symlink definitions (bootstrap maps these to ~/.config/opencode/)
+├── install.sh               # Homebrew install script for opencode + terminal-notifier
+├── plugin/
+│   └── sound-notification.ts  # Custom plugin: sound + notification on session idle
+├── commands/
+│   └── full-review.md       # Custom command: multi-dimensional code review
+├── skills/                  # 14 installed agent skills (copy-mode installs)
+│   ├── frontend-design/
+│   ├── vercel-react-best-practices/
+│   ├── skill-creator/
+│   └── ...
+└── oh-my-opencode/          # Git submodule — full TypeScript project (has its own AGENTS.md)
+```
 
-### 2. Implementation Flow
+## Build & Verify Commands
 
-1. **Understand** - Study existing patterns in codebase
-2. **Test** - Write test first (red)
-3. **Implement** - Minimal code to pass (green)
-4. **Refactor** - Clean up with tests passing
-5. **Commit** - With clear message linking to plan
-
-### 3. When Stuck (After 3 Attempts)
-
-**CRITICAL**: Maximum 3 attempts per issue, then STOP.
-
-1. **Document what failed**:
-   - What you tried
-   - Specific error messages
-   - Why you think it failed
-
-2. **Research alternatives**:
-   - Find 2-3 similar implementations
-   - Note different approaches used
-
-3. **Question fundamentals**:
-   - Is this the right abstraction level?
-   - Can this be split into smaller problems?
-   - Is there a simpler approach entirely?
-
-4. **Try different angle**:
-   - Different library/framework feature?
-   - Different architectural pattern?
-   - Remove abstraction instead of adding?
-
-## Technical Standards
-
-### Architecture Principles
-
-- **Explicit over implicit** - Clear data flow and dependencies
-- **Functional over object oriented**
-- **Test-driven when possible** - Never disable tests, fix them
-
-### Code Quality
-
-- **Every commit must**:
-  - Compile successfully
-  - Pass all existing tests
-  - Include tests for new functionality
-  - Follow project formatting/linting
-
-- **Before committing**:
-  - Run formatters/linters
-  - Self-review changes
-  - Ensure commit message explains "why"
-
-### Error Handling
-
-- Fail fast with descriptive messages
-- Include context for debugging
-- Handle errors at appropriate level
-- Never silently swallow exceptions
-
-## Decision Framework
-
-When multiple valid approaches exist, choose based on:
-
-1. **Testability** - Can I easily test this?
-2. **Readability** - Will someone understand this in 6 months?
-3. **Consistency** - Does this match project patterns?
-4. **Simplicity** - Is this the simplest solution that works?
-5. **Reversibility** - How hard to change later?
-
-## Project Integration
-
-### Learning the Codebase
-
-- Find 3 similar features/components
-- Identify common patterns and conventions
-- Use same libraries/utilities when possible
-- Follow existing test patterns
-
-### Next.js Projects
-
-When working in a Next.js project, **always run this command first** to generate local documentation:
+This directory has **no build step** — it's configuration. But the oh-my-opencode submodule does:
 
 ```bash
-npx @next/codemod agents-md --output AGENTS.md
+# Oh-My-OpenCode subproject (run from opencode/oh-my-opencode/)
+bun run typecheck                    # Type check
+bun run build                        # ESM + declarations + schema
+bun run rebuild                      # Clean + build
+bun test                             # Run all tests (83 files)
+bun test src/path/file.test.ts       # Run single test file
+bun test --grep "pattern"            # Run tests matching pattern
+
+# Validate symlinks are correct
+cat links.prop                       # Check what's mapped where
+
+# Apply all dotfiles symlinks (from repo root)
+./install/bootstrap.sh
 ```
 
-This creates a `.next-docs/` directory containing Next.js documentation tailored to the project's version. The generated `AGENTS.md` will reference these docs, giving you access to:
-- API references for App Router, Pages Router, and configuration
-- Migration guides and best practices
-- Version-specific features and deprecations
+## Code Style
 
-**Run this command**:
-- On first interaction with any Next.js project
-- After upgrading Next.js version
-- If `.next-docs/` directory is missing
+### TypeScript (plugin/, oh-my-opencode/)
 
-### Tooling
+- **Runtime**: Bun (not Node). Use `bun run`, `bun build`, `bunx`
+- **Types**: `bun-types` — never use `@types/node`
+- **Module**: ESM only (`"type": "module"`)
+- **Target**: ESNext, strict mode
+- **Style**: 2 spaces, no semicolons, double quotes for imports
+- **Naming**: kebab-case directories, `createXXXHook`/`createXXXTool` factories
+- **Exports**: Barrel pattern via `index.ts`, explicit named exports
+- **Validation**: Zod schemas for config (`src/config/schema.ts`)
+- **Config format**: JSONC (comments and trailing commas allowed)
 
-- Use project's existing build system
-- Use project's test framework
-- Use project's formatter/linter settings
-- Don't introduce new tools without strong justification
+### Forbidden Patterns
 
-## Quality Gates
+| Pattern | Why |
+|---------|-----|
+| `as any`, `@ts-ignore`, `@ts-expect-error` | Type safety is non-negotiable |
+| Empty `catch(e) {}` | Never swallow errors silently |
+| `npm install`, `yarn add` | Bun only in oh-my-opencode |
+| `@types/node` | Use `bun-types` |
+| Direct `bun publish` | Publishing is CI-only (GitHub Actions) |
+| Local version bumps | Managed by CI pipeline |
+| Deleting failing tests | Fix the code, not the test |
 
-### Definition of Done
+## Key Config Files
 
-- [ ] Tests written and passing
-- [ ] Code follows project conventions
-- [ ] No linter/formatter warnings
-- [ ] Commit messages are clear
-- [ ] Implementation matches plan
-- [ ] No TODOs without issue numbers
+### opencode.jsonc
+Main OpenCode config. Notable sections:
+- `model`: Default model (`vercel/anthropic/claude-opus-4.6`)
+- `provider`: Vercel (cloud) + Ollama (local) model providers
+- `mcp`: MCP server configs (playwriter for browser automation)
+- `plugin`: Plugin load order (sound-notification → md-table-formatter → oh-my-opencode)
+- `permission`: Granular bash command permissions (allow/ask/deny per command pattern)
 
-### Test Guidelines
+### oh-my-opencode.json
+Agent orchestration config defining:
+- Specialized agents (Sisyphus, Oracle, Librarian, Explore, etc.)
+- Task categories (visual-engineering, ultrabrain, quick, etc.)
+- Model assignments per agent/category
+- Git-master and other skill settings
 
-- Test behavior, not implementation
-- One assertion per test when possible
-- Clear test names describing scenario
-- Use existing test utilities/helpers
-- Tests should be deterministic
+## Testing (oh-my-opencode submodule only)
 
-## Important Reminders
-
-**NEVER**:
-- Use `--no-verify` to bypass commit hooks
-- Disable tests instead of fixing them
-- Commit code that doesn't compile
-- Make assumptions - verify with existing code
-
-**ALWAYS**:
-- Commit working code incrementally
-- Update plan documentation as you go
-- Learn from existing implementations
-- Stop after 3 failed attempts and reassess
+- **Framework**: Bun native test runner
+- **Convention**: `*.test.ts` files alongside source
+- **TDD mandatory**: RED → GREEN → REFACTOR
+- **BDD comments**: `#given`, `#when`, `#then`
+- **83 test files**, 2 known flaky (ralph-loop CI timeout, session-state parallel pollution)
+- Test behavior, not implementation. One assertion per test when possible.
 
 ## Skills Management
 
-Skills extend agent capabilities with reusable instruction sets. This dotfiles repo tracks skills in `opencode/skills/`.
+Skills are installed to `skills/` and symlinked to `~/.config/opencode/skills/`.
 
-### Installing New Skills
-
-Use **copy mode** to install skills directly into the dotfiles-tracked directory:
+**Always use copy mode** — the default symlink mode creates relative links to `~/.agents/skills/` which break with this dotfiles symlink setup.
 
 ```bash
-# Install a skill with copy mode (recommended for this setup)
-npx skills add <source> --skill <skill-name> -a opencode
-
-# When prompted for installation method, select "Copy"
-# This writes directly to ~/.config/opencode/skills/ (symlinked to dotfiles)
-
-# Examples:
-npx skills add vercel-labs/agent-skills --skill frontend-design -a opencode
-npx skills add anthropics/skills --skill pdf -a opencode
+npx skills add <source> --skill <name> -a opencode    # select "Copy" when prompted
+npx skills find                                         # search available
+npx skills check                                        # check for updates
+npx skills update                                       # update all
+npx skills init my-skill                                # create custom skill
 ```
 
-### Why Copy Mode?
-
-This dotfiles setup symlinks `~/.config/opencode/skills/` → `$DOTFILES/opencode/skills/`.
-
-The default "symlink" installation method creates relative symlinks to `~/.agents/skills/` which break with this setup. Copy mode writes files directly, which works correctly.
-
-### Updating Skills
-
-```bash
-# Check for available updates
-npx skills check
-
-# Update all installed skills
-npx skills update
-```
-
-Updates work because the lock file (`~/.agents/.skill-lock.json`) tracks skill sources independently of installation method.
-
-### Finding Skills
-
-```bash
-# Interactive skill search
-npx skills find
-
-# Search by keyword
-npx skills find typescript
-```
-
-### Creating Custom Skills
-
-```bash
-# Initialize a new skill in skills/ directory
-npx skills init my-skill
-```
-
-Skills are directories containing a `SKILL.md` file with YAML frontmatter:
-
-```markdown
+Skills are directories with a `SKILL.md` containing YAML frontmatter:
+```yaml
 ---
 name: my-skill
 description: What this skill does and when to use it
 ---
-
-# My Skill
-
-Instructions for the agent...
 ```
+
+## Oh-My-OpenCode Submodule
+
+The `oh-my-opencode/` directory is a **git submodule** with its own comprehensive `AGENTS.md`. When working inside it, defer to that file for:
+- Project structure and where-to-look guide
+- Factory patterns (`createXXXHook`, `createXXXTool`)
+- Agent model assignments
+- Complexity hotspots (files >600 lines)
+- CI/CD pipeline details
+- MCP architecture (three-tier: built-in, Claude Code compat, skill-embedded)
+
+## Commits
+
+Format: `opencode: <description>`
+
+- Explain "why" not "what"
+- Every commit must leave config in a valid state
+- For oh-my-opencode changes: separate test from implementation commits
+- Never use `--no-verify`
+
+## Process
+
+1. **Understand** — study existing patterns before changing anything
+2. **Test** — write tests first for oh-my-opencode changes
+3. **Implement** — minimal change to achieve the goal
+4. **Verify** — `bun run typecheck && bun test` for submodule changes
+5. **Max 3 attempts** per issue, then stop and reassess
