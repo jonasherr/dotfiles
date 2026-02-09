@@ -50,8 +50,16 @@ usage() {
 # ── Cleanup trap ──────────────────────────────────────────────────────
 
 container_name=""
+relay_pid=""
+sock_path=""
 
 cleanup() {
+  if [ -n "$relay_pid" ]; then
+    kill "$relay_pid" 2>/dev/null || true
+  fi
+  if [ -n "$sock_path" ]; then
+    rm -f "$sock_path"
+  fi
   if [ -n "$container_name" ]; then
     echo ""
     warn "Script interrupted. Container '$container_name' may still be running."
@@ -180,6 +188,7 @@ cleanup_existing_containers() {
 
 wait_for_healthy() {
   local name="$1"
+  local sock="$2"
   local elapsed=0
 
   printf "  Waiting for OpenCode server"
@@ -194,8 +203,8 @@ wait_for_healthy() {
   container logs --boot $name"
     fi
 
-    # Health check
-    if container exec "$name" curl -sf "http://127.0.0.1:${PORT}/global/health" 2>/dev/null | jq -e '.healthy == true' > /dev/null 2>&1; then
+    # Health check via Unix socket (--publish TCP is broken in Apple container)
+    if curl -sf --unix-socket "$sock" http://localhost/global/health 2>/dev/null | jq -e '.healthy == true' > /dev/null 2>&1; then
       echo " ready!"
       return 0
     fi
@@ -242,13 +251,16 @@ main() {
 
   info "Starting container: $container_name"
 
+  sock_path="/tmp/opencode-${project_basename}.sock"
+  rm -f "$sock_path"
+
   if ! container run -d \
     --name "$container_name" \
     --memory 4g \
     --cpus 4 \
     --volume "$project_dir":/workspace \
     --volume "$auth_file":/root/.local/share/opencode/auth.json \
-    --publish "127.0.0.1:${PORT}:${PORT}" \
+    --publish-socket "$sock_path":/tmp/opencode.sock \
     --env GIT_AUTHOR_NAME="$git_author_name" \
     --env GIT_AUTHOR_EMAIL="$git_author_email" \
     --env GIT_COMMITTER_NAME="$git_committer_name" \
@@ -257,7 +269,37 @@ main() {
     fail "Failed to start container"
   fi
 
-  wait_for_healthy "$container_name"
+  wait_for_healthy "$container_name" "$sock_path"
+
+  # Start TCP relay: host TCP:4096 → Unix socket → container
+  # (Apple container --publish TCP is broken; use --publish-socket + relay instead)
+  python3 -c "
+import socket, threading, signal, sys
+def relay(src, dst):
+    try:
+        while True:
+            data = src.recv(65536)
+            if not data: break
+            dst.sendall(data)
+    except: pass
+    finally:
+        try: src.close()
+        except: pass
+        try: dst.close()
+        except: pass
+signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server.bind(('127.0.0.1', ${PORT}))
+server.listen(5)
+while True:
+    client, _ = server.accept()
+    unix = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    unix.connect('${sock_path}')
+    threading.Thread(target=relay, args=(client, unix), daemon=True).start()
+    threading.Thread(target=relay, args=(unix, client), daemon=True).start()
+" &
+  relay_pid=$!
 
   echo ""
   success "OpenCode sandbox running"
@@ -282,6 +324,12 @@ main() {
   echo ""
   info "TUI detached. Container '$container_name' is still running."
   read -r -p "  Stop container now? [y/N] " response
+  # Clean up relay
+  if [ -n "$relay_pid" ]; then
+    kill "$relay_pid" 2>/dev/null || true
+  fi
+  rm -f "$sock_path"
+
   if [[ "$response" =~ ^[Yy]$ ]]; then
     info "Stopping container..."
     container stop "$container_name" 2>/dev/null || true

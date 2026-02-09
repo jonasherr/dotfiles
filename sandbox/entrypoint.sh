@@ -35,6 +35,11 @@ if [ ! -f /root/.local/share/opencode/auth.json ]; then
   exit 1
 fi
 
+# ── Start socat relay ─────────────────────────────────────────────────
+# Bridge Unix socket to TCP for --publish-socket forwarding
+# (Apple container --publish TCP port forwarding is broken for HTTP)
+socat UNIX-LISTEN:/tmp/opencode.sock,fork,reuseaddr TCP:127.0.0.1:4096 &
+
 # ── Start OpenCode server ─────────────────────────────────────────────
 # exec replaces this shell so OpenCode receives signals directly
 exec opencode serve --port 4096 --hostname 0.0.0.0
