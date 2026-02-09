@@ -1,0 +1,62 @@
+# OpenCode Sandbox Image
+# Debian bookworm-slim with Node.js 22, Bun, OpenCode, Git, headless Chromium
+#
+# Build:  container build -t opencode-sandbox sandbox/
+# Run:    container run --volume ./project:/workspace opencode-sandbox
+
+FROM debian:bookworm-slim
+
+# ── System dependencies ──────────────────────────────────────────────
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      curl \
+      git \
+      ca-certificates \
+      jq \
+      openssh-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Node.js 22 LTS (NodeSource) ─────────────────────────────────────
+RUN curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | \
+      gpg --dearmor -o /usr/share/keyrings/nodesource.gpg && \
+    echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" > \
+      /etc/apt/sources.list.d/nodesource.list && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+# ── Bun ──────────────────────────────────────────────────────────────
+RUN curl -fsSL https://bun.sh/install | bash && \
+    ln -s /root/.bun/bin/bun /usr/local/bin/bun && \
+    ln -s /root/.bun/bin/bunx /usr/local/bin/bunx
+
+# ── OpenCode ─────────────────────────────────────────────────────────
+RUN npm install -g opencode-ai@latest
+
+# ── Playwright Chromium (separate layer for caching, ~500MB) ─────────
+RUN npx playwright install --with-deps chromium
+
+# ── Directories ──────────────────────────────────────────────────────
+RUN mkdir -p /workspace /config /root/.local/share/opencode
+
+# ── Environment ──────────────────────────────────────────────────────
+ENV HOME=/root \
+    OPENCODE_CONFIG_DIR=/config \
+    OPENCODE_DISABLE_AUTOUPDATE=true \
+    OPENCODE_DISABLE_LSP_DOWNLOAD=false
+
+# ── Configuration files ──────────────────────────────────────────────
+COPY opencode.container.json /config/opencode.json
+COPY oh-my-opencode.container.json /config/oh-my-opencode.json
+COPY container-package.json /config/package.json
+
+# ── Install plugins ──────────────────────────────────────────────────
+RUN cd /config && npm install
+
+# ── Entrypoint ───────────────────────────────────────────────────────
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 4096
+WORKDIR /workspace
+ENTRYPOINT ["/entrypoint.sh"]
