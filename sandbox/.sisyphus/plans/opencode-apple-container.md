@@ -126,12 +126,12 @@ Create a fully functional, one-command sandboxed OpenCode environment using Appl
 - `sandbox/opencode-sandbox` — Wrapper script (executable)
 
 ### Definition of Done
-- [ ] `container build -t opencode-sandbox sandbox/` succeeds
-- [ ] Wrapper script launches container, user can attach TUI from host
-- [ ] Agent inside container can: read/write files, run shell commands, git commit
-- [ ] Agent can call Anthropic/Vercel APIs via mounted `auth.json`
-- [ ] Playwriter MCP can launch headless Chromium and take screenshots
-- [ ] Stopping container leaves mounted project directory intact with agent's commits
+- [x] `container build -t opencode-sandbox sandbox/` succeeds
+- [x] Wrapper script launches container, user can attach TUI from host
+- [x] Agent inside container can: read/write files, run shell commands, git commit
+- [x] Agent can call Anthropic/Vercel APIs via mounted `auth.json`
+- [x] Playwriter MCP can launch headless Chromium and take screenshots
+- [x] Stopping container leaves mounted project directory intact with agent's commits
 
 ### Must Have
 - All OpenCode permissions set to "allow" (the whole point of sandboxing)
@@ -1018,10 +1018,10 @@ container run --rm opencode-sandbox git --version        # Expected: git version
 ```
 
 ### Final Checklist
-- [ ] All "Must Have" present (full permissions, git, project mount, auth.json mount, oh-my-opencode, Chromium)
-- [ ] All "Must NOT Have" absent (no Ollama, no macOS plugins, no hardcoded keys, no auto-push)
-- [ ] Container builds in < 10 minutes
-- [ ] Container starts in < 30 seconds
-- [ ] Wrapper script validates all prerequisites before starting
-- [ ] Agent can complete a full task cycle: read → modify → test → commit
-- [ ] All files committed to sandbox/ directory
+- [x] All "Must Have" present (full permissions, git, project mount, auth.json mount, oh-my-opencode, Chromium)
+- [x] All "Must NOT Have" absent (no Ollama, no macOS plugins, no hardcoded keys, no auto-push)
+- [x] Container builds in < 10 minutes (actual: ~2 minutes)
+- [x] Container starts in < 30 seconds (actual: ~5 seconds)
+- [x] Wrapper script validates all prerequisites before starting
+- [x] Agent can complete a full task cycle: read → modify → test → commit
+- [x] All files committed to sandbox/ directory
