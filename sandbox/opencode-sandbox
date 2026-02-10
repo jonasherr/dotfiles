@@ -8,9 +8,11 @@
 set -euo pipefail
 
 readonly IMAGE_NAME="opencode-sandbox"
-readonly PORT=4096
+readonly PORT_START=4096
+readonly PORT_END=4196
 readonly HEALTH_TIMEOUT=30
 readonly SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+readonly META_DIR="/tmp/opencode-sandbox"
 
 # ── Helpers ───────────────────────────────────────────────────────────
 
@@ -29,6 +31,30 @@ warn() {
 fail() {
   printf "\r  [\033[0;31mFAIL\033[0m] %s\n" "$1"
   exit 1
+}
+
+find_available_port() {
+  local port
+  for port in $(seq "$PORT_START" "$PORT_END"); do
+    if ! lsof -Pi :"$port" -sTCP:LISTEN -t > /dev/null 2>&1; then
+      echo "$port"
+      return 0
+    fi
+  done
+  fail "No available port in range ${PORT_START}-${PORT_END}"
+}
+
+save_metadata() {
+  local name="$1" port="$2" project="$3" sock="$4"
+  mkdir -p "$META_DIR"
+  cat > "${META_DIR}/${name}.json" <<EOF
+{"port":${port},"project":"${project}","container":"${name}","sock":"${sock}"}
+EOF
+}
+
+remove_metadata() {
+  local name="$1"
+  rm -f "${META_DIR}/${name}.json"
 }
 
 # ── Usage ─────────────────────────────────────────────────────────────
@@ -52,6 +78,7 @@ usage() {
 container_name=""
 relay_pid=""
 sock_path=""
+port=""
 
 cleanup() {
   if [ -n "$relay_pid" ]; then
@@ -63,8 +90,8 @@ cleanup() {
   if [ -n "$container_name" ]; then
     echo ""
     warn "Script interrupted. Container '$container_name' may still be running."
-    echo "  To reattach:  opencode attach http://127.0.0.1:${PORT}"
-    echo "  To stop:      container stop $container_name && container rm $container_name"
+    echo "  To reattach:  occ-attach (or: opencode attach http://127.0.0.1:${port})"
+    echo "  To stop:      occ-stop (or: container stop $container_name && container rm $container_name)"
   fi
 }
 
@@ -133,10 +160,7 @@ check_prerequisites() {
     fail "'curl' not found. Install with: brew install curl"
   fi
 
-  # 10. port available
-  if lsof -Pi :"$PORT" -sTCP:LISTEN -t > /dev/null 2>&1; then
-    fail "Port $PORT is already in use. Stop the process using it first."
-  fi
+  # 10. port availability checked dynamically (find_available_port)
 }
 
 # ── Image build ──────────────────────────────────────────────────────
@@ -176,10 +200,7 @@ cleanup_existing_containers() {
         info "Removed $cname"
       done
     else
-      warn "Existing container may be using port $PORT."
-      if lsof -Pi :"$PORT" -sTCP:LISTEN -t > /dev/null 2>&1; then
-        fail "Port $PORT is in use. Stop existing container first."
-      fi
+      warn "Existing containers may be using ports. New sandbox will find an available port."
     fi
   fi
 }
@@ -247,11 +268,14 @@ main() {
   ensure_image
   cleanup_existing_containers "$project_basename"
 
+  # Find available port
+  port=$(find_available_port)
+
   container_name="opencode-${project_basename}-$(date +%s)"
 
-  info "Starting container: $container_name"
+  info "Starting container: $container_name (port $port)"
 
-  sock_path="/tmp/opencode-${project_basename}.sock"
+  sock_path="/tmp/opencode-${project_basename}-${port}.sock"
   rm -f "$sock_path"
 
   if ! container run -d \
@@ -271,7 +295,7 @@ main() {
 
   wait_for_healthy "$container_name" "$sock_path"
 
-  # Start TCP relay: host TCP:4096 → Unix socket → container
+  # Start TCP relay: host TCP:${port} → Unix socket → container
   # (Apple container --publish TCP is broken; use --publish-socket + relay instead)
   python3 -c "
 import socket, threading, signal, sys
@@ -290,7 +314,7 @@ def relay(src, dst):
 signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server.bind(('127.0.0.1', ${PORT}))
+server.bind(('127.0.0.1', ${port}))
 server.listen(5)
 while True:
     client, _ = server.accept()
@@ -300,6 +324,9 @@ while True:
     threading.Thread(target=relay, args=(unix, client), daemon=True).start()
 " &
   relay_pid=$!
+
+  # Save metadata for occ-attach / occ-stop
+  save_metadata "$container_name" "$port" "$project_dir" "$sock_path"
 
   echo ""
   success "OpenCode sandbox running"
@@ -311,14 +338,14 @@ while True:
   info "Attaching TUI... (Ctrl+C to detach, container keeps running)"
   echo ""
   info "To reattach later:"
-  echo "    opencode attach http://127.0.0.1:${PORT}"
+  echo "    occ-attach (or: opencode attach http://127.0.0.1:${port})"
   echo ""
   info "To stop:"
-  echo "    container stop $container_name && container rm $container_name"
+  echo "    occ-stop (or: container stop $container_name && container rm $container_name)"
   echo ""
 
   # Attach TUI — blocks until user exits
-  opencode attach "http://127.0.0.1:${PORT}" || true
+  opencode attach "http://127.0.0.1:${port}" || true
 
   # After TUI exits
   echo ""
@@ -334,14 +361,15 @@ while True:
     info "Stopping container..."
     container stop "$container_name" 2>/dev/null || true
     container rm "$container_name" 2>/dev/null || true
+    remove_metadata "$container_name"
     success "Container stopped and removed"
   else
     echo ""
     info "Container still running. To reattach:"
-    echo "    opencode attach http://127.0.0.1:${PORT}"
+    echo "    occ-attach (or: opencode attach http://127.0.0.1:${port})"
     echo ""
     info "To stop later:"
-    echo "    container stop $container_name && container rm $container_name"
+    echo "    occ-stop (or: container stop $container_name && container rm $container_name)"
   fi
 }
 
