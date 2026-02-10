@@ -36,8 +36,17 @@ RUN curl -fsSL https://bun.sh/install | bash && \
 # ── OpenCode ─────────────────────────────────────────────────────────
 RUN npm install -g opencode-ai@latest
 
-# ── Playwright Chromium (separate layer for caching, ~500MB) ─────────
-RUN npx playwright install --with-deps chromium
+# ── System Chromium (ARM64 native from Debian repos) ─────────────────
+# Playwright's bundled Chromium doesn't support ARM64 Linux.
+# Use Debian's system package instead and point Playwright to it.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      chromium \
+      chromium-common \
+      fonts-liberation \
+      libnss3 \
+      libxss1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # ── Directories ──────────────────────────────────────────────────────
 RUN mkdir -p /workspace /config /root/.local/share/opencode
@@ -46,7 +55,10 @@ RUN mkdir -p /workspace /config /root/.local/share/opencode
 ENV HOME=/root \
     OPENCODE_CONFIG_DIR=/config \
     OPENCODE_DISABLE_AUTOUPDATE=true \
-    OPENCODE_DISABLE_LSP_DOWNLOAD=false
+    OPENCODE_DISABLE_LSP_DOWNLOAD=false \
+    PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 \
+    PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium \
+    CHROME_PATH=/usr/bin/chromium
 
 # ── Configuration files ──────────────────────────────────────────────
 COPY opencode.container.json /config/opencode.json
