@@ -126,12 +126,7 @@
       }
     }
   },
-  "mcp": {
-    "playwriter": {
-      "type": "local",
-      "command": ["npx", "-y", "playwriter@latest"]
-    }
-  },
+  "mcp": {},
   "plugin": [
     "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
