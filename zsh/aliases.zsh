@@ -24,27 +24,85 @@ ccd() {
 alias oc="opencode"
 # OpenCode Container Sandbox
 alias occ="$DOTFILES/sandbox/opencode-sandbox"
-occ-stop() {
-  local id
-  id=$(container ls --format json 2>/dev/null | jq -r '.[] | select(.configuration.id | startswith("opencode-")) | .configuration.id' 2>/dev/null | head -1)
-  if [ -z "$id" ]; then
-    echo "No running sandbox container found."
+_occ_find() {
+  # Find sandbox(es) matching current directory or all if no match
+  local project_dir meta_dir="/tmp/opencode-sandbox"
+  project_dir="$(pwd -P)"
+  local matches=()
+  if [ -d "$meta_dir" ]; then
+    for f in "$meta_dir"/*.json; do
+      [ -f "$f" ] || continue
+      local p
+      p=$(jq -r '.project' "$f" 2>/dev/null)
+      if [ "$p" = "$project_dir" ]; then
+        matches+=("$f")
+      fi
+    done
+  fi
+  # If no match for current dir, show all
+  if [ ${#matches[@]} -eq 0 ] && [ -d "$meta_dir" ]; then
+    for f in "$meta_dir"/*.json; do
+      [ -f "$f" ] || continue
+      matches+=("$f")
+    done
+  fi
+  if [ ${#matches[@]} -eq 0 ]; then
+    echo "No running sandbox found." >&2
     return 1
   fi
-  echo "Stopping $id..."
-  container stop "$id" && container rm "$id"
+  if [ ${#matches[@]} -eq 1 ]; then
+    cat "${matches[0]}"
+    return 0
+  fi
+  # Multiple matches — let user pick
+  echo "Multiple sandboxes running:" >&2
+  local i=1
+  for f in "${matches[@]}"; do
+    local name port proj
+    name=$(jq -r '.container' "$f" 2>/dev/null)
+    port=$(jq -r '.port' "$f" 2>/dev/null)
+    proj=$(jq -r '.project' "$f" 2>/dev/null)
+    echo "  $i) $name (port $port) → $proj" >&2
+    i=$((i + 1))
+  done
+  local choice
+  read -r -p "  Select [1-${#matches[@]}]: " choice
+  if [[ "$choice" =~ ^[0-9]+$ ]] && [ "$choice" -ge 1 ] && [ "$choice" -le ${#matches[@]} ]; then
+    cat "${matches[$((choice))]}"
+    return 0
+  fi
+  echo "Invalid selection." >&2
+  return 1
 }
 occ-attach() {
-  opencode attach http://127.0.0.1:4096
+  local meta
+  meta=$(_occ_find) || return 1
+  local port
+  port=$(echo "$meta" | jq -r '.port')
+  opencode attach "http://127.0.0.1:${port}"
+}
+occ-stop() {
+  local meta
+  meta=$(_occ_find) || return 1
+  local name port sock
+  name=$(echo "$meta" | jq -r '.container')
+  port=$(echo "$meta" | jq -r '.port')
+  sock=$(echo "$meta" | jq -r '.sock')
+  echo "Stopping $name (port $port)..."
+  # Kill relay using the port
+  lsof -Pi :"$port" -sTCP:LISTEN -t 2>/dev/null | xargs kill 2>/dev/null || true
+  rm -f "$sock"
+  container stop "$name" 2>/dev/null || true
+  container rm "$name" 2>/dev/null || true
+  rm -f "/tmp/opencode-sandbox/${name}.json"
+  echo "Stopped and removed."
 }
 occ-logs() {
-  local id
-  id=$(container ls --format json 2>/dev/null | jq -r '.[] | select(.configuration.id | startswith("opencode-")) | .configuration.id' 2>/dev/null | head -1)
-  if [ -z "$id" ]; then
-    echo "No running sandbox container found."
-    return 1
-  fi
-  container logs "$id"
+  local meta
+  meta=$(_occ_find) || return 1
+  local name
+  name=$(echo "$meta" | jq -r '.container')
+  container logs "$name"
 }
 occ-rebuild() {
   container image rm opencode-sandbox:latest 2>/dev/null
