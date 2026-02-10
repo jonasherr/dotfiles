@@ -79,7 +79,7 @@ cat links.prop                       # Check what's mapped where
 Main OpenCode config. Notable sections:
 - `model`: Default model (`vercel/anthropic/claude-opus-4.6`)
 - `provider`: Vercel (cloud) + Ollama (local) model providers
-- `mcp`: MCP server configs (playwriter for browser automation)
+- `mcp`: MCP server configs (none currently — browser automation via agent-browser skill)
 - `plugin`: Plugin load order (sound-notification → md-table-formatter → oh-my-opencode)
 - `permission`: Granular bash command permissions (allow/ask/deny per command pattern)
 

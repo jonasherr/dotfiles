@@ -87,7 +87,7 @@
     "history_next": "down",
     "terminal_suspend": "ctrl+z",
     "terminal_title_toggle": "none",
-    "tips_toggle": "<leader>h"
+    "tips_toggle": "none"
   },
   "model": "vercel/anthropic/claude-opus-4.6",
   "provider": {
@@ -126,7 +126,7 @@
       }
     }
   },
-  "mcp": {},
+  // Playwriter removed — using agent-browser skill instead
   "plugin": [
     "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
@@ -152,6 +152,7 @@
       "file *": "allow",
       "tree *": "allow",
       "stat *": "allow",
+      "cat */.ssh/*": "deny",
       "cat *": "allow",
       "grep *": "allow",
       "find *": "allow",
