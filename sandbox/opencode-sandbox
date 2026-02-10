@@ -65,8 +65,8 @@ usage() {
   echo "Launch an OpenCode agent sandbox for the given project."
   echo ""
   echo "Environment variables:"
-  echo "  GIT_AUTHOR_NAME       Git author name (default: OpenCode Agent)"
-  echo "  GIT_AUTHOR_EMAIL      Git author email (default: agent@opencode-sandbox)"
+  echo "  GIT_AUTHOR_NAME       Git author name (default: git config user.name, or OpenCode Agent)"
+  echo "  GIT_AUTHOR_EMAIL      Git author email (default: git config user.email, or agent@opencode-sandbox)"
   echo "  GIT_COMMITTER_NAME    Git committer name (default: same as author)"
   echo "  GIT_COMMITTER_EMAIL   Git committer email (default: same as author)"
   echo "  OPENCODE_AUTH_DIR     Path to opencode data dir (default: ~/.local/share/opencode)"
@@ -255,8 +255,8 @@ main() {
 
   local auth_dir="${OPENCODE_AUTH_DIR:-$HOME/.local/share/opencode}"
 
-  local git_author_name="${GIT_AUTHOR_NAME:-OpenCode Agent}"
-  local git_author_email="${GIT_AUTHOR_EMAIL:-agent@opencode-sandbox}"
+  local git_author_name="${GIT_AUTHOR_NAME:-$(git config user.name 2>/dev/null || echo "OpenCode Agent")}"
+  local git_author_email="${GIT_AUTHOR_EMAIL:-$(git config user.email 2>/dev/null || echo "agent@opencode-sandbox")}"
   local git_committer_name="${GIT_COMMITTER_NAME:-$git_author_name}"
   local git_committer_email="${GIT_COMMITTER_EMAIL:-$git_author_email}"
 
