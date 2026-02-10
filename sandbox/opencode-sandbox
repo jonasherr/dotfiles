@@ -285,6 +285,8 @@ main() {
     --volume "$project_dir":/workspace \
     --volume "$auth_dir":/root/.local/share/opencode \
     --volume "$HOME/.cache/oh-my-opencode":/root/.cache/oh-my-opencode \
+    --volume "$HOME/.config/opencode/skills":/config/skills \
+    --volume "$HOME/.agents/skills":/root/.agents/skills \
     --publish-socket "$sock_path":/tmp/opencode.sock \
     --env GIT_AUTHOR_NAME="$git_author_name" \
     --env GIT_AUTHOR_EMAIL="$git_author_email" \
