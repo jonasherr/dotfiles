@@ -22,10 +22,10 @@
     "multimodal-looker": {
       "model": "vercel/google/gemini-3-flash"
     },
-    "Metis (Plan Consultant)": {
+    "metis": {
       "model": "vercel/anthropic/claude-sonnet-4.5"
     },
-    "Momus (Plan Reviewer)": {
+    "momus": {
       "model": "vercel/anthropic/claude-sonnet-4.5"
     }
   },
