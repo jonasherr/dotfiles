@@ -22,6 +22,34 @@ ccd() {
     claude "$@"
 }
 alias oc="opencode"
+# OpenCode Container Sandbox
+alias occ="$DOTFILES/sandbox/opencode-sandbox"
+occ-stop() {
+  local id
+  id=$(container ls --format json 2>/dev/null | jq -r '.[] | select(.configuration.id | startswith("opencode-")) | .configuration.id' 2>/dev/null | head -1)
+  if [ -z "$id" ]; then
+    echo "No running sandbox container found."
+    return 1
+  fi
+  echo "Stopping $id..."
+  container stop "$id" && container rm "$id"
+}
+occ-attach() {
+  opencode attach http://127.0.0.1:4096
+}
+occ-logs() {
+  local id
+  id=$(container ls --format json 2>/dev/null | jq -r '.[] | select(.configuration.id | startswith("opencode-")) | .configuration.id' 2>/dev/null | head -1)
+  if [ -z "$id" ]; then
+    echo "No running sandbox container found."
+    return 1
+  fi
+  container logs "$id"
+}
+occ-rebuild() {
+  container image rm opencode-sandbox:latest 2>/dev/null
+  echo "Image removed. Next 'occ' run will rebuild."
+}
 och() {
   cd /Users/jonasherrmansdsoerfer/Projects/vercel/agent-help && opencode "$@"
 }
