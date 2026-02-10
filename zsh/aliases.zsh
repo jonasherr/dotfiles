@@ -23,7 +23,7 @@ ccd() {
 }
 alias oc="opencode"
 # OpenCode Container Sandbox
-alias occ="$DOTFILES/sandbox/opencode-sandbox"
+occ() { "$DOTFILES/sandbox/opencode-sandbox" "${1:-.}"; }
 _occ_find() {
   # Find sandbox(es) matching current directory or all if no match
   local project_dir meta_dir="/tmp/opencode-sandbox"
