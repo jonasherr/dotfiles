@@ -176,7 +176,23 @@
       "rm -rf *": "deny",
       "sudo *": "deny",
       "chmod *": "deny",
-      "chown *": "deny"
+      "chown *": "deny",
+      // gh — read-only operations
+      "gh pr view *": "allow",
+      "gh pr list *": "allow",
+      "gh pr checks *": "allow",
+      "gh pr diff *": "allow",
+      "gh issue view *": "allow",
+      "gh issue list *": "allow",
+      "gh repo view *": "allow",
+      "gh release list *": "allow",
+      "gh run view *": "allow",
+      "gh run list *": "allow",
+      // gh api — read-only endpoints (PR and issue comments)
+      "gh api repos/*/pulls/*/comments": "allow",
+      "gh api repos/*/issues/*/comments": "allow",
+      // npm — read-only
+      "npm view *": "allow"
     },
     "edit": "ask",
     "write": "ask"
