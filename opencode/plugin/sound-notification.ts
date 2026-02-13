@@ -25,17 +25,6 @@ export const SoundNotificationPlugin: Plugin = async ({ app, client, $ }) => {
 					console.error("Failed to play sound/notification:", error);
 				}
 			}
-
-			// Reset kitty tab color when session becomes busy
-			if (event.type === "session.status" && event.properties.status.type === "busy") {
-				if (kittyWindowId) {
-					try {
-						await $`kitty @ set-tab-color --match window_id:${kittyWindowId} active_bg=NONE inactive_bg=NONE`;
-					} catch (error) {
-						// Silent failure for kitty commands
-					}
-				}
-			}
 		},
 	};
 };
