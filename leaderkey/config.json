@@ -359,6 +359,42 @@
 					"value": "$DOTFILES/leaderkey/normal.sh"
 				}
 			]
+		},
+		{
+			"key": "n",
+			"label": "Notifications",
+			"type": "group",
+			"iconPath": "bell",
+			"actions": [
+				{
+					"key": "d",
+					"label": "Dismiss Latest",
+					"type": "command",
+					"iconPath": "bell.slash",
+					"value": "$DOTFILES/leaderkey/scripts/dismiss-latest-notification.sh"
+				},
+				{
+					"key": "a",
+					"label": "Dismiss All",
+					"type": "command",
+					"iconPath": "bell.slash.circle",
+					"value": "$DOTFILES/leaderkey/scripts/dismiss-all-notifications.sh"
+				},
+				{
+					"key": "s",
+					"label": "Toggle Silence",
+					"type": "command",
+					"iconPath": "moon.fill",
+					"value": "$DOTFILES/leaderkey/scripts/toggle-dnd.sh"
+				},
+				{
+					"key": "o",
+					"label": "Open Latest",
+					"type": "command",
+					"iconPath": "bell.badge",
+					"value": "$DOTFILES/leaderkey/scripts/invoke-latest-notification.sh"
+				}
+			]
 		}
 	],
 	"type": "group"
