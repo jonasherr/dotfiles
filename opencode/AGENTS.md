@@ -19,7 +19,7 @@ opencode/
 │   └── sound-notification.ts  # Custom plugin: sound + notification on session idle
 ├── commands/
 │   └── full-review.md       # Custom command: multi-dimensional code review
-├── skills/                  # 14 installed agent skills (copy-mode installs)
+├── skills/                  # 18 installed agent skills (copy-mode installs)
 │   ├── frontend-design/
 │   ├── vercel-react-best-practices/
 │   ├── skill-creator/
@@ -36,7 +36,7 @@ This directory has **no build step** — it's configuration. But the oh-my-openc
 bun run typecheck                    # Type check
 bun run build                        # ESM + declarations + schema
 bun run rebuild                      # Clean + build
-bun test                             # Run all tests (83 files)
+bun test                             # Run all tests (~193 files)
 bun test src/path/file.test.ts       # Run single test file
 bun test --grep "pattern"            # Run tests matching pattern
 
@@ -96,7 +96,7 @@ Agent orchestration config defining:
 - **Convention**: `*.test.ts` files alongside source
 - **TDD mandatory**: RED → GREEN → REFACTOR
 - **BDD comments**: `#given`, `#when`, `#then`
-- **83 test files**, 2 known flaky (ralph-loop CI timeout, session-state parallel pollution)
+- **~193 test files**, 2 known flaky (ralph-loop CI timeout, session-state parallel pollution)
 - Test behavior, not implementation. One assertion per test when possible.
 
 ## Skills Management
