@@ -153,11 +153,12 @@
       // Git — write operations (ask)
       "git commit *": "ask",
       "git push *": "ask",
+      // Destructive operations (ask for approval)
+      "rm *": "ask",
+      "rm -rf *": "ask",
+      "chmod *": "ask",
       // Destructive operations (deny)
-      "rm *": "deny",
-      "rm -rf *": "deny",
       "sudo *": "deny",
-      "chmod *": "deny",
       "chown *": "deny",
       // gh — read-only operations
       "gh pr view *": "allow",
