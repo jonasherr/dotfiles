@@ -1,2 +1,2 @@
 #!/bin/bash
-exec /opt/homebrew/bin/kanata --cfg "$HOME/.config/kanata/kanata.kbd"
+exec kanata --cfg "$HOME/.config/kanata/kanata.kbd"
