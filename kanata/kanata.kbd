@@ -1,0 +1,171 @@
+;; Kanata configuration
+;; Migrated from Karabiner-Elements TypeScript configuration
+;;
+;; This configuration mirrors the behavior from the original Karabiner setup:
+;; - Home row mods (a/s/d/f and j/k/l/;)
+;; - Hyper key (Caps Lock)
+;; - MEH key (Space)
+;; - Layer system (special and numbers layers)
+
+;; ============================================================================
+;; Configuration
+;; ============================================================================
+
+(defcfg
+  ;; macOS specific: Kanata requires Karabiner driver to be installed
+  ;; Process unmapped keys to ensure all keys work correctly with layers
+  process-unmapped-keys yes
+  
+  ;; Only apply to MacBook internal keyboard, not external keyboards
+  macos-dev-names-include (
+    "Apple Internal Keyboard / Trackpad"
+  )
+)
+
+;; ============================================================================
+;; Variables - Timeout values matching Karabiner configuration
+;; ============================================================================
+
+(defvar
+  ;; Karabiner: basic.simultaneous_threshold_milliseconds: 50
+  simultaneous-threshold 50
+  
+  ;; Karabiner: basic.to_if_alone_timeout_milliseconds: 1000
+  ;; This is how long to wait before deciding it's a hold (not a tap)
+  tap-timeout 200
+  
+  ;; Karabiner: basic.to_if_held_down_threshold_milliseconds: 500
+  ;; This is the minimum hold time before activating the hold action
+  hold-timeout 200
+  
+  ;; Karabiner: basic.to_delayed_action_delay_milliseconds: 1000
+  delayed-action-timeout 1000
+)
+
+;; ============================================================================
+;; Source - Define which keys kanata will intercept
+;; ============================================================================
+
+(defsrc
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  caps a    s    d    f    g    h    j    k    l    ;    '    ret
+  lsft z    x    c    v    b    n    m    ,    .    /    rsft
+  lctl lmet lalt           spc            ralt rmet rctl
+)
+
+;; ============================================================================
+;; Aliases - Shortcuts for complex actions
+;; ============================================================================
+
+(defalias
+  ;; ------------------------------------------------------------------------
+  ;; Escape Key - Reset layers and output escape
+  ;; ------------------------------------------------------------------------
+  ;; In Karabiner: escape resets the sublayer variable and outputs escape
+  ;; In Kanata: we just need escape - layer reset happens automatically
+  esc esc
+  
+  ;; ------------------------------------------------------------------------
+  ;; Home Row Mods - Left Hand
+  ;; ------------------------------------------------------------------------
+  ;; a: tap for 'a', hold for left control
+  a (tap-hold $tap-timeout $hold-timeout a lctl)
+  
+  ;; s: tap for 's', hold for left option/alt
+  s (tap-hold $tap-timeout $hold-timeout s lalt)
+  
+  ;; d: tap for 'd', hold for left command
+  d (tap-hold $tap-timeout $hold-timeout d lmet)
+  
+  ;; f: tap for 'f', hold for left shift
+  f (tap-hold $tap-timeout $hold-timeout f lsft)
+  
+  ;; ------------------------------------------------------------------------
+  ;; Home Row Mods - Right Hand
+  ;; ------------------------------------------------------------------------
+  ;; j: tap for 'j', hold for right shift
+  j (tap-hold $tap-timeout $hold-timeout j rsft)
+  
+  ;; k: tap for 'k', hold for right command
+  k (tap-hold $tap-timeout $hold-timeout k rmet)
+  
+  ;; l: tap for 'l', hold for right option/alt
+  l (tap-hold $tap-timeout $hold-timeout l ralt)
+  
+  ;; semicolon: tap for ';', hold for right control
+  ; (tap-hold $tap-timeout $hold-timeout ; rctl)
+  
+  ;; ------------------------------------------------------------------------
+  ;; Hyper Key - Caps Lock
+  ;; ------------------------------------------------------------------------
+  ;; Caps Lock: tap for escape, hold for Hyper (Ctrl+Option+Shift+Command)
+  cap (tap-hold $tap-timeout $hold-timeout esc (multi lctl lalt lsft lmet))
+  
+  ;; ------------------------------------------------------------------------
+  ;; MEH Key - Space
+  ;; ------------------------------------------------------------------------
+  ;; Space: tap for space, hold for Meh (Ctrl+Option+Shift)
+  spc (tap-hold $tap-timeout $hold-timeout spc (multi lctl lalt lsft))
+  
+  ;; ------------------------------------------------------------------------
+  ;; Layer Switchers
+  ;; ------------------------------------------------------------------------
+  ;; Layer switching is "sticky" - layers stay active until you switch to another
+  ;; 
+  ;; Behavior:
+  ;; - In base layer: Left/Right Command switches TO their respective layers
+  ;; - In special layer: Left Command returns to base, Right Command switches to numbers
+  ;; - In numbers layer: Right Command returns to base, Left Command switches to special
+  ;;
+  ;; This creates a toggle-like behavior:
+  ;; - Tap Left Command once → Enter special layer
+  ;; - Tap Left Command again → Return to base layer
+  lmc-to-special (layer-switch special)
+  lmc-to-base (layer-switch base)
+  rmc-to-numbers (layer-switch numbers)
+  rmc-to-base (layer-switch base)
+)
+
+;; ============================================================================
+;; Base Layer - Default layer with home row mods
+;; ============================================================================
+
+(deflayer base
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  @cap @a   @s   @d   @f   g    h    @j   @k   @l   @;   '    ret
+  lsft z    x    c    v    b    n    m    ,    .    /    rsft
+  lctl @lmc-to-special lalt @spc      ralt @rmc-to-numbers rctl
+)
+
+;; Note: Escape key behavior
+;; In Karabiner, escape explicitly resets layer variables. In Kanata, when you
+;; release layer-while-held keys, you automatically return to the base layer.
+;; The escape key just outputs escape - no special layer reset needed.
+
+;; ============================================================================
+;; Special Layer - Symbol mappings (activated by left command)
+;; ============================================================================
+;; Based on Karabiner special layer mappings
+
+(deflayer special
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    q    S-2  S-3  grv  S-'  S-7  S-,  S-.  S--  -    _    _    _
+  @cap S-6  S-5  S-8  S-4  '    \    S-[  S-]  S-\  S-grv _   _
+  _    S--  =    S-grv S-6 S-1  [    S-9  S-0  ]    S-=  _
+  _    @lmc-to-base _        @spc         _    @rmc-to-numbers _
+)
+
+;; ============================================================================
+;; Numbers Layer - Numpad layout (activated by right command)
+;; ============================================================================
+;; Based on Karabiner number layer mappings
+
+(deflayer numbers
+  _    _    _    _    _    ,    _    -    7    8    9    _    _    _
+  _    _    _    _    _    _    _    =    4    5    6    _    _    _
+  @cap _    _    _    _    .    _    +    1    2    3    _    _
+  _    _    _    _    _    _    _    0    _    _    S-g  _
+  _    @lmc-to-special _     @spc         _    @rmc-to-base _
+)
