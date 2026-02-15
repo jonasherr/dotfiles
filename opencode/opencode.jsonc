@@ -176,7 +176,11 @@
       "gh api repos/*/pulls/*/comments": "allow",
       "gh api repos/*/issues/*/comments": "allow",
       // npm — read-only
-      "npm view *": "allow"
+      "npm view *": "allow",
+      // bun — safe operations (last match wins, so deny overrides allow)
+      "bun test *": "allow",
+      "bun test *--update*": "deny",
+      "bun run typecheck *": "allow"
     },
     "edit": "ask",
     "write": "ask"
