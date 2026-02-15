@@ -1,20 +1,15 @@
 # Dotfiles Repository - Agent Guidelines
 
-macOS dotfiles: Neovim, Karabiner, Kitty, Zsh, SketchyBar, and related tools.
+macOS dotfiles: Neovim, Kanata, Kitty, Zsh, SketchyBar, and related tools.
 
 ## Critical Rules
 
-- **Never edit `karabiner.json` directly** - it's generated from TypeScript
-- **Always run `yarn build`** in karabiner/ after modifying `.ts` files
 - **macOS-only** - scripts use `afplay`, `system_profiler`, Homebrew
 - **`$DOTFILES` env var** is set in `~/.env.sh` and used throughout
 
 ## Build & Verify Commands
 
 ```bash
-# Karabiner - MUST run after any .ts changes
-cd karabiner && yarn build
-
 # Lua formatting
 stylua --config-path nvim/.stylua.toml nvim/
 
@@ -29,7 +24,7 @@ bash -n path/to/script.sh
 
 | Directory | Language | Formatter |
 |-----------|----------|-----------|
-| karabiner/ | TypeScript | Prettier (see .prettierrc) |
+| kanata/ | Kanata KBD (S-expressions) | - |
 | opencode/ | TypeScript (Bun) | - | See `opencode/AGENTS.md` |
 | opencode/plugin/ | TypeScript | Prettier |
 | nvim/lua/ | Lua | StyLua (see .stylua.toml) |
@@ -37,27 +32,16 @@ bash -n path/to/script.sh
 | sketchybar/ | Bash | - |
 | kitty/meow/ | Python | PEP 8 |
 
-## Karabiner Patterns
+## Kanata Patterns
 
-Edit files in `karabiner/rules/` or `karabiner/rules/layers/`. Use utils from `karabiner/utils.ts`:
+Edit `kanata/kanata.kbd` directly. Config uses S-expressions (Lisp-like syntax).
 
-```typescript
-// Layer-based key mapping
-import { createLayerConverter } from "../../utils";
-const convert = createLayerConverter(Layers.arrows);
-convert("h", "left_arrow")
+Key concepts:
+- `defsrc` — which physical keys kanata intercepts
+- `defalias` — named shortcuts for complex actions (tap-hold, layer switches)
+- `deflayer` — layer definitions (`base`, `special`, `numbers`)
 
-// Simultaneous key press
-createCombinedKey(["j", "k"], "escape")
-
-// Home row modifications
-homeRowKey([{ key: "f", modifier: "left_shift" }], "left_control")
-```
-
-After creating a new rule file:
-1. Export a `KarabinerRules` object
-2. Import in `karabiner/rules.ts` and add to `rules` array
-3. Run `yarn build`
+Kanata live-reloads on config change. Requires `sudo` on macOS (uses Karabiner driver).
 
 ## Neovim Patterns
 
@@ -73,7 +57,7 @@ Follow existing plugin structure - return a table with lazy.nvim spec.
 Each tool directory has a `links.prop` file:
 ```
 $DOTFILES/nvim=$HOME/.config/nvim
-$DOTFILES/karabiner/karabiner.json=$HOME/.config/karabiner/karabiner.json
+$DOTFILES/kanata=$HOME/.config/kanata
 ```
 
 ## Code Style Quick Reference
@@ -89,4 +73,4 @@ $DOTFILES/karabiner/karabiner.json=$HOME/.config/karabiner/karabiner.json
 ## Commits
 
 Format: `<area>: <description>`
-Examples: `karabiner: add vim layer`, `nvim: configure LSP for Go`
+Examples: `kanata: add vim layer`, `nvim: configure LSP for Go`
