@@ -173,11 +173,11 @@
       "gh release view *": "allow",
       "gh run view *": "allow",
       "gh run list *": "allow",
-       "gh search issues *": "allow",
-       "gh search prs *": "allow",
+       "gh search *": "allow",
        // gh api — read-only endpoints (PR and issue comments)
       "gh api repos/*/pulls/*/comments": "allow",
        "gh api repos/*/issues/*/comments": "allow",
+       "gh api repos/*/contents/*": "allow",
        "gh api /search/*": "allow",
        // npm — read-only
       "npm view *": "allow",
@@ -212,13 +212,20 @@
        "linear-cli labels list *": "allow",
        "linear-cli cycles *": "allow",
        // Misc
+       "curl -s https://vercel.com/atom": "allow",
        "mkdir -p *": "allow",
        "agent-slack --help": "allow",
        "agent-slack * --help": "allow",
        "linear-cli --help": "allow",
        "linear-cli * --help": "allow"
      },
-    "edit": "ask",
-    "write": "ask"
+    "edit": {
+       "*": "ask",
+       "/tmp/*": "allow"
+     },
+    "write": {
+       "*": "ask",
+       "/tmp/*": "allow"
+     }
   }
 }
