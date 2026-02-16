@@ -51,6 +51,10 @@
       "model": "vercel/anthropic/claude-opus-4.6",
       "variant": "max"
     },
+    "deep": {
+      "model": "vercel/anthropic/claude-opus-4.6",
+      "variant": "max"
+    },
     "writing": {
       "model": "vercel/google/gemini-3-flash"
     }
