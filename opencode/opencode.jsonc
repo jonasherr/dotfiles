@@ -173,6 +173,7 @@
       "gh release view *": "allow",
       "gh run view *": "allow",
       "gh run list *": "allow",
+      "gh search issues *": "allow",
       // gh api — read-only endpoints (PR and issue comments)
       "gh api repos/*/pulls/*/comments": "allow",
       "gh api repos/*/issues/*/comments": "allow",
@@ -181,7 +182,9 @@
       // bun — safe operations (last match wins, so deny overrides allow)
       "bun test *": "allow",
       "bun test *--update*": "deny",
-      "bun run typecheck *": "allow"
+      "bun run typecheck *": "allow",
+      // Misc — read-only
+      "date *": "allow"
     },
     "edit": "ask",
     "write": "ask"
