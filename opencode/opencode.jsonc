@@ -196,8 +196,21 @@
        "agent-slack user *": "allow",
        "agent-slack search *": "allow",
        "agent-slack canvas get *": "allow",
-       // linear-cli
-       "linear-cli read *": "allow",
+       // linear-cli — read-only operations
+       "linear-cli issues search *": "allow",
+       "linear-cli issues get *": "allow",
+       "linear-cli issues list *": "allow",
+       "linear-cli issues create *": "ask",
+       "linear-cli issues update *": "ask",
+       "linear-cli projects list *": "allow",
+       "linear-cli projects get *": "allow",
+       "linear-cli teams list": "allow",
+       "linear-cli teams get *": "allow",
+       "linear-cli users *": "allow",
+       "linear-cli comments list *": "allow",
+       "linear-cli comments create *": "ask",
+       "linear-cli labels list *": "allow",
+       "linear-cli cycles *": "allow",
        // Misc
        "mkdir -p *": "allow"
      },
