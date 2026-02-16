@@ -212,7 +212,11 @@
        "linear-cli labels list *": "allow",
        "linear-cli cycles *": "allow",
        // Misc
-       "mkdir -p *": "allow"
+       "mkdir -p *": "allow",
+       "agent-slack --help": "allow",
+       "agent-slack * --help": "allow",
+       "linear-cli --help": "allow",
+       "linear-cli * --help": "allow"
      },
     "edit": "ask",
     "write": "ask"
