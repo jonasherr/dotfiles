@@ -173,19 +173,34 @@
       "gh release view *": "allow",
       "gh run view *": "allow",
       "gh run list *": "allow",
-      "gh search issues *": "allow",
-      // gh api — read-only endpoints (PR and issue comments)
+       "gh search issues *": "allow",
+       "gh search prs *": "allow",
+       // gh api — read-only endpoints (PR and issue comments)
       "gh api repos/*/pulls/*/comments": "allow",
-      "gh api repos/*/issues/*/comments": "allow",
-      // npm — read-only
+       "gh api repos/*/issues/*/comments": "allow",
+       "gh api /search/*": "allow",
+       // npm — read-only
       "npm view *": "allow",
       // bun — safe operations (last match wins, so deny overrides allow)
       "bun test *": "allow",
       "bun test *--update*": "deny",
       "bun run typecheck *": "allow",
-      // Misc — read-only
-      "date *": "allow"
-    },
+       // Misc — read-only
+       "date *": "allow",
+       // agent-slack — read-only operations
+       "agent-slack auth *": "allow",
+       "agent-slack message get *": "allow",
+       "agent-slack message list *": "allow",
+       "agent-slack message send *": "ask",
+       "agent-slack message react *": "ask",
+       "agent-slack user *": "allow",
+       "agent-slack search *": "allow",
+       "agent-slack canvas get *": "allow",
+       // linear-cli
+       "linear-cli read *": "allow",
+       // Misc
+       "mkdir -p *": "allow"
+     },
     "edit": "ask",
     "write": "ask"
   }
