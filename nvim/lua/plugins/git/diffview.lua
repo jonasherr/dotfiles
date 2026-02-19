@@ -35,7 +35,8 @@ return {
     {
       '<leader>gf',
       function()
-        toggle_diffview 'DiffviewFileHistory %'
+        local path = vim.fn.expand '%:p'
+        toggle_diffview('DiffviewFileHistory ' .. vim.fn.fnameescape(path))
       end,
       desc = 'Open diffs for current File',
     },
