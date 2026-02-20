@@ -77,7 +77,7 @@ export default function Command() {
         <List.EmptyView
           title="No Sessions Found"
           description="Add .kitty-session files to ~/.config/kitty/sessions/"
-          icon={Icon.Cat}
+          icon={Icon.Terminal}
         />
       ) : (
         sessions.map((session) => (
