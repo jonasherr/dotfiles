@@ -3,7 +3,6 @@ return {
   'HakonHarnes/img-clip.nvim',
   event = 'VeryLazy',
   opts = {
-    -- recommended settings
     default = {
       embed_image_as_base64 = false,
       prompt_for_file_name = false,
@@ -13,7 +12,6 @@ return {
       dir_path = (os.getenv 'NOTES' or vim.fn.expand '~') .. '/attachments',
       use_absolute_path = false,
       relative_to_current_file = false,
-      only_render_image_at_cursor = true,
     },
   },
   keys = {
