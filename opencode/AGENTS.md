@@ -90,6 +90,16 @@ Agent orchestration config defining:
 - Model assignments per agent/category
 - Git-master and other skill settings
 
+### Available Models
+
+To check which models are available on the Vercel AI Gateway:
+
+```
+GET https://ai-gateway.vercel.sh/v1/models
+```
+
+Use this endpoint to verify model IDs before adding them to `oh-my-opencode.json` or `opencode.jsonc`. Model IDs follow the format `vercel/<provider>/<model>` in config (e.g., `vercel/openai/gpt-5.2-codex`).
+
 ## Testing (oh-my-opencode submodule only)
 
 - **Framework**: Bun native test runner
