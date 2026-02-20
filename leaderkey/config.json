@@ -34,14 +34,21 @@
 					"iconPath": "note.text.badge.plus",
 					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/new-note"
 				},
-				{
-					"key": "n",
-					"label": "Search Notes",
-					"type": "url",
-					"iconPath": "magnifyingglass",
-					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
-				}
-			]
+			{
+				"key": "n",
+				"label": "Search Notes",
+				"type": "url",
+				"iconPath": "magnifyingglass",
+				"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
+			},
+			{
+				"key": "k",
+				"label": "Kitty Sessions",
+				"type": "url",
+				"iconPath": "terminal",
+				"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
+			}
+		]
 		},
 	{
 		"key": "w",
