@@ -91,7 +91,7 @@ export default function Command() {
                 ?.replace("cd ", "") || ""
             }
             icon={Icon.Terminal}
-            accessories={[{ tag: { value: ".kitty-session" } }]}
+            accessories={[]}
             actions={
               <ActionPanel>
                 <Action
