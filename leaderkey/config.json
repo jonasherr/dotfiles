@@ -402,7 +402,7 @@
 					"value": "$DOTFILES/leaderkey/scripts/invoke-latest-notification.sh"
 				}
 			]
-		}
+		},
 		{
 			"key": "x",
 			"label": "Reload",
