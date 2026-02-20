@@ -1,6 +1,6 @@
-import { Action, ActionPanel, Icon, List, showToast, Toast, closeMainWindow } from "@raycast/api";
+import { Action, ActionPanel, Alert, Icon, List, confirmAlert, showToast, Toast, closeMainWindow } from "@raycast/api";
 import { execSync } from "child_process";
-import { readdirSync, readFileSync } from "fs";
+import { readdirSync, readFileSync, unlinkSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 import { useState, useEffect } from "react";
@@ -101,6 +101,29 @@ export default function Command() {
                 />
                 <Action.ShowInFinder title="Show Session File" path={session.path} />
                 <Action.CopyToClipboard title="Copy Session Path" content={session.path} />
+                <Action
+                  title="Delete Session"
+                  icon={Icon.Trash}
+                  style={Action.Style.Destructive}
+                  shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                  onAction={async () => {
+                    if (
+                      await confirmAlert({
+                        title: `Delete "${session.name}"?`,
+                        message: `This will remove ${basename(session.path)}`,
+                        primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+                      })
+                    ) {
+                      try {
+                        unlinkSync(session.path);
+                        setSessions((prev) => prev.filter((s) => s.name !== session.name));
+                        showToast({ style: Toast.Style.Success, title: "Deleted", message: session.name });
+                      } catch (error) {
+                        showToast({ style: Toast.Style.Failure, title: "Failed to delete", message: String(error) });
+                      }
+                    }
+                  }}
+                />
               </ActionPanel>
             }
           />
