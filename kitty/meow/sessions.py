@@ -83,6 +83,41 @@ def main(args: List[str]) -> str:
 
     all_binds = f"{delete_bind},{binds}"
 
+    # -- Vim-style normal/insert mode simulation --
+    # INSERT mode (default): type to search, Esc enters NORMAL mode.
+    # NORMAL mode: single-key actions (d/a/f/p/r), i returns to INSERT.
+    # ctrl-key binds work in BOTH modes.
+
+    # Normal-mode single-key action binds
+    normal_d = (
+        f"d:execute-silent(rm -f {{-1}})+reload({sessions_reload})"
+    )
+    normal_a = (
+        f"a:change-prompt(\U0001f408 active > )+reload({active_reload})"
+    )
+    normal_f = (
+        f"f:change-prompt(\U0001f408 dirs > )+reload({dirs_reload})"
+    )
+    normal_p = "p:toggle-preview"
+    normal_r = (
+        f"r:change-prompt(\U0001f408 sessions > )+reload({sessions_reload})"
+    )
+    # i: return to insert mode — restore prompt, rebind esc, unbind normal keys
+    normal_i = (
+        "i:change-prompt(\U0001f408 sessions > )"
+        "+rebind(esc)"
+        "+unbind(d,a,f,p,r,i)"
+    )
+
+    # Esc: enter normal mode — change prompt, rebind normal keys, unbind esc
+    enter_normal = (
+        "esc:change-prompt(\U0001f408 NORMAL > )"
+        "+rebind(d,a,f,p,r,i)"
+        "+unbind(esc)"
+    )
+
+    vim_header = "esc: normal mode | d/a/f/p/r | i: insert"
+
     fzf_args = [
         fzf,
         "--no-multi",
@@ -91,8 +126,11 @@ def main(args: List[str]) -> str:
         "--preview=cat {-1}",
         "--preview-window=right:50%:wrap",
         "--prompt=\U0001f408 sessions > ",
-        f"--header=ctrl-d: delete | {header}",
+        f"--header=ctrl-d: delete | {header} | {vim_header}",
         f"--bind={all_binds}",
+        f"--bind={enter_normal}",
+        f"--bind={normal_d},{normal_a},{normal_f},{normal_p},{normal_r},{normal_i}",
+        "--bind=d:ignore,a:ignore,f:ignore,p:ignore,r:ignore,i:ignore",
     ]
 
     p = subprocess.Popen(fzf_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)

@@ -1,0 +1,34 @@
+Task 8: Vim-style normal/insert modes in session picker
+========================================================
+
+Date: 2026-02-20
+
+## Changes Made
+File: meow/sessions.py
+
+Added vim-style normal/insert mode simulation to the fzf picker:
+- INSERT mode (default): standard search, Esc enters NORMAL mode
+- NORMAL mode: single-key actions (d/a/f/p/r), i returns to INSERT
+- Prompt changes to reflect mode: "sessions >" vs "NORMAL >"
+
+## Normal Mode Keys
+- d: delete session (same as ctrl-d)
+- a: filter active sessions (same as ctrl-a)
+- f: browse directories (same as ctrl-f)
+- p: toggle preview pane
+- r: refresh/reload sessions (same as ctrl-r)
+- i: return to insert mode
+
+## Implementation Details
+- Uses fzf rebind/unbind mechanism for mode switching
+- Normal-mode keys start as `ignore` (unbound in insert mode)
+- Esc triggers rebind(d,a,f,p,r,i) + unbind(esc)
+- i triggers rebind(esc) + unbind(d,a,f,p,r,i)
+- ctrl-key binds remain active in BOTH modes
+
+## Verification
+- python3 -m py_compile meow/sessions.py: PASS
+- grep -c "NORMAL" meow/sessions.py: 3 (PASS, >= 1)
+- grep "esc.*change-prompt" meow/sessions.py: MATCH (PASS)
+- grep "'" meow/sessions.py: NO OUTPUT (PASS, no single quotes)
+- Core ctrl-key binds unchanged: ctrl-d, ctrl-a, ctrl-f, ctrl-r still present
