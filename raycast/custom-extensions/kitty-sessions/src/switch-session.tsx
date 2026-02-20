@@ -1,6 +1,6 @@
-import { Action, ActionPanel, Alert, Icon, List, confirmAlert, showToast, Toast, closeMainWindow } from "@raycast/api";
+import { Action, ActionPanel, Alert, Form, Icon, List, confirmAlert, showToast, Toast, closeMainWindow, useNavigation } from "@raycast/api";
 import { execSync } from "child_process";
-import { existsSync, readdirSync, readFileSync, statSync, unlinkSync, writeFileSync } from "fs";
+import { existsSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 import { useState, useEffect } from "react";
@@ -110,7 +110,35 @@ function switchToSession(sessionPath: string, onSuccess?: () => void) {
   }
 }
 
+function normalizeSessionName(name: string): string {
+  return name.trim().replace(/\s+/g, "-");
+}
+
+function renameSession(session: Session, newName: string): boolean {
+  const nextName = normalizeSessionName(newName);
+  if (!nextName) {
+    showToast({ style: Toast.Style.Failure, title: "Name required" });
+    return false;
+  }
+  if (nextName === session.name) {
+    return true;
+  }
+  const nextPath = join(SESSIONS_DIR, `${nextName}.kitty-session`);
+  if (existsSync(nextPath)) {
+    showToast({ style: Toast.Style.Failure, title: "Session already exists" });
+    return false;
+  }
+  try {
+    renameSync(session.path, nextPath);
+    return true;
+  } catch (error) {
+    showToast({ style: Toast.Style.Failure, title: "Failed to rename", message: String(error) });
+    return false;
+  }
+}
+
 function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>> }) {
+  const { push } = useNavigation();
   return (
     <>
       {sessions.length === 0 ? (
@@ -127,6 +155,12 @@ function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessi
                 <Action title="Switch to Session" icon={Icon.ArrowRight} onAction={() => switchToSession(session.path)} />
                 <Action.ShowInFinder title="Show Session File" path={session.path} />
                 <Action.CopyToClipboard title="Copy Session Path" content={session.path} />
+                <Action
+                  title="Rename Session"
+                  icon={Icon.Pencil}
+                  shortcut={{ modifiers: ["ctrl"], key: "r" }}
+                  onAction={() => push(<RenameSessionForm session={session} setSessions={setSessions} />)}
+                />
                 <Action
                   title="Delete Session"
                   icon={Icon.Trash}
@@ -156,6 +190,30 @@ function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessi
         ))
       )}
     </>
+  );
+}
+
+function RenameSessionForm({ session, setSessions }: { session: Session; setSessions: React.Dispatch<React.SetStateAction<Session[]>> }) {
+  const { pop } = useNavigation();
+  return (
+    <Form
+      navigationTitle={`Rename ${session.name}`}
+      actions={
+        <ActionPanel>
+          <Action.SubmitForm
+            title="Rename"
+            onSubmit={(values: { name: string }) => {
+              if (renameSession(session, values.name)) {
+                setSessions(getSessionFiles());
+                pop();
+              }
+            }}
+          />
+        </ActionPanel>
+      }
+    >
+      <Form.TextField id="name" defaultValue={session.name} />
+    </Form>
   );
 }
 
