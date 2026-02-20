@@ -403,6 +403,49 @@
 				}
 			]
 		}
+		{
+			"key": "x",
+			"label": "Reload",
+			"type": "group",
+			"iconPath": "arrow.clockwise",
+			"actions": [
+				{
+					"key": "l",
+					"label": "LeaderKey",
+					"type": "url",
+					"iconPath": "keyboard",
+					"value": "leaderkey://config-reload"
+				},
+				{
+					"key": "a",
+					"label": "Aerospace",
+					"type": "command",
+					"iconPath": "rectangle.3.group",
+					"value": "aerospace reload-config"
+				},
+				{
+					"key": "s",
+					"label": "SketchyBar",
+					"type": "command",
+					"iconPath": "menubar.rectangle",
+					"value": "sketchybar --reload"
+				},
+				{
+					"key": "m",
+					"label": "Mouseless",
+					"type": "command",
+					"iconPath": "computermouse",
+					"value": "$DOTFILES/leaderkey/scripts/reload-mouseless.sh"
+				},
+				{
+					"key": "k",
+					"label": "Kitty",
+					"type": "command",
+					"iconPath": "terminal",
+					"value": "$DOTFILES/leaderkey/scripts/reload-kitty.sh"
+				}
+			]
+		}
 	],
 	"type": "group"
 }
