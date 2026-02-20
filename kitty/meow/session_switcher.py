@@ -1,21 +1,10 @@
-"""
-Custom kitten: Alt+Tab-style session switcher with live terminal text preview.
-
-Opens a curses TUI overlay with:
-- Left column: session list with markers (▶ highlighted, * current)
-- Right column: live terminal text preview of highlighted session
-- Tab/↓: next, Shift+Tab/↑: prev, Enter: switch, Esc/q: cancel
-
-Sessions are discovered by scanning ~/.config/kitty/sessions/*.kitty-session
-and checking which are currently loaded via kitty @ ls --match "session:<name>".
-"""
-
 import curses
 import json
 import os
 import subprocess
 import sys
 from typing import Dict, List, Optional, Tuple
+
 
 
 def get_session_files() -> List[Tuple[str, str]]:
@@ -70,7 +59,7 @@ def get_loaded_sessions(
                     "tab_ids": tab_ids,
                     "active_window_id": active_window_id,
                 })
-        except Exception as e:
+        except Exception:
             # Session not loaded or parse error — skip
             continue
     return loaded
@@ -113,7 +102,7 @@ def find_current_session(
         for session in loaded_sessions:
             if self_tab_id in session["tab_ids"]:
                 return session["name"]
-    except Exception as e:
+    except Exception:
         pass
     return None
 
@@ -169,7 +158,7 @@ def get_mru_order(
             ]
 
         return ordered
-    except Exception as e:
+    except Exception:
         return loaded_sessions
 
 
@@ -196,8 +185,85 @@ def fetch_preview(window_id: Optional[int]) -> str:
         if not text.strip():
             return "(empty screen)"
         return text
-    except Exception as e:
+    except Exception:
         return "(preview unavailable)"
+
+
+def sanitize_session_name(value: str) -> str:
+    normalized = value.strip().replace(" ", "-")
+    while "--" in normalized:
+        normalized = normalized.replace("--", "-")
+    return normalized
+
+
+def load_sessions_state() -> Tuple[List[Dict], Optional[str]]:
+    session_files = get_session_files()
+    if not session_files:
+        return [], None
+    loaded_sessions = get_loaded_sessions(session_files)
+    if not loaded_sessions:
+        return [], None
+    current_session = find_current_session(loaded_sessions)
+    sessions = get_mru_order(loaded_sessions, current_session)
+    return sessions, current_session
+
+
+def prompt_confirm(stdscr: "curses.window", message: str) -> bool:
+    max_y, max_x = stdscr.getmaxyx()
+    prompt = f"{message} [y/N]"
+    try:
+        stdscr.addstr(max_y - 1, 0, " " * (max_x - 1), curses.A_REVERSE)
+        stdscr.addstr(max_y - 1, 0, prompt[: max_x - 1], curses.A_REVERSE)
+        stdscr.refresh()
+    except curses.error:
+        pass
+
+    while True:
+        key = stdscr.getch()
+        if key in (ord("y"), ord("Y")):
+            return True
+        if key in (ord("n"), ord("N"), 27, ord("q")):
+            return False
+
+
+def prompt_input(stdscr: "curses.window", message: str) -> str:
+    max_y, max_x = stdscr.getmaxyx()
+    curses.curs_set(1)
+    curses.echo()
+    try:
+        stdscr.addstr(max_y - 1, 0, " " * (max_x - 1), curses.A_REVERSE)
+        stdscr.addstr(max_y - 1, 0, message[: max_x - 1], curses.A_REVERSE)
+        stdscr.refresh()
+        value = stdscr.getstr(max_y - 1, len(message), max_x - len(message) - 1)
+    except curses.error:
+        value = b""
+    finally:
+        curses.noecho()
+        curses.curs_set(0)
+
+    try:
+        return value.decode().strip()
+    except Exception:
+        return ""
+
+
+def close_session_tabs(session_name: str) -> None:
+    subprocess.run(
+        ["kitty", "@", "close-tab", "--match", f"session:{session_name}"],
+        capture_output=True,
+        text=True,
+    )
+
+
+def show_message(stdscr: "curses.window", message: str) -> None:
+    max_y, max_x = stdscr.getmaxyx()
+    try:
+        stdscr.addstr(max_y - 1, 0, " " * (max_x - 1), curses.A_REVERSE)
+        stdscr.addstr(max_y - 1, 0, message[: max_x - 1], curses.A_REVERSE)
+        stdscr.refresh()
+    except curses.error:
+        pass
+    stdscr.getch()
 
 
 def draw_ui(
@@ -282,7 +348,7 @@ def draw_ui(
             pass
 
     # Footer
-    footer = " Tab/↓: next  Shift+Tab/↑: prev  Enter: switch  Esc/q: cancel"
+    footer = " Tab/↓: next  Shift+Tab/↑: prev  Enter: switch  d: delete  r: rename  Esc/q: cancel"
     try:
         stdscr.addstr(
             max_y - 1, 0,
@@ -312,9 +378,13 @@ def run_switcher(
     # Pre-highlight index 0 which is the previous session (MRU order)
     selected_idx = 0
     preview_cache: Dict[str, str] = {}
-    last_previewed: Optional[str] = None
 
     while True:
+        if not sessions:
+            return ""
+
+        selected_idx = min(selected_idx, len(sessions) - 1)
+
         # Fetch preview for highlighted session (lazy, cached)
         highlighted = sessions[selected_idx]
         highlighted_name = highlighted["name"]
@@ -339,32 +409,80 @@ def run_switcher(
         elif key in (curses.KEY_BTAB, 353, curses.KEY_UP):
             # Shift+Tab or Up arrow — previous
             selected_idx = (selected_idx - 1) % len(sessions)
+        elif key in (ord("d"), ord("D")):
+            name = highlighted["name"]
+            if not prompt_confirm(
+                stdscr, f"Delete '{name}'? This will close the session"
+            ):
+                continue
+            close_session_tabs(name)
+            try:
+                if os.path.exists(highlighted["path"]):
+                    os.remove(highlighted["path"])
+            except Exception as exc:
+                show_message(stdscr, f"Delete failed: {exc}")
+                continue
+            sessions, current_session = load_sessions_state()
+            preview_cache = {}
+            if not sessions:
+                return ""
+            if len(sessions) <= 1:
+                show_message(stdscr, "Only one session open")
+                return ""
+            selected_idx = 0
+        elif key in (ord("r"), ord("R")):
+            name = highlighted["name"]
+            if not prompt_confirm(
+                stdscr, f"Rename '{name}'? This will close and reload"
+            ):
+                continue
+            new_name = sanitize_session_name(prompt_input(stdscr, "Rename to: "))
+            if not new_name:
+                show_message(stdscr, "Rename cancelled")
+                continue
+            if new_name == name:
+                continue
+            new_path = os.path.join(
+                os.path.dirname(highlighted["path"]),
+                f"{new_name}.kitty-session",
+            )
+            if os.path.exists(new_path):
+                show_message(stdscr, "Session name already exists")
+                continue
+            close_session_tabs(name)
+            try:
+                os.rename(highlighted["path"], new_path)
+            except Exception as exc:
+                show_message(stdscr, f"Rename failed: {exc}")
+                continue
+            subprocess.run(
+                ["kitty", "@", "action", "goto_session", new_path],
+                capture_output=True,
+                text=True,
+            )
+            sessions, current_session = load_sessions_state()
+            preview_cache = {}
+            if not sessions:
+                return ""
+            if len(sessions) <= 1:
+                show_message(stdscr, "Only one session open")
+                return ""
+            selected_idx = 0
 
 
 def main(args: List[str]) -> str:
     """
     Kitten entry point. Discovers sessions, shows TUI, returns selection.
     """
-    # Discover session files
-    session_files = get_session_files()
-    if not session_files:
+    sessions, current_session = load_sessions_state()
+    if not sessions:
         return ""
-
-    # Check which are loaded
-    loaded_sessions = get_loaded_sessions(session_files)
-    if not loaded_sessions:
-        return ""
-
-    # Find current session
-    current_session = find_current_session(loaded_sessions)
-
-    # Single session edge case
-    if len(loaded_sessions) <= 1:
+    if len(sessions) <= 1:
         print("Only one session open", file=sys.stderr)
         return ""
 
-    # Order by MRU
-    sessions = get_mru_order(loaded_sessions, current_session)
+    if "--previous" in args:
+        return sessions[0]["name"]
 
     # Run curses TUI
     result = curses.wrapper(run_switcher, sessions, current_session)
@@ -372,7 +490,7 @@ def main(args: List[str]) -> str:
 
 
 def handle_result(
-    args: List[str], answer: str, target_window_id: int, boss: "Boss"
+    args: List[str], answer: str, target_window_id: int, boss
 ) -> None:
     """
     Handle the selected session. Switch to it and reset tab colors.
