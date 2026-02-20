@@ -34,14 +34,14 @@
   },
   "categories": {
     "visual-engineering": {
-      "model": "vercel/google/gemini-3-pro"
+      "model": "vercel/google/gemini-3.1-pro-preview"
     },
     "ultrabrain": {
       "model": "vercel/openai/gpt-5.2-codex",
       "variant": "xhigh"
     },
     "artistry": {
-      "model": "vercel/google/gemini-3-pro",
+      "model": "vercel/google/gemini-3.1-pro-preview",
       "variant": "max"
     },
     "quick": {
