@@ -13,7 +13,7 @@ import meow
 
 SESSIONS_DIR = Path(os.path.expanduser("~/.config/kitty/sessions"))
 HISTORY_PATH = Path(os.path.expanduser("~/.config/kitty/meow/history"))
-_HELPER = os.path.join(os.path.dirname(__file__), "_sessions_list.py")
+_HELPER = os.path.expanduser("~/.config/kitty/meow/_sessions_list.py")
 
 
 def get_session_files() -> List[Path]:
