@@ -3,43 +3,44 @@
 # Required parameters:
 # @raycast.schemaVersion 1
 # @raycast.title Switch Kitty Session
-# @raycast.mode silent
+# @raycast.mode compact
 # @raycast.packageName Kitty
+# @raycast.argument1 { "type": "text", "placeholder": "session name (e.g. dotfiles, notes)" }
 
 # Optional parameters:
 # @raycast.icon 🐈
-# @raycast.description Switch between kitty terminal sessions using fzf
+# @raycast.description Switch to a kitty session by name. Available: dotfiles, notes, or any .kitty-session filename.
 
 set -euo pipefail
+
+session_name="$1"
 
 # Find the kitty socket
 sock="$(ls /tmp/mykitty-* 2>/dev/null | head -n1)"
 if [ -z "$sock" ]; then
-  echo "Kitty is not running (no socket found at /tmp/mykitty-*)"
+  echo "Kitty is not running"
   exit 1
 fi
 
 SESSIONS_DIR="$HOME/.config/kitty/sessions"
+session_file="$SESSIONS_DIR/${session_name}.kitty-session"
 
-# List session files, excluding template
-sessions=$(find "$SESSIONS_DIR" -name "*.kitty-session" ! -name "template.kitty-session" 2>/dev/null | sort)
-
-if [ -z "$sessions" ]; then
-  echo "No session files found in $SESSIONS_DIR"
-  exit 1
+if [ ! -f "$session_file" ]; then
+  # Try fuzzy match — find session files containing the argument
+  match=$(find "$SESSIONS_DIR" -name "*${session_name}*.kitty-session" ! -name "template.kitty-session" 2>/dev/null | head -n1)
+  if [ -n "$match" ]; then
+    session_file="$match"
+  else
+    echo "No session matching: $session_name"
+    exit 1
+  fi
 fi
 
-# Use fzf to pick a session (show just the filename stem for readability)
-selected=$(echo "$sessions" | xargs -I{} basename {} .kitty-session | fzf --prompt="🐈 session > " --reverse --height=40%)
-
-if [ -z "$selected" ]; then
-  exit 0
-fi
-
-session_file="$SESSIONS_DIR/${selected}.kitty-session"
-
-# Switch to the selected session via kitty remote control
+# Switch to the session via kitty remote control
 /Applications/kitty.app/Contents/MacOS/kitten @ --to "unix:${sock}" action goto_session "$session_file"
 
 # Bring kitty to the foreground
 osascript -e 'tell application "kitty" to activate'
+
+session_basename=$(basename "$session_file" .kitty-session)
+echo "Switched to: $session_basename"
