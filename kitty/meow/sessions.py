@@ -135,16 +135,24 @@ def handle_result(
     if path.endswith(".kitty-session"):
         boss.call_remote_control(None, ("action", "goto_session", path))
     else:
-        # Directory selected (from ctrl-f) — open a new tab
+        # Directory selected (from ctrl-f) — auto-create a session from template
+        dir_name = os.path.basename(path.rstrip("/"))
+        session_file = SESSIONS_DIR / f"{dir_name}.kitty-session"
+
+        if not session_file.exists():
+            # Read template and substitute directory
+            template_path = SESSIONS_DIR / "template.kitty-session"
+            if template_path.exists():
+                template_content = template_path.read_text()
+                session_content = template_content.replace("{directory}", path)
+                session_file.write_text(session_content)
+            else:
+                # Fallback: create minimal session inline
+                session_file.write_text(
+                    f"layout horizontal\ncd {path}\nlaunch opencode\nlaunch\n"
+                )
+
+        # Switch to the session (newly created or existing)
         boss.call_remote_control(
-            None,
-            (
-                "launch",
-                "--type",
-                "tab",
-                "--tab-title",
-                os.path.basename(path),
-                "--cwd",
-                path,
-            ),
+            None, ("action", "goto_session", str(session_file))
         )
