@@ -1,0 +1,4 @@
+layout horizontal
+cd ~/Projects/dotfiles
+launch opencode
+launch
