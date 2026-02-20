@@ -167,6 +167,7 @@ def handle_result(
         name = os.path.basename(path)
 
     # Write to history for kill.py compatibility
+    HISTORY_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(HISTORY_PATH, "a") as f:
         f.write(f"{name} {datetime.now().isoformat()}\n")
 
