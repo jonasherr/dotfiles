@@ -178,6 +178,14 @@ return {
 
     ui = {
       enable = false,
+      checkboxes = {
+        [' '] = { order = 1, char = '󰄱', hl_group = 'ObsidianTodo' },
+        ['x'] = { order = 2, char = '', hl_group = 'ObsidianDone' },
+      },
+    },
+
+    checkbox = {
+      order = { ' ', 'x' },
     },
 
     -- Optional, by default when you use `:ObsidianFollowLink` on a link to an external
