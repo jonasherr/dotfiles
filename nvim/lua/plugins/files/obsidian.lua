@@ -1,8 +1,90 @@
+-- Creates the weekly note for the current week under projects/planning/weekly/YYYY/KW NN.md.
+-- Only embeds daily notes that actually exist on disk.
+local function create_weekly_note()
+  local vault = vim.fn.expand '$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes'
+  local t = os.time()
+  local wday = tonumber(os.date('%w', t)) -- 0=Sun, 1=Mon … 6=Sat
+
+  -- Anchor on yesterday: the weekly note always reviews the week that just finished,
+  -- which includes yesterday regardless of what day of the week today is.
+  local yesterday = t - 86400
+  local ywday = tonumber(os.date('%w', yesterday)) -- 0=Sun, 1=Mon … 6=Sat
+
+  -- Find the Monday of the week containing yesterday.
+  local days_since_monday = ywday == 0 and 6 or (ywday - 1)
+  local last_monday = yesterday - days_since_monday * 86400
+
+  -- ISO calendar week and year of that Monday.
+  local kw   = tonumber(os.date('%V', last_monday))
+  local year = tonumber(os.date('%G', last_monday)) -- ISO week-year (differs from %Y near Jan 1)
+
+  -- Build list of embeds for daily notes that exist.
+  local review_lines = {}
+  for offset = 0, 6 do
+    local day = last_monday + offset * 86400
+    local rel = string.format('projects/planning/daily/%s/%s/%s.md',
+      os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
+    local abs = vault .. '/' .. rel
+    if vim.fn.filereadable(abs) == 1 then
+      review_lines[#review_lines + 1] = string.format('![[%s/%s/%s]]',
+        os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
+    end
+  end
+  if #review_lines == 0 then
+    review_lines[1] = '*(no daily notes found for this week)*'
+  end
+
+  -- Target path: projects/planning/weekly/YYYY/KW NN.md
+  local dir  = string.format('%s/projects/planning/weekly/%d', vault, year)
+  local path = string.format('%s/KW %02d.md', dir, kw)
+
+  if vim.fn.filereadable(path) == 1 then
+    vim.cmd('edit ' .. vim.fn.fnameescape(path))
+    return
+  end
+
+  vim.fn.mkdir(dir, 'p')
+
+  local lines = {
+    '---',
+    string.format('id: %d-kw-%02d', year, kw),
+    'aliases:',
+    string.format('  - %d-kw-%02d', year, kw),
+    'tags:',
+    '  - weekly-planning',
+    string.format('  - "%02d"', tonumber(os.date('%m', last_monday))),
+    string.format('  - "%d"', year),
+    string.format('  - kw-%02d', kw),
+    '---',
+    '',
+    '## Weekly Planning',
+    '',
+    '- [ ] Scanned all documents and tagged them in Paperless',
+    '- [ ] Did weekly budgeting',
+    '- [ ] Planned private activities for the week',
+    '',
+    '## Week in Review',
+    '',
+  }
+  for _, l in ipairs(review_lines) do
+    lines[#lines + 1] = l
+  end
+  vim.list_extend(lines, { '', '## Week in Advance', '', '' })
+
+  -- Write and open the file.
+  vim.fn.writefile(lines, path)
+  vim.cmd('edit ' .. vim.fn.fnameescape(path))
+end
+
 return {
   'obsidian-nvim/obsidian.nvim',
   version = '*', -- recommended, use latest release instead of latest commit
   lazy = true,
   ft = 'markdown',
+  config = function(_, opts)
+    require('obsidian').setup(opts)
+    vim.api.nvim_create_user_command('WeeklyNote', create_weekly_note, { desc = 'Open or create this week\'s weekly note' })
+  end,
   -- Replace the above line with this if you only want to load obsidian.nvim for markdown files in your vault:
   -- event = {
   --   -- If you want to use the home shortcut '~' here you need to call 'vim.fn.expand'.

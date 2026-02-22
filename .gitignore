@@ -9,3 +9,4 @@ bin/format-transactions.js
 node_modules
 /karabiner/automatic_backups/
 raycast/ai/providers.yaml
+raycast/extensions/
