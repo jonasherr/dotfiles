@@ -1,21 +1,34 @@
 ;; Kanata configuration
-;; Migrated from Karabiner-Elements TypeScript configuration
 ;;
-;; This configuration mirrors the behavior from the original Karabiner setup:
+;; Designed for a 40-key mindset (3×10 grid + 3 thumb keys)
+;; but intercepts full MacBook keyboard so all physical keys still work.
+;;
+;; Features:
 ;; - Home row mods (a/s/d/f and j/k/l/;)
-;; - Hyper key (Caps Lock)
-;; - MEH key (Space)
-;; - Layer system (special and numbers layers)
+;; - System layer (g hold) — media, brightness, tabs, live reload
+;; - Hyper key (Caps Lock tap=Esc, hold=Hyper)
+;; - MEH key (Space tap=Space, hold=Meh)
+;; - Symbol layer (left command hold) — numbers on home row, symbols on top
+;; - Numbers layer (right command hold) — numpad on right hand
+;; - Navigation layer (e hold) — arrows, word-jump, selection, delete
+;;
+;; 40-key layout reference (keys you should use):
+;;
+;;   q  w  e  r  t    y  u  i  o  p
+;;   a  s  d  f  g    h  j  k  l  ;
+;;   z  x  c  v  b    n  m  ,  .  /
+;;         lmet spc rmet
+;;
+;; Plus: caps(hyper), lsft, rsft, bspc, ret, tab
 
 ;; ============================================================================
 ;; Configuration
 ;; ============================================================================
 
 (defcfg
-  ;; macOS specific: Kanata requires Karabiner driver to be installed
-  ;; Process unmapped keys to ensure all keys work correctly with layers
   process-unmapped-keys yes
-  
+  concurrent-tap-hold yes
+
   ;; Only apply to MacBook internal keyboard, not external keyboards
   macos-dev-names-include (
     "Apple Internal Keyboard / Trackpad"
@@ -23,28 +36,19 @@
 )
 
 ;; ============================================================================
-;; Variables - Timeout values matching Karabiner configuration
+;; Variables
 ;; ============================================================================
 
 (defvar
-  ;; Karabiner: basic.simultaneous_threshold_milliseconds: 50
-  simultaneous-threshold 50
-  
-  ;; Karabiner: basic.to_if_alone_timeout_milliseconds: 1000
-  ;; This is how long to wait before deciding it's a hold (not a tap)
   tap-timeout 200
-  
-  ;; Karabiner: basic.to_if_held_down_threshold_milliseconds: 500
-  ;; This is the minimum hold time before activating the hold action
   hold-timeout 200
-  
-  ;; Karabiner: basic.to_delayed_action_delay_milliseconds: 1000
-  delayed-action-timeout 1000
 )
 
 ;; ============================================================================
 ;; Source - Define which keys kanata will intercept
 ;; ============================================================================
+;; We intercept the full MacBook keyboard so unmapped keys still work.
+;; Layer design only uses the 40-key zone.
 
 (defsrc
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
@@ -55,117 +59,123 @@
 )
 
 ;; ============================================================================
-;; Aliases - Shortcuts for complex actions
+;; Aliases
 ;; ============================================================================
 
 (defalias
-  ;; ------------------------------------------------------------------------
-  ;; Escape Key - Reset layers and output escape
-  ;; ------------------------------------------------------------------------
-  ;; In Karabiner: escape resets the sublayer variable and outputs escape
-  ;; In Kanata: we just need escape - layer reset happens automatically
-  esc esc
-  
-  ;; ------------------------------------------------------------------------
   ;; Home Row Mods - Left Hand
-  ;; ------------------------------------------------------------------------
-  ;; a: tap for 'a', hold for left control
   a (tap-hold $tap-timeout $hold-timeout a lctl)
-  
-  ;; s: tap for 's', hold for left option/alt
   s (tap-hold $tap-timeout $hold-timeout s lalt)
-  
-  ;; d: tap for 'd', hold for left command
   d (tap-hold $tap-timeout $hold-timeout d lmet)
-  
-  ;; f: tap for 'f', hold for left shift
   f (tap-hold $tap-timeout $hold-timeout f lsft)
-  
-  ;; ------------------------------------------------------------------------
+
+  ;; e: tap for 'e', hold for navigation layer
+  e (tap-hold $tap-timeout $hold-timeout e (layer-toggle nav))
+
+  ;; g: tap for 'g', hold for system layer
+  g (tap-hold $tap-timeout $hold-timeout g (layer-toggle system))
+
   ;; Home Row Mods - Right Hand
-  ;; ------------------------------------------------------------------------
-  ;; j: tap for 'j', hold for right shift
   j (tap-hold $tap-timeout $hold-timeout j rsft)
-  
-  ;; k: tap for 'k', hold for right command
   k (tap-hold $tap-timeout $hold-timeout k rmet)
-  
-  ;; l: tap for 'l', hold for right option/alt
   l (tap-hold $tap-timeout $hold-timeout l ralt)
-  
-  ;; semicolon: tap for ';', hold for right control
   ; (tap-hold $tap-timeout $hold-timeout ; rctl)
-  
-  ;; ------------------------------------------------------------------------
-  ;; Hyper Key - Caps Lock
-  ;; ------------------------------------------------------------------------
-  ;; Caps Lock: tap for escape, hold for Hyper (Ctrl+Option+Shift+Command)
+
+  ;; Hyper Key - Caps Lock: tap=Esc, hold=Hyper (Ctrl+Option+Shift+Command)
   cap (tap-hold $tap-timeout $hold-timeout esc (multi lctl lalt lsft lmet))
-  
-  ;; ------------------------------------------------------------------------
-  ;; MEH Key - Space
-  ;; ------------------------------------------------------------------------
-  ;; Space: tap for space, hold for Meh (Ctrl+Option+Shift)
+
+  ;; MEH Key - Space: tap=Space, hold=Meh (Ctrl+Option+Shift)
   spc (tap-hold $tap-timeout $hold-timeout spc (multi lctl lalt lsft))
-  
-  ;; ------------------------------------------------------------------------
-  ;; Layer Switchers
-  ;; ------------------------------------------------------------------------
-  ;; Layer switching is "sticky" - layers stay active until you switch to another
-  ;; 
-  ;; Behavior:
-  ;; - In base layer: Left/Right Command switches TO their respective layers
-  ;; - In special layer: Left Command returns to base, Right Command switches to numbers
-  ;; - In numbers layer: Right Command returns to base, Left Command switches to special
-  ;;
-  ;; This creates a toggle-like behavior:
-  ;; - Tap Left Command once → Enter special layer
-  ;; - Tap Left Command again → Return to base layer
-  lmc-to-special (layer-switch special)
-  lmc-to-base (layer-switch base)
-  rmc-to-numbers (layer-switch numbers)
-  rmc-to-base (layer-switch base)
+
+  ;; Layer Activators (hold-to-activate)
+  ;; Left Command: tap=lmet, hold=symbol layer
+  lmc (tap-hold $tap-timeout $hold-timeout lmet (layer-toggle symbol))
+  ;; Right Command: tap=rmet, hold=numbers layer
+  rmc (tap-hold $tap-timeout $hold-timeout rmet (layer-toggle numbers))
 )
 
 ;; ============================================================================
-;; Base Layer - Default layer with home row mods
+;; Base Layer
 ;; ============================================================================
+;; Number row and outer keys pass through as-is for when you're on the MacBook.
+;; The 40-key zone is where the action is.
 
 (deflayer base
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
-  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
-  @cap @a   @s   @d   @f   g    h    @j   @k   @l   @;   '    ret
+  tab  q    w    @e   r    t    y    u    i    o    p    [    ]    \
+  @cap @a   @s   @d   @f   @g   h    @j   @k   @l   @;   '    ret
   lsft z    x    c    v    b    n    m    ,    .    /    rsft
-  lctl @lmc-to-special lalt @spc      ralt @rmc-to-numbers rctl
+  lctl @lmc lalt           @spc           ralt @rmc rctl
 )
 
-;; Note: Escape key behavior
-;; In Karabiner, escape explicitly resets layer variables. In Kanata, when you
-;; release layer-while-held keys, you automatically return to the base layer.
-;; The escape key just outputs escape - no special layer reset needed.
-
 ;; ============================================================================
-;; Special Layer - Symbol mappings (activated by left command)
+;; Symbol Layer (hold left command)
 ;; ============================================================================
-;; Based on Karabiner special layer mappings
+;; All numbers and symbols accessible from the 40-key zone.
+;; Top row: shifted symbols  ! @ # $ %    ^ & * ( )
+;; Home row: bare numbers    1 2 3 4 5    6 7 8 9 0
+;; Bottom row: brackets + common symbols
+;;   grv  =  S-grv  [  {    }  ]  -  S-=  \
 
-(deflayer special
+(deflayer symbol
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    q    S-2  S-3  grv  S-'  S-7  S-,  S-.  S--  -    _    _    _
-  @cap S-6  S-5  S-8  S-4  '    \    S-[  S-]  S-\  S-grv _   _
-  _    S--  =    S-grv S-6 S-1  [    S-9  S-0  ]    S-=  _
-  _    @lmc-to-base _        @spc         _    @rmc-to-numbers _
+  _    S-1  S-2  S-3  S-4  S-5  S-6  S-7  S-8  S-9  S-0  _    _    _
+  _    1    2    3    4    5    6    7    8    9    0    _    _
+  _    grv  =    S-grv [   S-[  S-]  ]    -    S-=  \    _
+  _    _    _              _              _    _    _
 )
 
 ;; ============================================================================
-;; Numbers Layer - Numpad layout (activated by right command)
+;; Numbers Layer (hold right command)
 ;; ============================================================================
-;; Based on Karabiner number layer mappings
+;; Numpad on right hand, operators on left.
 
 (deflayer numbers
-  _    _    _    _    _    ,    _    -    7    8    9    _    _    _
-  _    _    _    _    _    _    _    =    4    5    6    _    _    _
-  @cap _    _    _    _    .    _    +    1    2    3    _    _
-  _    _    _    _    _    _    _    0    _    _    S-g  _
-  _    @lmc-to-special _     @spc         _    @rmc-to-base _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    -    7    8    9    _    _    _
+  _    _    _    _    _    _    _    =    4    5    6    _    _
+  _    _    _    _    _    _    .    0    1    2    3    _
+  _    _    _              _              _    _    _
+)
+
+;; ============================================================================
+;; System Layer (hold g)
+;; ============================================================================
+;; Right hand: media, volume, brightness, tab switching
+;; Space: live reload
+;;
+;;   top:               prev brdn brup next
+;;  home:               ⌘⇧[  vol- vol+ ⌘⇧]
+;;   bot:               pp
+;;   spc:  lrld
+
+(deflayer system
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    prev brdn brup next _    _    _    _
+  _    _    _    _    _    _    M-S-[ vold volu M-S-] _  _    _
+  _    _    _    _    _    _    _    pp   _    _    _    _
+  _    _    _              lrld           _    _    _
+)
+
+;; ============================================================================
+;; Navigation Layer (hold e)
+;; ============================================================================
+;; Arrows on HJKL (vim-style), word-jump, selection, Home/End, delete shortcuts
+;;
+;;   top:                      Home pgdn pgup End
+;;  home:                      ←    ↓    ↑    →
+;;   bot:                      ⌥Bspc Bspc del  ⌘Bspc
+;;
+;; With host mods (hold s=Alt, d=Cmd, f=Shift on base) you get:
+;;   Shift+arrows = select text
+;;   Alt+arrows   = word jump
+;;   Cmd+arrows   = line start/end
+;;   Shift+Alt+arrows = select by word
+
+(deflayer nav
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    home pgdn pgup end  _    _    _    _
+  _    _    _    _    _    _    left down up   rght _    _    _
+  _    _    _    _    _    _    A-bspc bspc del M-bspc _ _
+  _    _    _              _              _    _    _
 )
