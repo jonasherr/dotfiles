@@ -1,6 +1,25 @@
-import { Action, ActionPanel, Alert, Form, Icon, List, confirmAlert, showToast, Toast, closeMainWindow, useNavigation } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Alert,
+  Form,
+  Icon,
+  List,
+  confirmAlert,
+  showToast,
+  Toast,
+  closeMainWindow,
+  useNavigation,
+} from "@raycast/api";
 import { execSync } from "child_process";
-import { existsSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
+} from "fs";
 import { homedir } from "os";
 import { join, basename } from "path";
 import { useState, useEffect } from "react";
@@ -33,10 +52,16 @@ function getKittySocket(): string | null {
 function getSessionFiles(): Session[] {
   try {
     return readdirSync(SESSIONS_DIR)
-      .filter((f) => f.endsWith(".kitty-session") && f !== "template.kitty-session")
+      .filter(
+        (f) => f.endsWith(".kitty-session") && f !== "template.kitty-session",
+      )
       .map((f) => {
         const fullPath = join(SESSIONS_DIR, f);
-        return { name: basename(f, ".kitty-session"), path: fullPath, content: readFileSync(fullPath, "utf-8").trim() };
+        return {
+          name: basename(f, ".kitty-session"),
+          path: fullPath,
+          content: readFileSync(fullPath, "utf-8").trim(),
+        };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
@@ -52,12 +77,22 @@ function isGitRoot(dirPath: string): boolean {
   return existsSync(join(dirPath, ".git"));
 }
 
-function collectGitRoots(dirPath: string, sessionNames: Set<string>, results: ProjectDir[], rootDir: string): void {
+function collectGitRoots(
+  dirPath: string,
+  sessionNames: Set<string>,
+  results: ProjectDir[],
+  rootDir: string,
+): void {
   if (!existsSync(dirPath)) return;
   try {
     const entries = readdirSync(dirPath, { withFileTypes: true });
     for (const entry of entries) {
-      if (!entry.isDirectory() || entry.name.startsWith(".") || entry.name === "node_modules") continue;
+      if (
+        !entry.isDirectory() ||
+        entry.name.startsWith(".") ||
+        entry.name === "node_modules"
+      )
+        continue;
       const fullPath = join(dirPath, entry.name);
       if (isGitRoot(fullPath)) {
         if (!hasSession(fullPath, sessionNames)) {
@@ -96,17 +131,31 @@ function createSessionFromTemplate(dirPath: string): string {
 function switchToSession(sessionPath: string, onSuccess?: () => void) {
   const socket = getKittySocket();
   if (!socket) {
-    showToast({ style: Toast.Style.Failure, title: "Kitty not running", message: "No socket found" });
+    showToast({
+      style: Toast.Style.Failure,
+      title: "Kitty not running",
+      message: "No socket found",
+    });
     return;
   }
   try {
-    execSync(`"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`);
+    execSync(
+      `"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`,
+    );
     execSync(`osascript -e 'tell application "kitty" to activate'`);
     closeMainWindow();
-    showToast({ style: Toast.Style.Success, title: "Switched session", message: basename(sessionPath, ".kitty-session") });
+    showToast({
+      style: Toast.Style.Success,
+      title: "Switched session",
+      message: basename(sessionPath, ".kitty-session"),
+    });
     onSuccess?.();
   } catch (error) {
-    showToast({ style: Toast.Style.Failure, title: "Failed to switch", message: String(error) });
+    showToast({
+      style: Toast.Style.Failure,
+      title: "Failed to switch",
+      message: String(error),
+    });
   }
 }
 
@@ -132,34 +181,70 @@ function renameSession(session: Session, newName: string): boolean {
     renameSync(session.path, nextPath);
     return true;
   } catch (error) {
-    showToast({ style: Toast.Style.Failure, title: "Failed to rename", message: String(error) });
+    showToast({
+      style: Toast.Style.Failure,
+      title: "Failed to rename",
+      message: String(error),
+    });
     return false;
   }
 }
 
-function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessions: React.Dispatch<React.SetStateAction<Session[]>> }) {
+function SessionsList({
+  sessions,
+  setSessions,
+}: {
+  sessions: Session[];
+  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+}) {
   const { push } = useNavigation();
   return (
     <>
       {sessions.length === 0 ? (
-        <List.EmptyView title="No Sessions" description="Use the 'Projects' tab to create one" icon={Icon.Terminal} />
+        <List.EmptyView
+          title="No Sessions"
+          description="Use the 'Projects' tab to create one"
+          icon={Icon.Terminal}
+        />
       ) : (
         sessions.map((session) => (
           <List.Item
             key={session.name}
             title={session.name}
-            subtitle={session.content.split("\n").find((l) => l.startsWith("cd "))?.replace("cd ", "") || ""}
+            subtitle={
+              session.content
+                .split("\n")
+                .find((l) => l.startsWith("cd "))
+                ?.replace("cd ", "") || ""
+            }
             icon={Icon.Terminal}
             actions={
               <ActionPanel>
-                <Action title="Switch to Session" icon={Icon.ArrowRight} onAction={() => switchToSession(session.path)} />
-                <Action.ShowInFinder title="Show Session File" path={session.path} />
-                <Action.CopyToClipboard title="Copy Session Path" content={session.path} />
+                <Action
+                  title="Switch to Session"
+                  icon={Icon.ArrowRight}
+                  onAction={() => switchToSession(session.path)}
+                />
+                <Action.ShowInFinder
+                  title="Show Session File"
+                  path={session.path}
+                />
+                <Action.CopyToClipboard
+                  title="Copy Session Path"
+                  content={session.path}
+                />
                 <Action
                   title="Rename Session"
                   icon={Icon.Pencil}
                   shortcut={{ modifiers: ["ctrl"], key: "r" }}
-                  onAction={() => push(<RenameSessionForm session={session} setSessions={setSessions} />)}
+                  onAction={() =>
+                    push(
+                      <RenameSessionForm
+                        session={session}
+                        setSessions={setSessions}
+                      />,
+                    )
+                  }
                 />
                 <Action
                   title="Delete Session"
@@ -171,15 +256,28 @@ function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessi
                       await confirmAlert({
                         title: `Delete "${session.name}"?`,
                         message: `This will remove ${basename(session.path)}`,
-                        primaryAction: { title: "Delete", style: Alert.ActionStyle.Destructive },
+                        primaryAction: {
+                          title: "Delete",
+                          style: Alert.ActionStyle.Destructive,
+                        },
                       })
                     ) {
                       try {
                         unlinkSync(session.path);
-                        setSessions((prev) => prev.filter((s) => s.name !== session.name));
-                        showToast({ style: Toast.Style.Success, title: "Deleted", message: session.name });
+                        setSessions((prev) =>
+                          prev.filter((s) => s.name !== session.name),
+                        );
+                        showToast({
+                          style: Toast.Style.Success,
+                          title: "Deleted",
+                          message: session.name,
+                        });
                       } catch (error) {
-                        showToast({ style: Toast.Style.Failure, title: "Failed to delete", message: String(error) });
+                        showToast({
+                          style: Toast.Style.Failure,
+                          title: "Failed to delete",
+                          message: String(error),
+                        });
                       }
                     }
                   }}
@@ -193,7 +291,13 @@ function SessionsList({ sessions, setSessions }: { sessions: Session[]; setSessi
   );
 }
 
-function RenameSessionForm({ session, setSessions }: { session: Session; setSessions: React.Dispatch<React.SetStateAction<Session[]>> }) {
+function RenameSessionForm({
+  session,
+  setSessions,
+}: {
+  session: Session;
+  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+}) {
   const { pop } = useNavigation();
   return (
     <Form
@@ -217,7 +321,13 @@ function RenameSessionForm({ session, setSessions }: { session: Session; setSess
   );
 }
 
-function ProjectsList({ sessionNames, onSessionCreated }: { sessionNames: Set<string>; onSessionCreated: () => void }) {
+function ProjectsList({
+  sessionNames,
+  onSessionCreated,
+}: {
+  sessionNames: Set<string>;
+  onSessionCreated: () => void;
+}) {
   const [projects, setProjects] = useState<ProjectDir[]>([]);
 
   useEffect(() => {
@@ -227,7 +337,11 @@ function ProjectsList({ sessionNames, onSessionCreated }: { sessionNames: Set<st
   return (
     <>
       {projects.length === 0 ? (
-        <List.EmptyView title="No Projects Found" description="All git repos already have sessions" icon={Icon.Folder} />
+        <List.EmptyView
+          title="No Projects Found"
+          description="All git repos already have sessions"
+          icon={Icon.Folder}
+        />
       ) : (
         projects.map((project) => (
           <List.Item
@@ -245,7 +359,10 @@ function ProjectsList({ sessionNames, onSessionCreated }: { sessionNames: Set<st
                     switchToSession(sessionPath, onSessionCreated);
                   }}
                 />
-                <Action.ShowInFinder title="Show in Finder" path={project.path} />
+                <Action.ShowInFinder
+                  title="Show in Finder"
+                  path={project.path}
+                />
               </ActionPanel>
             }
           />
@@ -267,18 +384,31 @@ export default function Command() {
 
   return (
     <List
-      searchBarPlaceholder={tab === "sessions" ? "Search sessions..." : "Search projects..."}
+      searchBarPlaceholder={
+        tab === "sessions" ? "Search sessions..." : "Search projects..."
+      }
       searchBarAccessory={
         <List.Dropdown tooltip="View" onChange={setTab} value={tab}>
-          <List.Dropdown.Item title="Sessions" value="sessions" icon={Icon.Terminal} />
-          <List.Dropdown.Item title="Projects" value="projects" icon={Icon.Folder} />
+          <List.Dropdown.Item
+            title="Sessions"
+            value="sessions"
+            icon={Icon.Terminal}
+          />
+          <List.Dropdown.Item
+            title="Projects"
+            value="projects"
+            icon={Icon.Folder}
+          />
         </List.Dropdown>
       }
     >
       {tab === "sessions" ? (
         <SessionsList sessions={sessions} setSessions={setSessions} />
       ) : (
-        <ProjectsList sessionNames={sessionNames} onSessionCreated={() => setSessions(getSessionFiles())} />
+        <ProjectsList
+          sessionNames={sessionNames}
+          onSessionCreated={() => setSessions(getSessionFiles())}
+        />
       )}
     </List>
   );
