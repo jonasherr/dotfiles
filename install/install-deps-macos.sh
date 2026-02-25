@@ -7,6 +7,7 @@ brew install --cask slack
 brew install --cask git-credential-manager
 brew install --cask whispering
 brew install oven-sh/bun/bun
+brew install --cask whispering
 
 brew install jesseduffield/lazygit/lazygit
 brew install jesseduffield/lazydocker/lazydocker
