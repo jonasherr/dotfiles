@@ -17,10 +17,10 @@ const DANGEROUS_BASH_PATTERNS: RegExp[] = [
 
 // ─── Category 2: Secret/Credential Access (bash) ─────────────────────────────
 const SECRET_BASH_PATTERNS: RegExp[] = [
-	/(cat|vim|nano|less|head|tail|base64)\s+.*\.env\b(?!\.sample|\.example)/,
+	/(cat|vim|nano|less|head|tail|base64|grep|sed|awk|sort|cut)\s+.*\.env\b(?!\.sample|\.example)/,
 	/(cat|vim|nano|less|head|tail)\s+.*\/(\.ssh|\.aws|\.gcp|\.gnupg)\//,
 	/(cat|vim|nano|less|head|tail)\s+.*\.(pem|key|p12|pfx)\b/,
-	/(cat|vim|nano|less|head|tail)\s+.*credentials/,
+	/(cat|vim|nano|less|head|tail|grep|sed|awk|sort|cut)\s+.*credentials/,
 ]
 
 // ─── Category 2: Secret/Credential Access (file paths) ───────────────────────
@@ -33,7 +33,8 @@ const SECRET_PATH_PATTERNS: RegExp[] = [
 	/\/\.gnupg\//,
 	/\.(pem|key|p12|pfx)$/,
 	/\/\.tfstate$/,
-	/credentials/,
+	/\/\.?credentials$/,
+	/credentials\.(json|yaml|yml|xml|toml)$/,
 ]
 
 // ─── Category 3: Destructive File Paths ──────────────────────────────────────
@@ -77,6 +78,10 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 	/\bredis-cli\s+FLUSHDB/,
 	/\bgh\s+repo\s+delete\b/,
 	/\bnpm\s+unpublish\b/,
+]
+
+// ─── Category 4b: Database Destructive Ops ─────────────────────────────────
+const DATABASE_DESTRUCTIVE_PATTERNS: RegExp[] = [
 	/DROP\s+(TABLE|DATABASE)\b/,
 	/TRUNCATE\s+TABLE\b/,
 	/DELETE\s+FROM\s+\w+\s*;/,
@@ -86,19 +91,21 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 const GIT_SAFETY_PATTERNS: RegExp[] = [
 	/\bgit\s+reset\s+--hard\b/,
 	/\bgit\s+clean\s+.*-[fFxX]/,
-	/\bgit\s+push\s+.*--force(?!-with-lease)/,
-	/\bgit\s+push\s+(-[^\s]*)*-f\b/,
+	/\bgit\s+push\s+.*--force(?!-with-lease|-if-includes)/,
+	/\bgit\s+push\s+.*-[^\s]*f/,
 	/\bgit\s+stash\s+clear\b/,
 	/\bgit\s+reflog\s+expire\b/,
 	/\bgit\s+gc\s+.*--prune=now/,
 	/\bgit\s+filter-branch\b/,
 ]
 
+// TODO: permission.ask hook may be dead code due to OpenCode bug #7006.
+// Remove this workaround if/when the hook starts firing reliably.
 // ─── Safe Patterns for permission.ask auto-approval ──────────────────────────
 const SAFE_BASH_PATTERNS: RegExp[] = [
 	/^(ls|ls\s)/,
 	/^(git\s+(status|diff|log|show|branch|remote|stash\s+list|ls-files|grep))/,
-	/^(cat\s+(?!.*\.(env|pem|key|ssh|aws|gcp)))/,
+	/^(cat\s+(?!.*\.(env|pem|key)))/,
 	/^(grep|find\s+(?!.*-delete|-exec))/,
 	/^(bun\s+(test|run\s+typecheck))/,
 	/^(npm\s+view)/,
@@ -141,6 +148,13 @@ export const DamageControlPlugin: Plugin = async () => {
 					if (cloudMatch) {
 						throw new Error(
 							`[damage-control] BLOCKED: Destructive cloud CLI operation matched ${cloudMatch}`,
+						)
+					}
+
+					const dbMatch = testPatterns(cmd, DATABASE_DESTRUCTIVE_PATTERNS)
+					if (dbMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Destructive database operation matched ${dbMatch}`,
 						)
 					}
 
