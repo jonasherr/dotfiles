@@ -106,9 +106,11 @@
   "plugin": [
     "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
+    "./plugin/damage-control.ts",
     "oh-my-opencode@latest"
   ],
   "permission": {
+    // Permission philosophy: allow by default, plugin/damage-control.ts blocks dangerous ops
     "read": "allow",
     "list": "allow",
     "glob": "allow",
@@ -116,116 +118,35 @@
     "webfetch": "allow",
     "websearch": "allow",
     "bash": {
-      "*": "ask",
-      "ls": "allow",
-      "ls *": "allow",
-      "echo *": "allow",
-      "test *": "allow",
-      "pwd": "allow",
-      "which *": "allow",
-      "head *": "allow",
-      "tail *": "allow",
-      "wc *": "allow",
-      "file *": "allow",
-      "tree *": "allow",
-      "stat *": "allow",
-      // Sensitive file deny patterns
+      "*": "allow",
+      // Sensitive file deny patterns (belt-and-suspenders alongside plugin)
       "cat */.ssh/*": "deny",
       "cat */.env*": "deny",
       "cat */.aws/*": "deny",
       "cat */.gcp/*": "deny",
       "cat */credentials*": "deny",
-      "cat *": "allow",
-      "grep *": "allow",
-      "find *": "allow",
-      "find * -delete*": "deny",
-      "find * -exec*": "deny",
-      "bash -n *": "allow",
-      // Git — read-only operations
-      "git status *": "allow",
-      "git diff *": "allow",
-      "git log *": "allow",
-      "git show *": "allow",
-      "git branch": "allow",
-      "git remote -v": "allow",
-      "git stash list": "allow",
-      "git ls-files *": "allow",
-      "git grep *": "allow",
-      // Git — write operations (ask)
-      "git commit *": "ask",
-      "git push *": "ask",
-      // Destructive operations (ask for approval)
-      "rm *": "ask",
-      "rm -rf *": "ask",
-      "chmod *": "ask",
       // Destructive operations (deny)
       "sudo *": "deny",
       "chown *": "deny",
-      // gh — read-only operations
-      "gh pr view *": "allow",
-      "gh pr list *": "allow",
-      "gh pr checks *": "allow",
-      "gh pr diff *": "allow",
-      "gh issue view *": "allow",
-      "gh issue list *": "allow",
-      "gh repo view *": "allow",
-      "gh release list *": "allow",
-      "gh release view *": "allow",
-      "gh run view *": "allow",
-      "gh run list *": "allow",
-       "gh search *": "allow",
-       // gh api — read-only endpoints (PR and issue comments)
-      "gh api repos/*/pulls/*/comments": "allow",
-       "gh api repos/*/issues/*/comments": "allow",
-       "gh api repos/*/contents/*": "allow",
-       "gh api /search/*": "allow",
-       // npm — read-only
-      "npm view *": "allow",
-      // bun — safe operations (last match wins, so deny overrides allow)
-      "bun test *": "allow",
+      "find * -delete*": "deny",
+      "find * -exec*": "deny",
       "bun test *--update*": "deny",
-      "bun run typecheck *": "allow",
-       // Misc — read-only
-       "date *": "allow",
-       // agent-slack — read-only operations
-       "agent-slack auth *": "allow",
-       "agent-slack message get *": "allow",
-       "agent-slack message list *": "allow",
-       "agent-slack message send *": "ask",
-       "agent-slack message react *": "ask",
-       "agent-slack user *": "allow",
-       "agent-slack search *": "allow",
-       "agent-slack canvas get *": "allow",
-       // linear-cli — read-only operations
-       "linear-cli issues search *": "allow",
-       "linear-cli issues get *": "allow",
-       "linear-cli issues list *": "allow",
-       "linear-cli issues create *": "ask",
-       "linear-cli issues update *": "ask",
-       "linear-cli projects list *": "allow",
-       "linear-cli projects get *": "allow",
-       "linear-cli teams list": "allow",
-       "linear-cli teams get *": "allow",
-       "linear-cli users *": "allow",
-       "linear-cli comments list *": "allow",
-       "linear-cli comments create *": "ask",
-       "linear-cli labels list *": "allow",
-       "linear-cli cycles *": "allow",
-       // Misc
-       "curl -s https://vercel.com/atom": "allow",
-       "mkdir -p *": "allow",
-       "agent-slack --help": "allow",
-       "agent-slack * --help": "allow",
-       "linear-cli --help": "allow",
-       "linear-cli * --help": "allow"
-     },
-    "edit": {
-       "*": "ask",
-       "/tmp/*": "allow"
-     },
-    "write": {
-       "*": "ask",
-       "/tmp/*": "allow"
-     }
+      // Destructive operations (ask for approval — safety net)
+      "rm *": "ask",
+      "rm -rf *": "ask",
+      "chmod *": "ask",
+      // Git — write operations (ask)
+      "git commit *": "ask",
+      "git push *": "ask",
+      // agent-slack — write operations
+      "agent-slack message send *": "ask",
+      "agent-slack message react *": "ask",
+      // linear-cli — write operations
+      "linear-cli issues create *": "ask",
+      "linear-cli issues update *": "ask",
+      "linear-cli comments create *": "ask"
+    },
+    "edit": "allow",
+    "write": "allow"
   }
 }

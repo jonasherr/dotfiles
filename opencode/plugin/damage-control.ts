@@ -1,0 +1,216 @@
+import type { Plugin } from "@opencode-ai/plugin"
+
+// ─── Category 1: Dangerous Bash Commands ─────────────────────────────────────
+const DANGEROUS_BASH_PATTERNS: RegExp[] = [
+	/\brm\s+(-[^\s]*)*-[rRf]/,
+	/\bsudo\s+/,
+	/\bchmod\s+(-[^\s]+\s+)*777\b/,
+	/\bchmod\s+-[Rr].*777/,
+	/\bchown\s+-[Rr].*\broot\b/,
+	/\bkill\s+-9\s+-1\b/,
+	/\bkillall\s+-9\b/,
+	/\bpkill\s+-9\b/,
+	/\bmkfs\./,
+	/\bdd\s+.*of=\/dev\//,
+	/\bhistory\s+-c\b/,
+]
+
+// ─── Category 2: Secret/Credential Access (bash) ─────────────────────────────
+const SECRET_BASH_PATTERNS: RegExp[] = [
+	/(cat|vim|nano|less|head|tail|base64)\s+.*\.env\b(?!\.sample|\.example)/,
+	/(cat|vim|nano|less|head|tail)\s+.*\/(\.ssh|\.aws|\.gcp|\.gnupg)\//,
+	/(cat|vim|nano|less|head|tail)\s+.*\.(pem|key|p12|pfx)\b/,
+	/(cat|vim|nano|less|head|tail)\s+.*credentials/,
+]
+
+// ─── Category 2: Secret/Credential Access (file paths) ───────────────────────
+const SECRET_PATH_PATTERNS: RegExp[] = [
+	/\/\.env(?!\.sample|\.example)/,
+	/\/\.env\./,
+	/\/\.ssh\//,
+	/\/\.aws\//,
+	/\/\.gcp\//,
+	/\/\.gnupg\//,
+	/\.(pem|key|p12|pfx)$/,
+	/\/\.tfstate$/,
+	/credentials/,
+]
+
+// ─── Category 3: Destructive File Paths ──────────────────────────────────────
+const DESTRUCTIVE_PATH_PATTERNS: RegExp[] = [
+	/\/node_modules\//,
+	/\/dist\//,
+	/\/build\//,
+	/\/\.next\//,
+	/\/__pycache__\//,
+	/\/\.venv\//,
+	/package-lock\.json$/,
+	/yarn\.lock$/,
+	/pnpm-lock\.yaml$/,
+	/bun\.lockb$/,
+	/\.min\.(js|css)$/,
+	/\.bundle\.js$/,
+]
+
+// ─── Category 4: Cloud CLI Destructive Ops ───────────────────────────────────
+const CLOUD_CLI_PATTERNS: RegExp[] = [
+	/\baws\s+s3\s+rm\s+.*--recursive/,
+	/\baws\s+ec2\s+terminate-instances\b/,
+	/\baws\s+rds\s+delete-db-instance\b/,
+	/\baws\s+cloudformation\s+delete-stack\b/,
+	/\baws\s+dynamodb\s+delete-table\b/,
+	/\bgcloud\s+projects\s+delete\b/,
+	/\bgcloud\s+compute\s+instances\s+delete\b/,
+	/\bgcloud\s+sql\s+instances\s+delete\b/,
+	/\bgcloud\s+container\s+clusters\s+delete\b/,
+	/\bvercel\s+remove\s+.*--yes/,
+	/\bvercel\s+projects\s+rm\b/,
+	/\bdocker\s+system\s+prune\s+.*-a/,
+	/\bdocker\s+volume\s+(rm|prune)\b/,
+	/\bkubectl\s+delete\s+namespace\b/,
+	/\bkubectl\s+delete\s+all\s+--all/,
+	/\bterraform\s+destroy\b/,
+	/\bpulumi\s+destroy\b/,
+	/\bheroku\s+apps:destroy\b/,
+	/\bheroku\s+pg:reset\b/,
+	/\bredis-cli\s+FLUSHALL/,
+	/\bredis-cli\s+FLUSHDB/,
+	/\bgh\s+repo\s+delete\b/,
+	/\bnpm\s+unpublish\b/,
+	/DROP\s+(TABLE|DATABASE)\b/,
+	/TRUNCATE\s+TABLE\b/,
+	/DELETE\s+FROM\s+\w+\s*;/,
+]
+
+// ─── Category 5: Git Safety ─────────────────────────────────────────────────
+const GIT_SAFETY_PATTERNS: RegExp[] = [
+	/\bgit\s+reset\s+--hard\b/,
+	/\bgit\s+clean\s+(-[^\s]*)*-[fd]/,
+	/\bgit\s+push\s+.*--force(?!-with-lease)/,
+	/\bgit\s+push\s+(-[^\s]*)*-f\b/,
+	/\bgit\s+stash\s+clear\b/,
+	/\bgit\s+reflog\s+expire\b/,
+	/\bgit\s+gc\s+.*--prune=now/,
+	/\bgit\s+filter-branch\b/,
+]
+
+// ─── Safe Patterns for permission.ask auto-approval ──────────────────────────
+const SAFE_BASH_PATTERNS: RegExp[] = [
+	/^(ls|ls\s)/,
+	/^(git\s+(status|diff|log|show|branch|remote|stash\s+list|ls-files|grep))/,
+	/^(cat\s+(?!.*\.(env|pem|key|ssh|aws|gcp)))/,
+	/^(grep|find\s+(?!.*-delete|-exec))/,
+	/^(bun\s+(test|run\s+typecheck))/,
+	/^(npm\s+view)/,
+	/^(gh\s+(pr|issue|repo|release|run|search)\s+(view|list|checks|diff))/,
+	/^(date|pwd|which|tree|stat|head|tail|wc|file|mkdir\s+-p)/,
+]
+
+function testPatterns(value: string, patterns: RegExp[]): RegExp | undefined {
+	for (const pattern of patterns) {
+		if (pattern.test(value)) {
+			return pattern
+		}
+	}
+	return undefined
+}
+
+export const DamageControlPlugin: Plugin = async () => {
+	return {
+		"tool.execute.before": async (input, output) => {
+			try {
+				// ── Bash command checks (Categories 1, 2, 4, 5) ──
+				if (input.tool === "bash" && typeof output.args?.command === "string") {
+					const cmd = output.args.command
+
+					const dangerousMatch = testPatterns(cmd, DANGEROUS_BASH_PATTERNS)
+					if (dangerousMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Dangerous bash command matched ${dangerousMatch}`,
+						)
+					}
+
+					const secretMatch = testPatterns(cmd, SECRET_BASH_PATTERNS)
+					if (secretMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Secret/credential access matched ${secretMatch}`,
+						)
+					}
+
+					const cloudMatch = testPatterns(cmd, CLOUD_CLI_PATTERNS)
+					if (cloudMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Destructive cloud CLI operation matched ${cloudMatch}`,
+						)
+					}
+
+					const gitMatch = testPatterns(cmd, GIT_SAFETY_PATTERNS)
+					if (gitMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Dangerous git operation matched ${gitMatch}`,
+						)
+					}
+				}
+
+				// ── Read tool checks (Category 2: secrets) ──
+				if (input.tool === "read" && typeof output.args?.filePath === "string") {
+					const filePath = output.args.filePath
+
+					const secretPathMatch = testPatterns(filePath, SECRET_PATH_PATTERNS)
+					if (secretPathMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Reading secret/credential file matched ${secretPathMatch}`,
+						)
+					}
+				}
+
+				// ── Edit/Write tool checks (Categories 2, 3) ──
+				if (
+					(input.tool === "edit" || input.tool === "write") &&
+					typeof output.args?.filePath === "string"
+				) {
+					const filePath = output.args.filePath
+
+					const secretPathMatch = testPatterns(filePath, SECRET_PATH_PATTERNS)
+					if (secretPathMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Writing to secret/credential file matched ${secretPathMatch}`,
+						)
+					}
+
+					const destructiveMatch = testPatterns(filePath, DESTRUCTIVE_PATH_PATTERNS)
+					if (destructiveMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Writing to generated/locked file matched ${destructiveMatch}`,
+						)
+					}
+				}
+			} catch (err) {
+				// Re-throw intentional blocks (our own Error throws)
+				if (err instanceof Error && err.message.startsWith("[damage-control] BLOCKED:")) {
+					throw err
+				}
+				// Fail-open for unexpected errors — log and let tool proceed
+				console.error("[damage-control] tool.execute.before error:", err)
+			}
+		},
+
+		"permission.ask": async (input, output) => {
+			try {
+				// Auto-approve safe bash patterns
+				if (input.type === "bash" && input.metadata) {
+					const command = input.metadata.command
+					if (typeof command === "string") {
+						const safeMatch = testPatterns(command, SAFE_BASH_PATTERNS)
+						if (safeMatch) {
+							output.status = "allow"
+						}
+					}
+				}
+			} catch (err) {
+				// Fail-open — don't block permission flow on unexpected errors
+				console.error("[damage-control] permission.ask error:", err)
+			}
+		},
+	}
+}
