@@ -26,7 +26,7 @@ const SECRET_BASH_PATTERNS: RegExp[] = [
 // ─── Category 2: Secret/Credential Access (file paths) ───────────────────────
 const SECRET_PATH_PATTERNS: RegExp[] = [
 	/\/\.env(?!\.sample|\.example)/,
-	/\/\.env\./,
+	/\/\.env\.(?!sample|example)/,
 	/\/\.ssh\//,
 	/\/\.aws\//,
 	/\/\.gcp\//,
@@ -85,7 +85,7 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 // ─── Category 5: Git Safety ─────────────────────────────────────────────────
 const GIT_SAFETY_PATTERNS: RegExp[] = [
 	/\bgit\s+reset\s+--hard\b/,
-	/\bgit\s+clean\s+(-[^\s]*)*-[fd]/,
+	/\bgit\s+clean\b/,
 	/\bgit\s+push\s+.*--force(?!-with-lease)/,
 	/\bgit\s+push\s+(-[^\s]*)*-f\b/,
 	/\bgit\s+stash\s+clear\b/,
