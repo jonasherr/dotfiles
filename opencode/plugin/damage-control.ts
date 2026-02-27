@@ -85,7 +85,7 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 // ─── Category 5: Git Safety ─────────────────────────────────────────────────
 const GIT_SAFETY_PATTERNS: RegExp[] = [
 	/\bgit\s+reset\s+--hard\b/,
-	/\bgit\s+clean\b/,
+	/\bgit\s+clean\s+.*-[fFxX]/,
 	/\bgit\s+push\s+.*--force(?!-with-lease)/,
 	/\bgit\s+push\s+(-[^\s]*)*-f\b/,
 	/\bgit\s+stash\s+clear\b/,
