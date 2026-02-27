@@ -3,9 +3,10 @@ import type { Plugin } from "@opencode-ai/plugin"
 // ─── Category 1: Dangerous Bash Commands ─────────────────────────────────────
 const DANGEROUS_BASH_PATTERNS: RegExp[] = [
 	/\brm\s+(-[^\s]*)*-[rRf]/,
+	/\brm\s+.*--(recursive|force)/,
 	/\bsudo\s+/,
-	/\bchmod\s+(-[^\s]+\s+)*777\b/,
-	/\bchmod\s+-[Rr].*777/,
+	/\bchmod\s+(-[^\s]+\s+)*0?777\b/,
+	/\bchmod\s+-[Rr].*0?777/,
 	/\bchown\s+-[Rr].*\broot\b/,
 	/\bkill\s+-9\s+-1\b/,
 	/\bkillall\s+-9\b/,
@@ -13,14 +14,19 @@ const DANGEROUS_BASH_PATTERNS: RegExp[] = [
 	/\bmkfs\./,
 	/\bdd\s+.*of=\/dev\//,
 	/\bhistory\s+-c\b/,
+	/\bcurl\s+.*\|\s*(bash|sh|zsh)\b/,
+	/\bwget\s+.*\|\s*(bash|sh|zsh)\b/,
+	/\bmv\s+.*\/dev\/null/,
 ]
 
 // ─── Category 2: Secret/Credential Access (bash) ─────────────────────────────
 const SECRET_BASH_PATTERNS: RegExp[] = [
 	/(cat|vim|nano|less|head|tail|base64|grep|sed|awk|sort|cut)\s+.*\.env\b(?!\.sample|\.example)/,
-	/(cat|vim|nano|less|head|tail)\s+.*\/(\.ssh|\.aws|\.gcp|\.gnupg)\//,
+	/(cat|vim|nano|less|head|tail|cp|scp|rsync)\s+.*\/(\.(ssh|aws|gcp|gnupg))\//,
 	/(cat|vim|nano|less|head|tail)\s+.*\.(pem|key|p12|pfx)\b/,
 	/(cat|vim|nano|less|head|tail|grep|sed|awk|sort|cut)\s+.*credentials/,
+	/(cp|scp|rsync)\s+.*\.(env|pem|key|p12|pfx)\b/,
+	/(cp|scp|rsync)\s+.*\/(\.(ssh|aws|gcp|gnupg))\//,
 ]
 
 // ─── Category 2: Secret/Credential Access (file paths) ───────────────────────
@@ -31,10 +37,10 @@ const SECRET_PATH_PATTERNS: RegExp[] = [
 	/\/\.aws\//,
 	/\/\.gcp\//,
 	/\/\.gnupg\//,
-	/\.(pem|key|p12|pfx)$/,
+	/\/(\.(ssh|aws|gcp|gnupg))\/.*(pem|key|p12|pfx)$/,
 	/\/\.tfstate$/,
-	/\/\.?credentials$/,
-	/credentials\.(json|yaml|yml|xml|toml)$/,
+	/\/(\.|^)credentials$/,
+	/\/credentials\.(json|yaml|yml|xml|toml)$/,
 ]
 
 // ─── Category 3: Destructive File Paths ──────────────────────────────────────
@@ -82,9 +88,9 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 
 // ─── Category 4b: Database Destructive Ops ─────────────────────────────────
 const DATABASE_DESTRUCTIVE_PATTERNS: RegExp[] = [
-	/DROP\s+(TABLE|DATABASE)\b/,
-	/TRUNCATE\s+TABLE\b/,
-	/DELETE\s+FROM\s+\w+\s*;/,
+	/DROP\s+(TABLE|DATABASE)\b/i,
+	/TRUNCATE\s+TABLE\b/i,
+	/DELETE\s+FROM\s+\w+/i,
 ]
 
 // ─── Category 5: Git Safety ─────────────────────────────────────────────────
