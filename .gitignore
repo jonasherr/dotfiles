@@ -38,3 +38,25 @@ raycast-env.d.ts
 # Build artifacts
 raycast/custom-extensions/shortcuts/shortcuts.js
 raycast/custom-extensions/shortcuts/shortcuts.js.map
+
+# OpenCode skills (most installed via `npx skills add`, keep only generic ones)
+opencode/skills/d0/
+opencode/skills/diagram-creator/
+opencode/skills/find-skills/
+opencode/skills/frontend-design/
+opencode/skills/geist-design-guidelines/
+opencode/skills/gmail-format/
+opencode/skills/linear/
+opencode/skills/secrets/
+opencode/skills/skill-creator/
+opencode/skills/slack-format/
+opencode/skills/tinybird/
+opencode/skills/tone-of-voice/
+opencode/skills/v-ray/
+opencode/skills/vercel-pdf/
+opencode/skills/vercel-sandbox/
+opencode/skills/vslides/
+
+# OpenCode commands (Vercel-internal workflow)
+opencode/commands/daily-report.md
+opencode/commands/daily-report_backup.md
