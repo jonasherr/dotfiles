@@ -29,19 +29,19 @@
       "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "hephaestus": {
-      "model": "vercel/moonshotai/kimi-k2.5"
+      "model": "vercel/openai/gpt-5.3-codex"
     }
   },
   "categories": {
     "visual-engineering": {
-      "model": "vercel/google/gemini-3-flash"
+      "model": "vercel/openai/gpt-5.3-codex"
     },
     "ultrabrain": {
-      "model": "vercel/moonshotai/kimi-k2.5",
+      "model": "vercel/openai/gpt-5.3-codex",
       "variant": "xhigh"
     },
     "artistry": {
-      "model": "vercel/google/gemini-3-flash",
+      "model": "vercel/openai/gpt-5.3-codex",
       "variant": "max"
     },
     "quick": {
@@ -51,15 +51,15 @@
       "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "unspecified-high": {
-      "model": "vercel/moonshotai/kimi-k2.5",
+      "model": "vercel/openai/gpt-5.3-codex",
       "variant": "max"
     },
     "deep": {
-      "model": "vercel/moonshotai/kimi-k2.5",
+      "model": "vercel/openai/gpt-5.3-codex",
       "variant": "max"
     },
     "writing": {
-      "model": "vercel/google/gemini-3-flash"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     }
   },
   "sisyphus_agent": {
