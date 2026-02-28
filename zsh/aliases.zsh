@@ -123,7 +123,7 @@ omo-profile() {
     personal|p)
       ln -sf "oh-my-opencode-personal.json" "$config_dir/oh-my-opencode.json"
       echo "💰 Switched to PERSONAL profile (cheap models)"
-      echo "   Sisyphus: glm-5 | Workers: kimi-k2.5 | Light: qwen-flash"
+      echo "   Haiku orchestration | Kimi workers | Qwen Flash light"
       ;;
     "")
       # No argument — show current profile
@@ -138,7 +138,7 @@ omo-profile() {
     *)
       echo "Usage: omo-profile [work|personal]"
       echo "  work (w)     — Expensive models (Opus, Sonnet, GPT-5.3 Codex)"
-      echo "  personal (p) — Cheap models (GLM-5 orchestration, Kimi workers, Qwen Flash)"
+      echo "  personal (p) — Cheap models (Haiku orchestration, Kimi workers, Qwen Flash)"
       echo "  (no args)    — Show current profile"
       return 1
       ;;

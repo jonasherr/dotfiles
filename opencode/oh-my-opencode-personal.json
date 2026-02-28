@@ -2,19 +2,19 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "vercel/zai/glm-5"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "atlas": {
-      "model": "vercel/zai/glm-5"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "prometheus": {
-      "model": "vercel/zai/glm-5"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "oracle": {
-      "model": "vercel/zai/glm-5"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "librarian": {
-      "model": "vercel/zai/glm-4.7"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "explore": {
       "model": "vercel/alibaba/qwen3.5-flash"
@@ -23,10 +23,10 @@
       "model": "vercel/google/gemini-3-flash"
     },
     "metis": {
-      "model": "vercel/zai/glm-4.7"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "momus": {
-      "model": "vercel/zai/glm-4.7"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "hephaestus": {
       "model": "vercel/moonshotai/kimi-k2.5"
@@ -48,7 +48,7 @@
       "model": "vercel/alibaba/qwen3.5-flash"
     },
     "unspecified-low": {
-      "model": "vercel/zai/glm-4.7"
+      "model": "vercel/anthropic/claude-haiku-4.5"
     },
     "unspecified-high": {
       "model": "vercel/moonshotai/kimi-k2.5",
