@@ -2,13 +2,13 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "vercel/moonshotai/kimi-k2.5"
+      "model": "vercel/zai/glm-5"
     },
     "atlas": {
-      "model": "vercel/zai/glm-4.7"
+      "model": "vercel/zai/glm-5"
     },
     "prometheus": {
-      "model": "vercel/moonshotai/kimi-k2.5"
+      "model": "vercel/zai/glm-5"
     },
     "oracle": {
       "model": "vercel/zai/glm-5"
