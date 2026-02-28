@@ -59,7 +59,7 @@
       "variant": "max"
     },
     "writing": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "vercel/google/gemini-3-flash"
     }
   },
   "sisyphus_agent": {
