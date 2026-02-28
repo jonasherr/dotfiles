@@ -11,6 +11,9 @@ node_modules
 raycast/ai/providers.yaml
 raycast/extensions/
 
+# Kitty session files (machine-specific paths)
+kitty/sessions/
+
 # Agent working state
 .sisyphus/
 
