@@ -118,7 +118,6 @@ Skills are split between **public** (in dotfiles, committed) and **internal** (l
 - `~/.config/opencode/skills/` — Real directory (NOT a symlink), contains:
   - Symlinks to each public skill from dotfiles (created by `install.sh`)
   - Internal skills installed directly (from `vercel/internal-agent-skills`)
-- `~/.config/opencode/commands/` — Real directory for local-only commands
 
 ### Public skills (in dotfiles)
 

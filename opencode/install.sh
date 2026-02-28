@@ -1,10 +1,9 @@
-brew install sst/tap/opencode terminal-notifier
+brew install sst/tap/opencode terminal-notifier || true
 
 # https://github.com/sst/opencode
 
 # Create real directories for local-only content (not symlinked from dotfiles)
 mkdir -p "$HOME/.config/opencode/skills"
-mkdir -p "$HOME/.config/opencode/commands"
 
 # Symlink public skills from dotfiles into the real skills directory
 DOTFILES="${DOTFILES:-$(cd "$(dirname "$0")/.." && pwd)}"

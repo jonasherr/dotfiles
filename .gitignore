@@ -40,5 +40,4 @@ raycast/custom-extensions/shortcuts/shortcuts.js
 raycast/custom-extensions/shortcuts/shortcuts.js.map
 
 # OpenCode local-only dirs (not symlinked from dotfiles)
-opencode/commands/
 opencode/scripts/
