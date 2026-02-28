@@ -1,0 +1,685 @@
+#!/usr/bin/env bash
+#
+# ocvc — Vercel Cloud Sandbox lifecycle manager
+#
+# Creates a Vercel Sandbox, starts OpenCode with auth, and attaches the TUI.
+# Supports snapshots for fast startup, credentials brokering, and config sync.
+#
+
+set -euo pipefail
+
+readonly PREFS_FILE="$HOME/.config/vercel-sandbox/preferences.json"
+readonly STATE_FILE="$HOME/.config/vercel-sandbox/state.json"
+readonly HEALTH_TIMEOUT=30
+readonly DEFAULT_TIMEOUT="30m"
+readonly DEFAULT_RUNTIME="node24"
+readonly DEFAULT_PORT=3000
+
+# ── Helpers ───────────────────────────────────────────────────────────
+
+info() {
+  printf "\r  [ \033[00;34m..\033[0m ] %s\n" "$1"
+}
+
+success() {
+  printf "\r  [ \033[00;32mOK\033[0m ] %s\n" "$1"
+}
+
+warn() {
+  printf "\r  [ \033[0;33m!!\033[0m ] %s\n" "$1"
+}
+
+fail() {
+  printf "\r  [\033[0;31mFAIL\033[0m] %s\n" "$1"
+  exit 1
+}
+
+# ── Usage ─────────────────────────────────────────────────────────────
+
+usage() {
+  echo "Usage: ocvc [command]"
+  echo ""
+  echo "Commands:"
+  echo "  (none), start    Create sandbox, start OpenCode, and attach TUI"
+  echo "  attach           Reattach to running sandbox"
+  echo "  stop             Stop running sandbox"
+  echo "  status           Show sandbox status"
+  echo "  rebuild-snapshot Rebuild golden snapshot with latest config/skills"
+  echo "  config           Show or set preferences"
+  echo "  help             Show this help"
+  echo ""
+  echo "Preferences: ~/.config/vercel-sandbox/preferences.json"
+  echo "State: ~/.config/vercel-sandbox/state.json"
+  exit 0
+}
+
+# ── Preferences ───────────────────────────────────────────────────────
+
+ensure_prefs_dir() {
+  mkdir -p "$(dirname "$PREFS_FILE")"
+}
+
+read_pref() {
+  local key="$1"
+  if [ -f "$PREFS_FILE" ]; then
+    jq -r --arg k "$key" '.[$k] // empty' "$PREFS_FILE" 2>/dev/null || true
+  fi
+}
+
+write_pref() {
+  local key="$1" value="$2"
+  ensure_prefs_dir
+  if [ -f "$PREFS_FILE" ]; then
+    local tmp
+    tmp=$(jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$PREFS_FILE")
+    printf '%s\n' "$tmp" > "$PREFS_FILE"
+  else
+    jq -n --arg k "$key" --arg v "$value" '{($k): $v}' > "$PREFS_FILE"
+  fi
+}
+
+# ── State ─────────────────────────────────────────────────────────────
+
+read_state() {
+  if [ -f "$STATE_FILE" ]; then
+    cat "$STATE_FILE"
+  fi
+}
+
+read_state_field() {
+  local key="$1"
+  if [ -f "$STATE_FILE" ]; then
+    jq -r --arg k "$key" '.[$k] // empty' "$STATE_FILE" 2>/dev/null || true
+  fi
+}
+
+save_state() {
+  local sandbox_id="$1" url="$2" password="$3" scope="$4" snapshot="${5:-}" created_at="$6"
+  ensure_prefs_dir
+  jq -n \
+    --arg sid "$sandbox_id" \
+    --arg url "$url" \
+    --arg pw "$password" \
+    --arg sc "$scope" \
+    --arg sn "$snapshot" \
+    --arg ca "$created_at" \
+    '{sandbox_id:$sid, url:$url, password:$pw, scope:$sc, snapshot:$sn, created_at:$ca}' \
+    > "$STATE_FILE"
+}
+
+remove_state() {
+  rm -f "$STATE_FILE"
+}
+
+# ── Prerequisite checks ──────────────────────────────────────────────
+
+check_prerequisites() {
+  # 1. sandbox CLI
+  if ! command -v sandbox &> /dev/null; then
+    fail "'sandbox' CLI not found. Install from: https://vercel.com/docs/sandboxes"
+  fi
+
+  # 2. vercel auth
+  if ! vercel whoami &> /dev/null; then
+    fail "Not authenticated with Vercel. Run: vercel login"
+  fi
+
+  # 3. jq
+  if ! command -v jq &> /dev/null; then
+    fail "'jq' not found. Install with: brew install jq"
+  fi
+
+  # 4. openssl
+  if ! command -v openssl &> /dev/null; then
+    fail "'openssl' not found. Install with: brew install openssl"
+  fi
+
+  # 5. opencode
+  if ! command -v opencode &> /dev/null; then
+    fail "'opencode' CLI not found. Install with: brew install sst/tap/opencode"
+  fi
+}
+
+# ── Resolve scope ─────────────────────────────────────────────────────
+
+resolve_scope() {
+  local scope
+  scope=$(read_pref "default_scope")
+  if [ -z "$scope" ]; then
+    fail "No scope configured. Run: ocvc config --scope <team>"
+  fi
+  echo "$scope"
+}
+
+# ── Parse sandbox output ─────────────────────────────────────────────
+
+parse_sandbox_id() {
+  local output="$1"
+  echo "$output" | grep -oE 'sbx_[a-zA-Z0-9]+' | head -1
+}
+
+parse_sandbox_url() {
+  local output="$1"
+  echo "$output" | grep -oE 'https://sb-[a-z0-9]+\.vercel\.run' | head -1
+}
+
+parse_snapshot_id() {
+  local output="$1"
+  echo "$output" | grep -oE 'snap_[a-zA-Z0-9]+' | head -1
+}
+
+# ── Health check ─────────────────────────────────────────────────────
+
+wait_for_healthy() {
+  local scope="$1" sandbox_id="$2" password="$3"
+  local elapsed=0
+
+  printf "  Waiting for OpenCode server"
+  while [ "$elapsed" -lt "$HEALTH_TIMEOUT" ]; do
+    if sandbox exec --scope "$scope" "$sandbox_id" -- \
+      curl -sf -u "opencode:${password}" http://localhost:${DEFAULT_PORT}/global/health > /dev/null 2>&1; then
+      echo " ready!"
+      return 0
+    fi
+
+    sleep 1
+    elapsed=$((elapsed + 1))
+    printf "."
+  done
+
+  echo " TIMEOUT after ${HEALTH_TIMEOUT}s"
+  fail "Server did not become healthy. Check sandbox logs."
+}
+
+# ── Credentials brokering ────────────────────────────────────────────
+
+setup_credentials() {
+  local scope="$1" sandbox_id="$2"
+
+  local ai_key=""
+  local vercel_token=""
+
+  if [ -f "$HOME/.local/share/opencode/auth.json" ]; then
+    ai_key=$(jq -r '.vercel.key' "$HOME/.local/share/opencode/auth.json" 2>/dev/null || true)
+  fi
+
+  vercel_token=$(jq -r '.token' "$HOME/Library/Application Support/com.vercel.cli/auth.json" 2>/dev/null \
+    || jq -r '.token' "$HOME/.local/share/com.vercel.cli/auth.json" 2>/dev/null \
+    || true)
+
+  if [ -z "$ai_key" ] || [ -z "$vercel_token" ]; then
+    warn "Could not read AI key or Vercel token. Credentials brokering skipped."
+    return 0
+  fi
+
+  info "Setting up credentials brokering..."
+  if ! curl -sf -X POST "https://api.vercel.com/v1/sandboxes/${sandbox_id}/network-policy?slug=${scope}" \
+    -H "Authorization: Bearer ${vercel_token}" \
+    -H "Content-Type: application/json" \
+    -d '{"mode":"default-allow","injectionRules":[{"domain":"ai-gateway.vercel.sh","headers":{"Authorization":"Bearer '"${ai_key}"'"}}]}' > /dev/null 2>&1; then
+    warn "Credentials brokering failed (may require Pro plan). Auth.json is still available inside sandbox."
+  else
+    success "Credentials brokering configured"
+  fi
+}
+
+# ── Copy config into sandbox (slow path) ─────────────────────────────
+
+copy_config_to_sandbox() {
+  local scope="$1" sandbox_id="$2"
+
+  info "Copying config into sandbox..."
+
+  # Create config dirs
+  sandbox exec --scope "$scope" "$sandbox_id" -- \
+    mkdir -p /home/vercel-sandbox/.config/opencode /home/vercel-sandbox/.local/share/opencode
+
+  # Copy opencode config
+  if [ -f "$HOME/.config/opencode/opencode.jsonc" ]; then
+    sandbox cp --scope "$scope" \
+      "$HOME/.config/opencode/opencode.jsonc" \
+      "${sandbox_id}:/home/vercel-sandbox/.config/opencode/opencode.jsonc"
+  fi
+
+  # Copy auth
+  if [ -f "$HOME/.local/share/opencode/auth.json" ]; then
+    sandbox cp --scope "$scope" \
+      "$HOME/.local/share/opencode/auth.json" \
+      "${sandbox_id}:/home/vercel-sandbox/.local/share/opencode/auth.json"
+  fi
+
+  # Copy skills (if directory exists and is non-empty)
+  if [ -d "$HOME/.config/opencode/skills" ] && [ -n "$(ls -A "$HOME/.config/opencode/skills/" 2>/dev/null)" ]; then
+    info "Copying skills..."
+    tar -czf /tmp/opencode-skills.tar.gz -C "$HOME/.config/opencode" -h skills
+    sandbox cp --scope "$scope" \
+      /tmp/opencode-skills.tar.gz \
+      "${sandbox_id}:/tmp/opencode-skills.tar.gz"
+    sandbox exec --scope "$scope" "$sandbox_id" -- \
+      bash -c 'tar -xzf /tmp/opencode-skills.tar.gz -C /home/vercel-sandbox/.config/opencode/ && rm /tmp/opencode-skills.tar.gz'
+    rm -f /tmp/opencode-skills.tar.gz
+  fi
+
+  success "Config copied"
+}
+
+# ── Check if sandbox is alive ────────────────────────────────────────
+
+is_sandbox_alive() {
+  local scope="$1" sandbox_id="$2"
+  sandbox list --scope "$scope" 2>/dev/null | grep -q "$sandbox_id"
+}
+
+# ── Subcommand: start (default) ──────────────────────────────────────
+
+cmd_start() {
+  echo ""
+  info "Vercel Cloud Sandbox"
+  echo ""
+
+  check_prerequisites
+
+  local scope
+  scope=$(resolve_scope)
+
+  local project
+  project=$(read_pref "default_project")
+
+  local snapshot_id
+  snapshot_id=$(read_pref "snapshot_id")
+
+  # Check for existing running sandbox
+  local existing_id
+  existing_id=$(read_state_field "sandbox_id")
+
+  if [ -n "$existing_id" ]; then
+    if is_sandbox_alive "$scope" "$existing_id"; then
+      local existing_url
+      existing_url=$(read_state_field "url")
+      warn "Sandbox already running: $existing_id"
+      info "Attach with: ocvc attach"
+      read -r -p "  Reuse existing sandbox? [Y/n] " response
+      if [[ ! "$response" =~ ^[Nn]$ ]]; then
+        local existing_pw
+        existing_pw=$(read_state_field "password")
+        info "Attaching to existing sandbox..."
+        echo ""
+        opencode attach --password "$existing_pw" "$existing_url" || true
+        echo ""
+        info "TUI detached. Sandbox is still running."
+        read -r -p "  Stop sandbox now? [y/N] " stop_response
+        if [[ "$stop_response" =~ ^[Yy]$ ]]; then
+          cmd_stop
+        else
+          echo ""
+          info "To reattach: ocvc attach"
+          info "To stop: ocvc stop"
+        fi
+        return 0
+      else
+        info "Stopping old sandbox..."
+        sandbox stop "$existing_id" --scope "$scope" 2>/dev/null || true
+        remove_state
+      fi
+    else
+      info "Previous sandbox $existing_id is no longer running. Cleaning up state."
+      remove_state
+    fi
+  fi
+
+  # Build create command
+  local create_args=()
+  if [ -n "$snapshot_id" ]; then
+    info "Creating sandbox from snapshot $snapshot_id (fast path)..."
+    create_args+=(--snapshot "$snapshot_id")
+  else
+    info "Creating sandbox from scratch (slow path)..."
+    create_args+=(--runtime "$DEFAULT_RUNTIME")
+  fi
+  create_args+=(--publish-port "$DEFAULT_PORT" --timeout "$DEFAULT_TIMEOUT")
+  if [ -n "$project" ]; then
+    create_args+=(--project "$project")
+  fi
+  create_args+=(--scope "$scope")
+
+  local create_output
+  create_output=$(sandbox create "${create_args[@]}" 2>&1)
+
+  local sandbox_id
+  sandbox_id=$(parse_sandbox_id "$create_output")
+  local sandbox_url
+  sandbox_url=$(parse_sandbox_url "$create_output")
+
+  if [ -z "$sandbox_id" ]; then
+    fail "Failed to parse sandbox ID from output:
+$create_output"
+  fi
+
+  if [ -z "$sandbox_url" ]; then
+    fail "Failed to parse sandbox URL from output:
+$create_output"
+  fi
+
+  success "Sandbox created: $sandbox_id"
+  info "URL: $sandbox_url"
+
+  # Slow path: install opencode and copy config
+  if [ -z "$snapshot_id" ]; then
+    info "Installing OpenCode in sandbox..."
+    sandbox exec --scope "$scope" "$sandbox_id" -- sudo npm install -g opencode-ai
+
+    copy_config_to_sandbox "$scope" "$sandbox_id"
+
+    echo ""
+    info "Sandbox created from scratch. Consider snapshotting for faster starts."
+    read -r -p "  Create snapshot now? [y/N] " snap_response
+    if [[ "$snap_response" =~ ^[Yy]$ ]]; then
+      info "Creating snapshot (sandbox will be stopped briefly)..."
+      local snap_output
+      snap_output=$(sandbox snapshot "$sandbox_id" --scope "$scope" --stop --expiration 0 2>&1)
+      local new_snap_id
+      new_snap_id=$(parse_snapshot_id "$snap_output")
+      if [ -n "$new_snap_id" ]; then
+        write_pref "snapshot_id" "$new_snap_id"
+        success "Snapshot $new_snap_id created and saved to preferences"
+        # Restart sandbox from snapshot
+        info "Restarting sandbox from snapshot..."
+        create_output=$(sandbox create --snapshot "$new_snap_id" --publish-port "$DEFAULT_PORT" --timeout "$DEFAULT_TIMEOUT" --scope "$scope" 2>&1)
+        sandbox_id=$(parse_sandbox_id "$create_output")
+        sandbox_url=$(parse_sandbox_url "$create_output")
+        snapshot_id="$new_snap_id"
+      else
+        warn "Could not parse snapshot ID. Continuing without snapshot."
+      fi
+    fi
+  fi
+
+  # Generate password
+  local sandbox_password
+  sandbox_password=$(openssl rand -base64 24)
+
+  # Set up credentials brokering
+  setup_credentials "$scope" "$sandbox_id"
+
+  # Start OpenCode server
+  info "Starting OpenCode server..."
+  sandbox exec --scope "$scope" "$sandbox_id" -- \
+    bash -c "OPENCODE_SERVER_PASSWORD='${sandbox_password}' nohup opencode serve --hostname 0.0.0.0 --port ${DEFAULT_PORT} > /tmp/opencode.log 2>&1 &"
+
+  # Wait for health
+  wait_for_healthy "$scope" "$sandbox_id" "$sandbox_password"
+
+  # Save state
+  local created_at
+  created_at=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+  save_state "$sandbox_id" "$sandbox_url" "$sandbox_password" "$scope" "$snapshot_id" "$created_at"
+
+  echo ""
+  success "OpenCode sandbox running"
+  success "Sandbox: $sandbox_id"
+  success "URL: $sandbox_url"
+  echo ""
+  info "Attaching TUI... (Ctrl+C to detach, sandbox keeps running)"
+  echo ""
+
+  # Attach TUI
+  opencode attach --password "$sandbox_password" "$sandbox_url" || true
+
+  # After TUI exits
+  echo ""
+  info "TUI detached. Sandbox '$sandbox_id' is still running."
+  read -r -p "  Stop sandbox now? [y/N] " response
+  if [[ "$response" =~ ^[Yy]$ ]]; then
+    cmd_stop
+  else
+    echo ""
+    info "To reattach: ocvc attach"
+    info "To stop: ocvc stop"
+  fi
+}
+
+# ── Subcommand: attach ────────────────────────────────────────────────
+
+cmd_attach() {
+  local sandbox_id
+  sandbox_id=$(read_state_field "sandbox_id")
+
+  if [ -z "$sandbox_id" ]; then
+    fail "No sandbox running. Start one with: ocvc"
+  fi
+
+  local scope
+  scope=$(read_state_field "scope")
+  local url
+  url=$(read_state_field "url")
+  local password
+  password=$(read_state_field "password")
+
+  if ! is_sandbox_alive "$scope" "$sandbox_id"; then
+    remove_state
+    fail "Sandbox $sandbox_id is no longer running. Start a new one with: ocvc"
+  fi
+
+  info "Attaching to sandbox $sandbox_id..."
+  echo ""
+  opencode attach --password "$password" "$url" || true
+}
+
+# ── Subcommand: stop ──────────────────────────────────────────────────
+
+cmd_stop() {
+  local sandbox_id
+  sandbox_id=$(read_state_field "sandbox_id")
+
+  if [ -z "$sandbox_id" ]; then
+    fail "No sandbox running."
+  fi
+
+  local scope
+  scope=$(read_state_field "scope")
+
+  info "Stopping sandbox $sandbox_id..."
+  sandbox stop "$sandbox_id" --scope "$scope" 2>/dev/null || true
+  remove_state
+  success "Stopped."
+}
+
+# ── Subcommand: status ────────────────────────────────────────────────
+
+cmd_status() {
+  local sandbox_id
+  sandbox_id=$(read_state_field "sandbox_id")
+
+  if [ -z "$sandbox_id" ]; then
+    info "No sandbox running."
+    return 0
+  fi
+
+  local scope
+  scope=$(read_state_field "scope")
+  local url
+  url=$(read_state_field "url")
+  local created_at
+  created_at=$(read_state_field "created_at")
+  local snapshot
+  snapshot=$(read_state_field "snapshot")
+
+  local alive="dead"
+  if is_sandbox_alive "$scope" "$sandbox_id"; then
+    alive="alive"
+  fi
+
+  echo ""
+  info "Sandbox Status"
+  echo "  ID:         $sandbox_id"
+  echo "  URL:        $url"
+  echo "  Scope:      $scope"
+  echo "  Snapshot:   ${snapshot:-none}"
+  echo "  Created:    $created_at"
+  echo "  Status:     $alive"
+  echo ""
+}
+
+# ── Subcommand: rebuild-snapshot ──────────────────────────────────────
+
+cmd_rebuild_snapshot() {
+  echo ""
+  info "Rebuilding golden snapshot"
+  echo ""
+
+  check_prerequisites
+
+  local scope
+  scope=$(resolve_scope)
+
+  # 1. Create fresh sandbox (no snapshot)
+  info "Creating fresh sandbox..."
+  local create_output
+  create_output=$(sandbox create --runtime "$DEFAULT_RUNTIME" --publish-port "$DEFAULT_PORT" --timeout "$DEFAULT_TIMEOUT" --scope "$scope" 2>&1)
+
+  local sandbox_id
+  sandbox_id=$(parse_sandbox_id "$create_output")
+
+  if [ -z "$sandbox_id" ]; then
+    fail "Failed to parse sandbox ID from output:
+$create_output"
+  fi
+
+  success "Sandbox created: $sandbox_id"
+
+  # 2. Install OpenCode
+  info "Installing OpenCode..."
+  sandbox exec --scope "$scope" "$sandbox_id" -- sudo npm install -g opencode-ai
+
+  # 3. Create config dirs
+  sandbox exec --scope "$scope" "$sandbox_id" -- \
+    mkdir -p /home/vercel-sandbox/.config/opencode /home/vercel-sandbox/.local/share/opencode
+
+  # 4. Copy config
+  info "Copying config..."
+  if [ -f "$HOME/.config/opencode/opencode.jsonc" ]; then
+    sandbox cp --scope "$scope" \
+      "$HOME/.config/opencode/opencode.jsonc" \
+      "${sandbox_id}:/home/vercel-sandbox/.config/opencode/opencode.jsonc"
+  fi
+
+  # 5. Copy auth
+  if [ -f "$HOME/.local/share/opencode/auth.json" ]; then
+    sandbox cp --scope "$scope" \
+      "$HOME/.local/share/opencode/auth.json" \
+      "${sandbox_id}:/home/vercel-sandbox/.local/share/opencode/auth.json"
+  fi
+
+  # 6. Copy skills (if non-empty)
+  if [ -d "$HOME/.config/opencode/skills" ] && [ -n "$(ls -A "$HOME/.config/opencode/skills/" 2>/dev/null)" ]; then
+    info "Copying skills..."
+    tar -czf /tmp/opencode-skills.tar.gz -C "$HOME/.config/opencode" -h skills
+    sandbox cp --scope "$scope" \
+      /tmp/opencode-skills.tar.gz \
+      "${sandbox_id}:/tmp/opencode-skills.tar.gz"
+    sandbox exec --scope "$scope" "$sandbox_id" -- \
+      bash -c 'tar -xzf /tmp/opencode-skills.tar.gz -C /home/vercel-sandbox/.config/opencode/ && rm /tmp/opencode-skills.tar.gz'
+    rm -f /tmp/opencode-skills.tar.gz
+  fi
+
+  # 7. Take snapshot
+  info "Creating snapshot..."
+  local snap_output
+  snap_output=$(sandbox snapshot "$sandbox_id" --scope "$scope" --stop --expiration 0 2>&1)
+
+  local new_snap_id
+  new_snap_id=$(parse_snapshot_id "$snap_output")
+
+  if [ -z "$new_snap_id" ]; then
+    fail "Failed to parse snapshot ID from output:
+$snap_output"
+  fi
+
+  # 8. Save to preferences
+  write_pref "snapshot_id" "$new_snap_id"
+
+  # 9. Clean up
+  rm -f /tmp/opencode-skills.tar.gz
+
+  echo ""
+  success "Snapshot $new_snap_id created and saved to preferences."
+}
+
+# ── Subcommand: config ────────────────────────────────────────────────
+
+cmd_config() {
+  if [ $# -eq 0 ]; then
+    # Show current preferences
+    echo ""
+    info "Preferences ($PREFS_FILE)"
+    if [ -f "$PREFS_FILE" ]; then
+      jq '.' "$PREFS_FILE"
+    else
+      echo "  (no preferences file found)"
+    fi
+    echo ""
+    return 0
+  fi
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --scope)
+        [ $# -ge 2 ] || fail "--scope requires a value"
+        write_pref "default_scope" "$2"
+        success "default_scope set to: $2"
+        shift 2
+        ;;
+      --project)
+        [ $# -ge 2 ] || fail "--project requires a value"
+        write_pref "default_project" "$2"
+        success "default_project set to: $2"
+        shift 2
+        ;;
+      --snapshot)
+        [ $# -ge 2 ] || fail "--snapshot requires a value"
+        write_pref "snapshot_id" "$2"
+        success "snapshot_id set to: $2"
+        shift 2
+        ;;
+      *)
+        fail "Unknown config option: $1"
+        ;;
+    esac
+  done
+}
+
+# ── Main ──────────────────────────────────────────────────────────────
+
+main() {
+  local cmd="${1:-start}"
+
+  case "$cmd" in
+    start)
+      cmd_start
+      ;;
+    attach)
+      cmd_attach
+      ;;
+    stop)
+      cmd_stop
+      ;;
+    status)
+      cmd_status
+      ;;
+    rebuild-snapshot)
+      cmd_rebuild_snapshot
+      ;;
+    config)
+      shift
+      cmd_config "$@"
+      ;;
+    help|--help|-h)
+      usage
+      ;;
+    *)
+      fail "Unknown command: $cmd. Run 'ocvc help' for usage."
+      ;;
+  esac
+}
+
+main "$@"
