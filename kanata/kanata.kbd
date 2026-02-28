@@ -109,19 +109,15 @@
 )
 
 ;; ============================================================================
-;; Symbol Layer (hold left command)
+;; Special Layer - Symbol mappings (hold left command)
 ;; ============================================================================
-;; All numbers and symbols accessible from the 40-key zone.
-;; Top row: shifted symbols  ! @ # $ %    ^ & * ( )
-;; Home row: bare numbers    1 2 3 4 5    6 7 8 9 0
-;; Bottom row: brackets + common symbols
-;;   grv  =  S-grv  [  {    }  ]  -  S-=  \
+;; Based on original Karabiner special layer mappings
 
 (deflayer symbol
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    S-1  S-2  S-3  S-4  S-5  S-6  S-7  S-8  S-9  S-0  _    _    _
-  _    1    2    3    4    5    6    7    8    9    0    _    _
-  _    grv  =    S-grv [   S-[  S-]  ]    -    S-=  \    _
+  _    q    S-2  S-3  grv  S-'  S-7  S-,  S-.  S--  -    _    _    _
+  _    S-6  S-5  S-8  S-4  '    \    S-[  S-]  S-\  S-grv _   _
+  _    S--  =    S-grv S-6 S-1  [    S-9  S-0  ]    S-=  _
   _    _    _              _              _    _    _
 )
 

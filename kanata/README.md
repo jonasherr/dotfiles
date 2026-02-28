@@ -30,14 +30,14 @@ Right:  j=Shift k=Cmd     l=Alt  ;=Ctrl
 - **Right Command**: Tap → Cmd, Hold → Numbers layer
 - **e**: Tap → e, Hold → Navigation layer
 
-### Symbol Layer (hold left Cmd)
+### Special Layer (hold left Cmd)
 
-All numbers and symbols within the 40-key zone:
+Symbol mappings (original Karabiner layout):
 
 ```
- top:  !    @    #    $    %    ^    &    *    (    )
-home:  1    2    3    4    5    6    7    8    9    0
- bot:  `    =    ~    [    {    }    ]    -    +    \
+ top:  q    @    #    `    "    &    <    >    _    -
+home:  ^    %    *    $    '    \    {    }    |    ~
+ bot:  _    =    ~    ^    !    [    (    )    ]    +
 ```
 
 ### Numbers Layer (hold right Cmd)
