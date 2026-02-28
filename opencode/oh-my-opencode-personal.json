@@ -1,0 +1,76 @@
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "agents": {
+    "sisyphus": {
+      "model": "vercel/moonshotai/kimi-k2.5"
+    },
+    "atlas": {
+      "model": "vercel/zai/glm-4.7"
+    },
+    "prometheus": {
+      "model": "vercel/moonshotai/kimi-k2.5"
+    },
+    "oracle": {
+      "model": "vercel/zai/glm-5"
+    },
+    "librarian": {
+      "model": "vercel/zai/glm-4.7"
+    },
+    "explore": {
+      "model": "vercel/alibaba/qwen3.5-flash"
+    },
+    "multimodal-looker": {
+      "model": "vercel/google/gemini-3-flash"
+    },
+    "metis": {
+      "model": "vercel/zai/glm-4.7"
+    },
+    "momus": {
+      "model": "vercel/zai/glm-4.7"
+    },
+    "hephaestus": {
+      "model": "vercel/moonshotai/kimi-k2.5"
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "vercel/google/gemini-3-flash"
+    },
+    "ultrabrain": {
+      "model": "vercel/moonshotai/kimi-k2.5",
+      "variant": "xhigh"
+    },
+    "artistry": {
+      "model": "vercel/google/gemini-3-flash",
+      "variant": "max"
+    },
+    "quick": {
+      "model": "vercel/alibaba/qwen3.5-flash"
+    },
+    "unspecified-low": {
+      "model": "vercel/zai/glm-4.7"
+    },
+    "unspecified-high": {
+      "model": "vercel/moonshotai/kimi-k2.5",
+      "variant": "max"
+    },
+    "deep": {
+      "model": "vercel/moonshotai/kimi-k2.5",
+      "variant": "max"
+    },
+    "writing": {
+      "model": "vercel/google/gemini-3-flash"
+    }
+  },
+  "sisyphus_agent": {
+    "default_builder_enabled": false,
+    "replace_plan": true
+  },
+  "git_master": {
+    "commit_footer": false,
+    "include_co_authored_by": false
+  },
+  "browser_automation_engine": {
+    "provider": "playwright-cli"
+  }
+}

@@ -109,6 +109,41 @@ occ-rebuild() {
   container image rm opencode-sandbox:latest 2>/dev/null
   echo "Image removed. Next 'occ' run will rebuild."
 }
+# Oh-My-OpenCode profile switcher
+omo-profile() {
+  local profile="${1}"
+  local config_dir="$DOTFILES/opencode"
+
+  case "$profile" in
+    work|w)
+      ln -sf "oh-my-opencode-work.json" "$config_dir/oh-my-opencode.json"
+      echo "🔧 Switched to WORK profile (expensive models)"
+      echo "   Sisyphus: claude-opus-4.6 | Oracle: claude-opus-4.6"
+      ;;
+    personal|p)
+      ln -sf "oh-my-opencode-personal.json" "$config_dir/oh-my-opencode.json"
+      echo "💰 Switched to PERSONAL profile (cheap models)"
+      echo "   Sisyphus: kimi-k2.5 | Oracle: glm-5"
+      ;;
+    "")
+      # No argument — show current profile
+      local target
+      target=$(readlink "$config_dir/oh-my-opencode.json" 2>/dev/null)
+      case "$target" in
+        *work*) echo "Current profile: WORK (expensive)" ;;
+        *personal*) echo "Current profile: PERSONAL (cheap)" ;;
+        *) echo "Current profile: unknown (target: $target)" ;;
+      esac
+      ;;
+    *)
+      echo "Usage: omo-profile [work|personal]"
+      echo "  work (w)     — Expensive models (Opus, Sonnet, GPT-5.3 Codex)"
+      echo "  personal (p) — Cheap models (Kimi K2.5, GLM 4.7, Qwen Flash)"
+      echo "  (no args)    — Show current profile"
+      return 1
+      ;;
+  esac
+}
 och() {
   cd /Users/jonasherrmansdsoerfer/Projects/vercel/agent-help && opencode "$@"
 }
