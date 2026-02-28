@@ -13,16 +13,15 @@ opencode/
 ├── opencode.jsonc           # Main OpenCode config (keybinds, models, providers, permissions)
 ├── oh-my-opencode.json      # Agent orchestration config (agents, categories, models)
 ├── package.json             # Dependencies: oh-my-opencode, md-table-formatter, plugin SDK
-├── links.prop               # Symlink definitions (bootstrap maps these to ~/.config/opencode/)
-├── install.sh               # Homebrew install script for opencode + terminal-notifier
+├── links.prop               # Per-file symlink definitions (bootstrap maps these to ~/.config/opencode/)
+├── install.sh               # Homebrew install + skill symlinking setup
 ├── plugin/
 │   └── sound-notification.ts  # Custom plugin: sound + notification on session idle
-├── commands/
-│   └── full-review.md       # Custom command: multi-dimensional code review
-├── skills/                  # 18 installed agent skills (copy-mode installs)
-│   ├── frontend-design/
+├── skills/                  # Public skills (committed, symlinked into ~/.config/opencode/skills/)
+│   ├── agent-browser/
+│   ├── full-review/
 │   ├── vercel-react-best-practices/
-│   ├── skill-creator/
+│   ├── web-design-guidelines/
 │   └── ...
 └── oh-my-opencode/          # Git submodule — full TypeScript project (has its own AGENTS.md)
 ```
@@ -111,12 +110,32 @@ Use this endpoint to verify model IDs before adding them to `oh-my-opencode.json
 
 ## Skills Management
 
-Skills are installed to `skills/` and symlinked to `~/.config/opencode/skills/`.
+Skills are split between **public** (in dotfiles, committed) and **internal** (local-only).
 
-**Always use copy mode** — the default symlink mode creates relative links to `~/.agents/skills/` which break with this dotfiles symlink setup.
+### Architecture
+
+- `dotfiles/opencode/skills/` — Public skills, committed to git
+- `~/.config/opencode/skills/` — Real directory (NOT a symlink), contains:
+  - Symlinks to each public skill from dotfiles (created by `install.sh`)
+  - Internal skills installed directly (from `vercel/internal-agent-skills`)
+- `~/.config/opencode/commands/` — Real directory for local-only commands
+
+### Public skills (in dotfiles)
+
+Add new public skills directly to `opencode/skills/<name>/SKILL.md`.
+After bootstrap, run `opencode/install.sh` to symlink them into the config dir.
+
+### Internal skills (local-only)
+
+Install from the private repo using copy mode:
 
 ```bash
-npx skills add <source> --skill <name> -a opencode    # select "Copy" when prompted
+npx skills add vercel/internal-agent-skills --skill <name> -a opencode    # select "Copy"
+```
+
+### General skill commands
+
+```bash
 npx skills find                                         # search available
 npx skills check                                        # check for updates
 npx skills update                                       # update all

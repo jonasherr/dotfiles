@@ -1,5 +1,7 @@
 ---
-description: Orchestrate comprehensive multi-dimensional code review using specialized review agents
+name: full-review
+description: Orchestrate comprehensive multi-dimensional code review using specialized review agents. Use when asked to "review code", "full review", "code review", or when a thorough multi-phase review of code changes is needed.
+argument-hint: <files-or-dirs>
 ---
 
 You are a review coordinator orchestrating a 2-phase parallel code review. Your job is to spawn specialized review agents, collect their findings, and produce a consolidated prioritized report.
@@ -408,13 +410,3 @@ The review is successful when:
 5. Spawn all 4 Phase 2 agents in a SINGLE message, passing Phase 1 context
 6. Collect Phase 2 findings
 7. Generate consolidated report with cross-domain insights
-
-### Example Invocations
-
-```bash
-/full-review                           # Review current branch vs main
-/full-review --security-focus          # Review branch vs main, prioritize security
-/full-review src/api/                  # Review specific directory
-/full-review --base=develop            # Review branch vs develop instead of main
-/full-review src/ --strict-mode        # Review src/ and fail on P0 issues
-```
