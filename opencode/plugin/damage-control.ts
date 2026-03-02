@@ -105,6 +105,47 @@ const GIT_SAFETY_PATTERNS: RegExp[] = [
 	/\bgit\s+filter-branch\b/,
 ]
 
+// ─── Category 6: Data Exfiltration ──────────────────────────────────────────
+// Catches indirect file reading via network tools (curl @file, wget --post-file, etc.)
+const EXFILTRATION_PATTERNS: RegExp[] = [
+	// curl @file syntax — reads local file contents into request body / form data
+	/\bcurl\b.*@\S*\/(\.(ssh|aws|gcp|gnupg))\//,
+	/\bcurl\b.*@\S*\.env\b(?!\.sample|\.example)/,
+	/\bcurl\b.*@\S*\.(pem|key|p12|pfx)\b/,
+	/\bcurl\b.*@\S*credentials\b/,
+	/\bcurl\b.*@\S*\bid_(rsa|ed25519|ecdsa|dsa)\b/,
+	// curl --upload-file / -T with sensitive paths
+	/\bcurl\b.*(-T|--upload-file)\s+\S*\/(\.(ssh|aws|gcp|gnupg))\//,
+	/\bcurl\b.*(-T|--upload-file)\s+\S*\.(env|pem|key|p12|pfx)\b/,
+	// wget --post-file with sensitive paths
+	/\bwget\b.*--post-file\s*=?\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
+	/\bwget\b.*--post-file\s*=?\s*\S*\.(env|pem|key|p12|pfx)\b/,
+	// netcat/socat with input redirection from sensitive files
+	/\b(nc|ncat|socat)\b.*<\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
+	/\b(nc|ncat|socat)\b.*<\s*\S*\.(pem|key|p12|pfx)\b/,
+	// openssl s_client with sensitive file input
+	/\bopenssl\b.*s_client.*<\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
+]
+
+// Broad heuristic — block if command has BOTH a sensitive path AND outbound network
+const SENSITIVE_PATH_INDICATORS: RegExp[] = [
+	/\/(\.(ssh|aws|gcp|gnupg))\//,
+	/\.env\b(?!\.sample|\.example)/,
+	/\.(pem|key|p12|pfx)\b/,
+	/\/credentials\b/,
+	/\bid_(rsa|ed25519|ecdsa|dsa)\b/,
+]
+
+const OUTBOUND_INDICATORS: RegExp[] = [
+	/https?:\/\//,
+	/\bcurl\b/,
+	/\bwget\b/,
+	/\b(nc|ncat|netcat)\s+\S+\s+\d+/,
+	/\bsocat\b.*TCP/i,
+	/\bsendmail\b/,
+	/\btelnet\b/,
+]
+
 // TODO: permission.ask hook may be dead code due to OpenCode bug #7006.
 // Remove this workaround if/when the hook starts firing reliably.
 // ─── Safe Patterns for permission.ask auto-approval ──────────────────────────
@@ -128,11 +169,17 @@ function testPatterns(value: string, patterns: RegExp[]): RegExp | undefined {
 	return undefined
 }
 
+function hasExfiltrationRisk(cmd: string): boolean {
+	const hasSensitivePath = SENSITIVE_PATH_INDICATORS.some((p) => p.test(cmd))
+	const hasOutbound = OUTBOUND_INDICATORS.some((p) => p.test(cmd))
+	return hasSensitivePath && hasOutbound
+}
+
 export const DamageControlPlugin: Plugin = async () => {
 	return {
 		"tool.execute.before": async (input, output) => {
 			try {
-				// ── Bash command checks (Categories 1, 2, 4, 5) ──
+				// ── Bash command checks (Categories 1, 2, 4, 5, 6) ──
 				if (input.tool === "bash" && typeof output.args?.command === "string") {
 					const cmd = output.args.command
 
@@ -168,6 +215,19 @@ export const DamageControlPlugin: Plugin = async () => {
 					if (gitMatch) {
 						throw new Error(
 							`[damage-control] BLOCKED: Dangerous git operation matched ${gitMatch}`,
+						)
+					}
+
+					const exfilMatch = testPatterns(cmd, EXFILTRATION_PATTERNS)
+					if (exfilMatch) {
+						throw new Error(
+							`[damage-control] BLOCKED: Data exfiltration attempt matched ${exfilMatch}`,
+						)
+					}
+
+					if (hasExfiltrationRisk(cmd)) {
+						throw new Error(
+							`[damage-control] BLOCKED: Command references both sensitive files and outbound network destination`,
 						)
 					}
 				}
