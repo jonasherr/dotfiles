@@ -1,0 +1,62 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "dse-tickets",
+  "title": "DSE Tickets",
+  "description": "Manage DSE Linear tickets from Raycast",
+  "icon": "extension-icon.png",
+  "author": "bernd",
+  "categories": ["Productivity"],
+  "license": "MIT",
+  "preferences": [
+    {
+      "name": "workdir",
+      "type": "directory",
+      "title": "Client Work Directory",
+      "description": "Base directory for client work folders",
+      "required": true,
+      "default": "~/dev/vercel/clients"
+    },
+    {
+      "name": "team",
+      "type": "textfield",
+      "title": "Linear Team Key",
+      "description": "Linear team key to fetch issues from",
+      "required": false,
+      "default": "DSE"
+    }
+  ],
+  "commands": [
+    {
+      "name": "my-tickets",
+      "title": "My DSE Tickets",
+      "subtitle": "DSE Tickets",
+      "description": "View active DSE tickets assigned to you",
+      "mode": "view"
+    },
+    {
+      "name": "team-tickets",
+      "title": "Team DSE Tickets",
+      "subtitle": "DSE Tickets",
+      "description": "View all open DSE tickets for your team",
+      "mode": "view"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.94.0",
+    "@raycast/utils": "^1.17.0"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "22.14.0",
+    "@types/react": "19.0.8",
+    "eslint": "^8.57.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint"
+  }
+}
