@@ -83,6 +83,7 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
 	/\bredis-cli\s+FLUSHALL/,
 	/\bredis-cli\s+FLUSHDB/,
 	/\bgh\s+repo\s+delete\b/,
+	/\bgh\s+pr\s+merge\b/,
 	/\bnpm\s+unpublish\b/,
 ]
 
