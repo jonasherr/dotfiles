@@ -2,64 +2,64 @@
   "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-sonnet-4.6"
     },
     "atlas": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-sonnet-4.6"
     },
     "prometheus": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/gpt-5.3-codex"
     },
     "oracle": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-opus-4.6"
     },
     "librarian": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/gpt-5-mini"
     },
     "explore": {
-      "model": "vercel/alibaba/qwen3.5-flash"
+      "model": "github-copilot/gpt-5-mini"
     },
     "multimodal-looker": {
-      "model": "vercel/google/gemini-3-flash"
+      "model": "github-copilot/gemini-3-flash"
     },
     "metis": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-sonnet-4.6"
     },
     "momus": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-sonnet-4.6"
     },
     "hephaestus": {
-      "model": "vercel/openai/gpt-5.3-codex"
+      "model": "github-copilot/gpt-5.3-codex"
     }
   },
   "categories": {
     "visual-engineering": {
-      "model": "vercel/openai/gpt-5.3-codex"
+      "model": "github-copilot/gemini-3.1-pro"
     },
     "ultrabrain": {
-      "model": "vercel/openai/gpt-5.3-codex",
+      "model": "github-copilot/gpt-5.3-codex",
       "variant": "xhigh"
     },
     "artistry": {
-      "model": "vercel/openai/gpt-5.3-codex",
+      "model": "github-copilot/gemini-3.1-pro",
       "variant": "max"
     },
     "quick": {
-      "model": "vercel/alibaba/qwen3.5-flash"
+      "model": "github-copilot/gpt-5-mini"
     },
     "unspecified-low": {
-      "model": "vercel/anthropic/claude-haiku-4.5"
+      "model": "github-copilot/claude-sonnet-4.6"
     },
     "unspecified-high": {
-      "model": "vercel/openai/gpt-5.3-codex",
+      "model": "github-copilot/claude-sonnet-4.6",
       "variant": "max"
     },
     "deep": {
-      "model": "vercel/openai/gpt-5.3-codex",
+      "model": "github-copilot/gpt-5.3-codex",
       "variant": "max"
     },
     "writing": {
-      "model": "vercel/google/gemini-3-flash"
+      "model": "github-copilot/gpt-5-mini"
     }
   },
   "sisyphus_agent": {
