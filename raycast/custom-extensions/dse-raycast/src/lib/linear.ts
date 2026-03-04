@@ -156,3 +156,119 @@ export function stateColor(stateName: string): Color {
       return Color.SecondaryText;
   }
 }
+
+export function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''" ) + "'"
+}
+
+export async function fetchLabelGroup(groupName: string): Promise<Array<{ id: string; name: string; color: string; description?: string | null }>> {
+  const apiKey = getLinearApiKey()
+  const query = `
+    query GetLabelWithChildren($labelName: String!) {
+      issueLabels(filter: { name: { eq: $labelName } }) {
+        nodes {
+          children {
+            nodes {
+              id
+              name
+              color
+              description
+            }
+          }
+        }
+      }
+    }
+  `
+  try {
+    const res = await fetch("https://api.linear.app/graphql", {
+      method: "POST",
+      headers: {
+        Authorization: apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ query, variables: { labelName: groupName } }),
+    })
+    const json = (await res.json()) as {
+      data?: {
+        issueLabels?: {
+          nodes?: Array<{
+            children?: {
+              nodes?: Array<{ id: string; name: string; color: string; description?: string | null }>
+            }
+          }>
+        }
+      }
+    }
+    const nodes = json.data?.issueLabels?.nodes ?? []
+    if (nodes.length > 0 && nodes[0].children?.nodes) {
+      return nodes[0].children.nodes
+    }
+    return []
+  } catch {
+    return []
+  }
+}
+
+export function getCustomerMap(tickets: ParsedTicket[]): Map<string, string | null> {
+  const map = new Map<string, string | null>()
+  for (const ticket of tickets) {
+    if (ticket.customerName && !map.has(ticket.customerName)) {
+      map.set(ticket.customerName, ticket.teamId)
+    }
+  }
+  return map
+}
+
+export async function createLinearTicket(opts: {
+  title: string
+  description: string
+  customerName?: string
+  teamId?: string
+  labels: string[]
+}): Promise<{ success: boolean; url?: string; identifier?: string; error?: string }> {
+  const { team } = getPreferenceValues<{ team: string }>()
+
+  // Format description: prepend team_id and customer name if provided
+  const parts: string[] = []
+  if (opts.teamId) {
+    const tid = opts.teamId.startsWith("team_") ? opts.teamId : `team_${opts.teamId}`
+    parts.push(tid)
+  }
+  if (opts.customerName) {
+    parts.push(`**Customer**\n\`${opts.customerName}\``)
+  }
+  const formattedDesc = parts.length > 0
+    ? parts.join("\n\n") + "\n\n" + opts.description
+    : opts.description
+
+  // Pass user content via env vars to avoid shell injection
+  // (shellEscape produces single-quoted strings which would break the outer /bin/zsh -lc '...' wrapper)
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    TICKET_TITLE: opts.title,
+    TICKET_DESC: formattedDesc,
+    TICKET_LABELS: opts.labels.join(","),
+  }
+
+  const labelPart = opts.labels.length > 0 ? '--labels "$TICKET_LABELS"' : ""
+  const cmd = `linear-cli issues create --team ${team} --title "$TICKET_TITLE" --description "$TICKET_DESC" ${labelPart} --json`
+
+  try {
+    const { stdout } = await execAsync(`/bin/zsh -lc '${cmd}'`, { timeout: 15000, env })
+    const json = JSON.parse(stdout) as {
+      success: boolean
+      data?: { identifier?: string; url?: string }
+      error?: string
+    }
+    if (json.success && json.data) {
+      return {
+        success: true,
+        url: json.data.url,
+        identifier: json.data.identifier,
+      }
+    }
+    return { success: false, error: json.error ?? "Unknown error" }
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : String(err) }
+  }
+}

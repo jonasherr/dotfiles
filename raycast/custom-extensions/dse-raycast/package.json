@@ -39,6 +39,13 @@
       "subtitle": "DSE Tickets",
       "description": "View all open DSE tickets for your team",
       "mode": "view"
+    },
+    {
+      "name": "create-ticket",
+      "title": "Create DSE Ticket",
+      "subtitle": "DSE Tickets",
+      "description": "Create a new DSE ticket in Linear",
+      "mode": "view"
     }
   ],
   "dependencies": {
