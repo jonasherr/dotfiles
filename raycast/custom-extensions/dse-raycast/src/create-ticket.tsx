@@ -9,21 +9,32 @@ import {
   Icon,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  fetchTeamTickets,
+  fetchCustomerSearchIndex,
   fetchLabelGroup,
-  getCustomerMap,
   createLinearTicket,
 } from "./lib/linear.js";
 
+function buildCustomerKeywords(name: string): string[] {
+  const lower = name.toLowerCase();
+  const compact = lower.replace(/\s+/g, "");
+  const alnum = lower.replace(/[^a-z0-9]/g, "");
+  const dashed = lower.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const words = lower.split(/[^a-z0-9]+/g).filter(Boolean);
+
+  return Array.from(new Set([lower, compact, alnum, dashed, ...words])).filter(
+    (value) => value.length > 1,
+  );
+}
+
 export default function CreateTicket() {
   const [teamId, setTeamId] = useState("");
+  const [dseCore, setDseCore] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Fetch team tickets for customer dropdown
-  const { data: tickets, isLoading: ticketsLoading } = useCachedPromise(
-    fetchTeamTickets,
+  const { data: customerIndex, isLoading: customerLoading } = useCachedPromise(
+    fetchCustomerSearchIndex,
     [],
     {
       keepPreviousData: true,
@@ -36,22 +47,22 @@ export default function CreateTicket() {
     ["DSE-Core"],
     { keepPreviousData: true },
   );
-  const { data: dseLoeLabels, isLoading: loeLoading } = useCachedPromise(
-    fetchLabelGroup,
-    ["DSE-LOE"],
-    { keepPreviousData: true },
+  const isLoading = customerLoading || coreLoading;
+  const customerMap = new Map(
+    (customerIndex ?? []).map((entry) => [entry.customerName, entry.teamId]),
   );
-  const { data: dseReqsLabels, isLoading: reqsLoading } = useCachedPromise(
-    fetchLabelGroup,
-    ["DSE-Reqs"],
-    { keepPreviousData: true },
-  );
-
-  const isLoading = ticketsLoading || coreLoading || loeLoading || reqsLoading;
-  const customerMap = tickets
-    ? getCustomerMap(tickets)
-    : new Map<string, string | null>();
   const customerOptions = Array.from(customerMap.keys()).sort();
+
+  useEffect(() => {
+    if (dseCore || !dseCoreLabels || dseCoreLabels.length === 0) {
+      return;
+    }
+
+    const requestLabel =
+      dseCoreLabels.find((label) => /request/i.test(label.name)) ??
+      dseCoreLabels[0];
+    setDseCore(requestLabel.id);
+  }, [dseCore, dseCoreLabels]);
 
   async function handleSubmit(values: {
     title: string;
@@ -59,8 +70,6 @@ export default function CreateTicket() {
     customerName: string;
     teamId: string;
     dseCore: string;
-    dseLoe: string[];
-    dseReqs: string[];
   }) {
     if (!values.title.trim()) {
       await showToast({
@@ -69,7 +78,7 @@ export default function CreateTicket() {
       });
       return;
     }
-    if (!values.dseCore) {
+    if (!dseCore) {
       await showToast({
         style: Toast.Style.Failure,
         title: "DSE-Core label is required",
@@ -79,18 +88,8 @@ export default function CreateTicket() {
 
     // Build label names array
     const coreLabelName =
-      dseCoreLabels?.find((l) => l.id === values.dseCore)?.name ?? "";
-    const loeLabelNames = (dseLoeLabels ?? [])
-      .filter((l) => values.dseLoe.includes(l.id))
-      .map((l) => l.name);
-    const reqsLabelNames = (dseReqsLabels ?? [])
-      .filter((l) => values.dseReqs.includes(l.id))
-      .map((l) => l.name);
-    const allLabels = [
-      coreLabelName,
-      ...loeLabelNames,
-      ...reqsLabelNames,
-    ].filter(Boolean);
+      dseCoreLabels?.find((l) => l.id === dseCore)?.name ?? "";
+    const allLabels = [coreLabelName].filter(Boolean);
 
     setIsSubmitting(true);
     try {
@@ -102,16 +101,30 @@ export default function CreateTicket() {
         labels: allLabels,
       });
 
-      if (result.success && result.url) {
+      if (result.success) {
+        const ticketUrl =
+          result.url ??
+          (result.identifier
+            ? `https://linear.app/vercel/issue/${result.identifier}`
+            : undefined);
+
         await showToast({
           style: Toast.Style.Success,
           title: "Ticket Created",
           message: result.identifier,
-          primaryAction: {
-            title: "Open in Linear",
-            onAction: () => open(result.url!),
-          },
+          ...(ticketUrl
+            ? {
+                primaryAction: {
+                  title: "Open in Linear",
+                  onAction: () => open(ticketUrl),
+                },
+              }
+            : {}),
         });
+
+        if (ticketUrl) {
+          await open(ticketUrl);
+        }
         popToRoot();
       } else {
         await showToast({
@@ -159,6 +172,7 @@ export default function CreateTicket() {
       <Form.Dropdown
         id="customerName"
         title="Customer"
+        storeValue
         onChange={(value) => {
           const tid = customerMap.get(value);
           if (tid) setTeamId(tid);
@@ -167,7 +181,12 @@ export default function CreateTicket() {
       >
         <Form.Dropdown.Item value="" title="Select customer (optional)" />
         {customerOptions.map((name) => (
-          <Form.Dropdown.Item key={name} value={name} title={name} />
+          <Form.Dropdown.Item
+            key={name}
+            value={name}
+            title={name}
+            keywords={buildCustomerKeywords(name)}
+          />
         ))}
       </Form.Dropdown>
       <Form.TextField
@@ -178,7 +197,13 @@ export default function CreateTicket() {
         onChange={setTeamId}
       />
       <Form.Separator />
-      <Form.Dropdown id="dseCore" title="DSE-Core *" storeValue>
+      <Form.Dropdown
+        id="dseCore"
+        title="DSE-Core *"
+        storeValue
+        value={dseCore}
+        onChange={setDseCore}
+      >
         <Form.Dropdown.Item value="" title="Select DSE-Core label" />
         {(dseCoreLabels ?? []).map((label) => (
           <Form.Dropdown.Item
@@ -188,24 +213,6 @@ export default function CreateTicket() {
           />
         ))}
       </Form.Dropdown>
-      <Form.TagPicker id="dseLoe" title="DSE-LOE">
-        {(dseLoeLabels ?? []).map((label) => (
-          <Form.TagPicker.Item
-            key={label.id}
-            value={label.id}
-            title={label.name}
-          />
-        ))}
-      </Form.TagPicker>
-      <Form.TagPicker id="dseReqs" title="DSE-Reqs">
-        {(dseReqsLabels ?? []).map((label) => (
-          <Form.TagPicker.Item
-            key={label.id}
-            value={label.id}
-            title={label.name}
-          />
-        ))}
-      </Form.TagPicker>
     </Form>
   );
 }

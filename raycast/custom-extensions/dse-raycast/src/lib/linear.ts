@@ -9,7 +9,12 @@ import { Color } from "@raycast/api";
 const execAsync = promisify(exec);
 
 function getLinearApiKey(): string {
-  const credPath = join(homedir(), ".config", "vercel-linear-cli", "credentials");
+  const credPath = join(
+    homedir(),
+    ".config",
+    "vercel-linear-cli",
+    "credentials",
+  );
   const content = readFileSync(credPath, "utf-8");
   const match = content.match(/LINEAR_API_KEY="([^"]+)"/);
   if (!match) throw new Error("LINEAR_API_KEY not found in credentials");
@@ -38,8 +43,37 @@ export interface ParsedTicket {
   slackThreadUrl: string | null;
 }
 
+export interface CustomerSearchEntry {
+  customerName: string;
+  teamId: string | null;
+  updatedAt: string;
+}
+
 const CUSTOMER_RE = /\*\*Customer\*\*\s*\n\s*`([^`]+)`/;
 const ADMIN_LINK_RE = /https:\/\/admin\.vercel\.com\/team\/team_[a-zA-Z0-9]+/;
+const CUSTOMER_SEARCH_CACHE_TTL_MS = 10 * 60 * 1000;
+
+let customerSearchCache: {
+  team: string;
+  fetchedAt: number;
+  data: CustomerSearchEntry[];
+} | null = null;
+
+function parseCustomerFromDescription(description: string | null | undefined): {
+  customerName: string | null;
+  teamId: string | null;
+} {
+  const desc = description ?? "";
+  const customerMatch = desc.match(CUSTOMER_RE);
+  const adminMatch = desc.match(ADMIN_LINK_RE);
+  const adminLink = adminMatch ? adminMatch[0] : null;
+  const teamId = adminLink ? adminLink.split("/team/")[1] : null;
+
+  return {
+    customerName: customerMatch ? customerMatch[1] : null,
+    teamId,
+  };
+}
 
 function parseIssue(issue: LinearIssue, slackUrl: string | null): ParsedTicket {
   const desc = issue.description ?? "";
@@ -57,11 +91,14 @@ function parseIssue(issue: LinearIssue, slackUrl: string | null): ParsedTicket {
   };
 }
 
-async function fetchSlackUrls(issueIds: string[]): Promise<Map<string, string>> {
+async function fetchSlackUrls(
+  issueIds: string[],
+): Promise<Map<string, string>> {
   const apiKey = getLinearApiKey();
   // Batch query: fetch slack attachments for all issues at once
   const fragments = issueIds.map(
-    (id, i) => `i${i}: issue(id: "${id}") { attachments(filter: { sourceType: { eq: "slack" } }) { nodes { url } } }`,
+    (id, i) =>
+      `i${i}: issue(id: "${id}") { attachments(filter: { sourceType: { eq: "slack" } }) { nodes { url } } }`,
   );
   const query = `{ ${fragments.join(" ")} }`;
 
@@ -104,7 +141,9 @@ export async function fetchTickets(): Promise<ParsedTicket[]> {
   // Fetch Slack thread URLs via Linear GraphQL API
   const slackUrls = await fetchSlackUrls(issues.map((i) => i.identifier));
 
-  return issues.map((issue) => parseIssue(issue, slackUrls.get(issue.identifier) ?? null));
+  return issues.map((issue) =>
+    parseIssue(issue, slackUrls.get(issue.identifier) ?? null),
+  );
 }
 
 export async function fetchTeamTickets(): Promise<ParsedTicket[]> {
@@ -120,12 +159,16 @@ export async function fetchTeamTickets(): Promise<ParsedTicket[]> {
 
   const slackUrls = await fetchSlackUrls(issues.map((i) => i.identifier));
 
-  return issues.map((issue) => parseIssue(issue, slackUrls.get(issue.identifier) ?? null));
+  return issues.map((issue) =>
+    parseIssue(issue, slackUrls.get(issue.identifier) ?? null),
+  );
 }
 
 export const STATE_ORDER = ["In Progress", "Todo", "Waiting", "Triage"];
 
-export function groupByState(tickets: ParsedTicket[]): Map<string, ParsedTicket[]> {
+export function groupByState(
+  tickets: ParsedTicket[],
+): Map<string, ParsedTicket[]> {
   const groups = new Map<string, ParsedTicket[]>();
   for (const state of STATE_ORDER) {
     groups.set(state, []);
@@ -158,11 +201,18 @@ export function stateColor(stateName: string): Color {
 }
 
 export function shellEscape(s: string): string {
-  return "'" + s.replace(/'/g, "'\\''" ) + "'"
+  return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
-export async function fetchLabelGroup(groupName: string): Promise<Array<{ id: string; name: string; color: string; description?: string | null }>> {
-  const apiKey = getLinearApiKey()
+export async function fetchLabelGroup(groupName: string): Promise<
+  Array<{
+    id: string;
+    name: string;
+    color: string;
+    description?: string | null;
+  }>
+> {
+  const apiKey = getLinearApiKey();
   const query = `
     query GetLabelWithChildren($labelName: String!) {
       issueLabels(filter: { name: { eq: $labelName } }) {
@@ -178,7 +228,7 @@ export async function fetchLabelGroup(groupName: string): Promise<Array<{ id: st
         }
       }
     }
-  `
+  `;
   try {
     const res = await fetch("https://api.linear.app/graphql", {
       method: "POST",
@@ -187,59 +237,223 @@ export async function fetchLabelGroup(groupName: string): Promise<Array<{ id: st
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ query, variables: { labelName: groupName } }),
-    })
+    });
     const json = (await res.json()) as {
       data?: {
         issueLabels?: {
           nodes?: Array<{
             children?: {
-              nodes?: Array<{ id: string; name: string; color: string; description?: string | null }>
-            }
-          }>
-        }
-      }
-    }
-    const nodes = json.data?.issueLabels?.nodes ?? []
+              nodes?: Array<{
+                id: string;
+                name: string;
+                color: string;
+                description?: string | null;
+              }>;
+            };
+          }>;
+        };
+      };
+    };
+    const nodes = json.data?.issueLabels?.nodes ?? [];
     if (nodes.length > 0 && nodes[0].children?.nodes) {
-      return nodes[0].children.nodes
+      return nodes[0].children.nodes;
     }
-    return []
+    return [];
   } catch {
-    return []
+    return [];
   }
 }
 
-export function getCustomerMap(tickets: ParsedTicket[]): Map<string, string | null> {
-  const map = new Map<string, string | null>()
+export function getCustomerMap(
+  tickets: ParsedTicket[],
+): Map<string, string | null> {
+  const map = new Map<string, string | null>();
   for (const ticket of tickets) {
     if (ticket.customerName && !map.has(ticket.customerName)) {
-      map.set(ticket.customerName, ticket.teamId)
+      map.set(ticket.customerName, ticket.teamId);
     }
   }
-  return map
+  return map;
+}
+
+export async function fetchCustomerSearchIndex(
+  forceRefresh = false,
+): Promise<CustomerSearchEntry[]> {
+  const { team } = getPreferenceValues<{ team: string }>();
+
+  if (
+    !forceRefresh &&
+    customerSearchCache &&
+    customerSearchCache.team === team &&
+    Date.now() - customerSearchCache.fetchedAt < CUSTOMER_SEARCH_CACHE_TTL_MS
+  ) {
+    return customerSearchCache.data;
+  }
+
+  try {
+    const apiKey = getLinearApiKey();
+    const query = `
+      query GetIssuesForCustomerSearch($teamKey: String!, $first: Int!, $after: String) {
+        issues(
+          filter: { team: { key: { eq: $teamKey } } }
+          first: $first
+          after: $after
+        ) {
+          nodes {
+            description
+            updatedAt
+          }
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+        }
+      }
+    `;
+
+    const first = 100;
+    const maxPages = 100;
+    let after: string | null = null;
+    let hasNextPage = true;
+    let page = 0;
+    const deduped = new Map<string, CustomerSearchEntry>();
+
+    while (hasNextPage && page < maxPages) {
+      const res = await fetch("https://api.linear.app/graphql", {
+        method: "POST",
+        headers: {
+          Authorization: apiKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            teamKey: team,
+            first,
+            after,
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Linear API responded with status: ${res.status}`);
+      }
+
+      const json = (await res.json()) as {
+        errors?: Array<{ message?: string }>;
+        data?: {
+          issues?: {
+            nodes?: Array<{ description: string | null; updatedAt: string }>;
+            pageInfo?: { hasNextPage: boolean; endCursor: string | null };
+          };
+        };
+      };
+
+      if (json.errors && json.errors.length > 0) {
+        throw new Error(
+          json.errors
+            .map((e) => e.message)
+            .filter(Boolean)
+            .join(", "),
+        );
+      }
+
+      const nodes = json.data?.issues?.nodes ?? [];
+      for (const node of nodes) {
+        const { customerName, teamId } = parseCustomerFromDescription(
+          node.description,
+        );
+        if (!customerName) continue;
+
+        const existing = deduped.get(customerName);
+        if (
+          !existing ||
+          new Date(node.updatedAt).getTime() >
+            new Date(existing.updatedAt).getTime()
+        ) {
+          deduped.set(customerName, {
+            customerName,
+            teamId,
+            updatedAt: node.updatedAt,
+          });
+        }
+      }
+
+      hasNextPage = json.data?.issues?.pageInfo?.hasNextPage ?? false;
+      after = json.data?.issues?.pageInfo?.endCursor ?? null;
+      page++;
+    }
+
+    const data = Array.from(deduped.values()).sort((a, b) =>
+      a.customerName.localeCompare(b.customerName, undefined, {
+        sensitivity: "base",
+      }),
+    );
+
+    customerSearchCache = {
+      team,
+      fetchedAt: Date.now(),
+      data,
+    };
+
+    return data;
+  } catch {
+    if (customerSearchCache && customerSearchCache.team === team) {
+      return customerSearchCache.data;
+    }
+
+    const fallbackMap = getCustomerMap(await fetchTeamTickets());
+    const fallbackData = Array.from(fallbackMap.entries())
+      .map(([customerName, teamId]) => ({
+        customerName,
+        teamId,
+        updatedAt: new Date(0).toISOString(),
+      }))
+      .sort((a, b) =>
+        a.customerName.localeCompare(b.customerName, undefined, {
+          sensitivity: "base",
+        }),
+      );
+
+    customerSearchCache = {
+      team,
+      fetchedAt: Date.now(),
+      data: fallbackData,
+    };
+
+    return fallbackData;
+  }
 }
 
 export async function createLinearTicket(opts: {
-  title: string
-  description: string
-  customerName?: string
-  teamId?: string
-  labels: string[]
-}): Promise<{ success: boolean; url?: string; identifier?: string; error?: string }> {
-  const { team } = getPreferenceValues<{ team: string }>()
+  title: string;
+  description: string;
+  customerName?: string;
+  teamId?: string;
+  labels: string[];
+}): Promise<{
+  success: boolean;
+  url?: string;
+  identifier?: string;
+  error?: string;
+}> {
+  const { team } = getPreferenceValues<{ team: string }>();
 
   // Format description: prepend team_id and customer name if provided
-  const parts: string[] = []
+  const parts: string[] = [];
   if (opts.teamId) {
-    const tid = opts.teamId.startsWith("team_") ? opts.teamId : `team_${opts.teamId}`
-    parts.push(tid)
+    const tid = opts.teamId.startsWith("team_")
+      ? opts.teamId
+      : `team_${opts.teamId}`;
+    parts.push(tid);
   }
   if (opts.customerName) {
-    parts.push(`**Customer**\n\`${opts.customerName}\``)
+    parts.push(`**Customer**\n\`${opts.customerName}\``);
   }
-  const formattedDesc = parts.length > 0
-    ? parts.join("\n\n") + "\n\n" + opts.description
-    : opts.description
+  const formattedDesc =
+    parts.length > 0
+      ? parts.join("\n\n") + "\n\n" + opts.description
+      : opts.description;
 
   // Pass user content via env vars to avoid shell injection
   // (shellEscape produces single-quoted strings which would break the outer /bin/zsh -lc '...' wrapper)
@@ -248,27 +462,33 @@ export async function createLinearTicket(opts: {
     TICKET_TITLE: opts.title,
     TICKET_DESC: formattedDesc,
     TICKET_LABELS: opts.labels.join(","),
-  }
+  };
 
-  const labelPart = opts.labels.length > 0 ? '--labels "$TICKET_LABELS"' : ""
-  const cmd = `linear-cli issues create --team ${team} --title "$TICKET_TITLE" --description "$TICKET_DESC" ${labelPart} --json`
+  const labelPart = opts.labels.length > 0 ? '--labels "$TICKET_LABELS"' : "";
+  const cmd = `linear-cli issues create --team ${team} --title "$TICKET_TITLE" --description "$TICKET_DESC" ${labelPart} --json`;
 
   try {
-    const { stdout } = await execAsync(`/bin/zsh -lc '${cmd}'`, { timeout: 15000, env })
+    const { stdout } = await execAsync(`/bin/zsh -lc '${cmd}'`, {
+      timeout: 15000,
+      env,
+    });
     const json = JSON.parse(stdout) as {
-      success: boolean
-      data?: { identifier?: string; url?: string }
-      error?: string
-    }
+      success: boolean;
+      data?: { identifier?: string; url?: string };
+      error?: string;
+    };
     if (json.success && json.data) {
       return {
         success: true,
         url: json.data.url,
         identifier: json.data.identifier,
-      }
+      };
     }
-    return { success: false, error: json.error ?? "Unknown error" }
+    return { success: false, error: json.error ?? "Unknown error" };
   } catch (err) {
-    return { success: false, error: err instanceof Error ? err.message : String(err) }
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : String(err),
+    };
   }
 }
