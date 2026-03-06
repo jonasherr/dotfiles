@@ -81,6 +81,16 @@
   l (tap-hold $tap-timeout $hold-timeout l ralt)
   ; (tap-hold $tap-timeout $hold-timeout ; rctl)
 
+  ;; Numbers Layer Home Row Mods (same modifiers, tap = digit)
+  n1 (tap-hold $tap-timeout $hold-timeout 1 lctl)
+  n2 (tap-hold $tap-timeout $hold-timeout 2 lalt)
+  n3 (tap-hold $tap-timeout $hold-timeout 3 lmet)
+  n4 (tap-hold $tap-timeout $hold-timeout 4 lsft)
+  n7 (tap-hold $tap-timeout $hold-timeout 7 rsft)
+  n8 (tap-hold $tap-timeout $hold-timeout 8 rmet)
+  n9 (tap-hold $tap-timeout $hold-timeout 9 ralt)
+  n0 (tap-hold $tap-timeout $hold-timeout 0 rctl)
+
   ;; Hyper Key - Caps Lock: tap=Esc, hold=Hyper (Ctrl+Option+Shift+Command)
   cap (tap-hold $tap-timeout $hold-timeout esc (multi lctl lalt lsft lmet))
 
@@ -124,13 +134,13 @@
 ;; ============================================================================
 ;; Numbers Layer (hold right command)
 ;; ============================================================================
-;; Numpad on right hand, operators on left.
+;; 1-0 across home row: left hand 1-5, right hand 6-0.
 
 (deflayer numbers
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    _    _    _    _    _    _    -    7    8    9    _    _    _
-  _    _    _    _    _    _    _    =    4    5    6    _    _
-  _    _    _    _    _    _    .    0    1    2    3    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    @n1  @n2  @n3  @n4  5    6    @n7  @n8  @n9  @n0  _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _              _              _    _    _
 )
 
