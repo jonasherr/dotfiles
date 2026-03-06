@@ -1,0 +1,3 @@
+[install]
+# Suppress bun install output that leaks into the TUI before it renders
+logLevel = "error"
