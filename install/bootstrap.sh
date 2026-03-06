@@ -115,11 +115,22 @@ prop () {
 }
 
 install_dotfiles () {
-  info 'installing dotfiles'
+  local target=$1
+  info "installing dotfiles${target:+ ($target)}"
 
   local overwrite_all=false backup_all=false skip_all=false
 
-  find -H "$DOTFILES" -maxdepth 2 -name 'links.prop' -not -path '*.git*' | while read linkfile
+  if [ -n "$target" ]; then
+    local linkfile="$DOTFILES/$target/links.prop"
+    if [ ! -f "$linkfile" ]; then
+      fail "No links.prop found in $target/"
+    fi
+    find_cmd="echo $linkfile"
+  else
+    find_cmd="find -H $DOTFILES -maxdepth 2 -name links.prop -not -path *.git*"
+  fi
+
+  eval "$find_cmd" | while read linkfile
   do
     cat "$linkfile" | while read line
     do
@@ -143,8 +154,10 @@ create_env_file () {
     fi
 }
 
-install_dotfiles
-create_env_file
+install_dotfiles "$1"
+if [ -z "$1" ]; then
+  create_env_file
+fi
 
 echo ''
 echo ''

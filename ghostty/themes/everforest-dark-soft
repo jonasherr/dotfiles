@@ -1,0 +1,45 @@
+# Everforest Dark Soft
+# Author: Sainnhe Park
+# License: MIT
+# Ported from kitty-everforest
+
+background = #333c43
+foreground = #d3c6aa
+
+cursor-color = #d3c6aa
+cursor-text = #3a464c
+
+selection-background = #505a60
+selection-foreground = #9da9a0
+
+# black
+palette = 0=#343f44
+palette = 8=#868d80
+
+# red
+palette = 1=#e67e80
+palette = 9=#e67e80
+
+# green
+palette = 2=#a7c080
+palette = 10=#a7c080
+
+# yellow
+palette = 3=#dbbc7f
+palette = 11=#dbbc7f
+
+# blue
+palette = 4=#7fbbb3
+palette = 12=#7fbbb3
+
+# magenta
+palette = 5=#d699b6
+palette = 13=#d699b6
+
+# cyan
+palette = 6=#83c092
+palette = 14=#83c092
+
+# white
+palette = 7=#859289
+palette = 15=#9da9a0
