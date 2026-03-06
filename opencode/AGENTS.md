@@ -175,3 +175,62 @@ Format: `opencode: <description>`
 3. **Implement** — minimal change to achieve the goal
 4. **Verify** — `bun run typecheck && bun test` for submodule changes
 5. **Max 3 attempts** per issue, then stop and reassess
+
+## Agent Learnings
+
+Agents can persist cross-project learnings for future sessions. This is a global knowledge
+layer — findings that are useful regardless of which project you're working in.
+
+### When to Write a Learning
+
+Write a learning when you discover something **genuinely novel and reusable**:
+
+- A non-obvious tool behavior or API quirk
+- A debugging technique that solved a tricky problem
+- A library pattern that isn't well-documented
+- A configuration insight that took significant effort to find
+
+**Do NOT write learnings for:**
+- Obvious things ("TypeScript needs type annotations")
+- Project-specific implementation details (those go in project AGENTS.md)
+- Vault-specific patterns (those go in `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/areas/agent-learnings/inbox.md`)
+
+### Where to Write
+
+Append to `~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/areas/agent-learnings/inbox.md`
+using this format:
+
+```markdown
+## YYYY-MM-DD — Title
+**Agent**: agent name
+**Session**: session_id
+**Confidence**: high | medium | low
+**Category**: tooling | library | debugging | pattern | configuration
+**Related**: project name or context
+
+Finding goes here. Keep it concise (3-5 sentences max).
+
+---
+```
+
+### Hallucination Guard
+
+Agent learnings are **hypotheses, not facts**. When reading learnings:
+
+- Treat entries with `Confidence: low` as unverified
+- Always verify claims against actual source code or documentation
+- If a learning contradicts what you observe, trust your own observation
+- The human reviews and promotes/discards entries periodically
+
+## Notes Vault Access
+
+A personal Obsidian vault exists at:
+`~/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes/`
+
+When working from **any project** (not the vault itself), agents have limited access:
+
+- **Read-only**: `areas/agent-context/` — human-curated preferences, current focus, past decisions
+- **Append-only**: `areas/agent-learnings/inbox.md` — for learnings (see format above)
+- **No editing** of existing vault notes
+
+When working **from the vault directory**, see the vault's own `AGENTS.md` for full access rules.
