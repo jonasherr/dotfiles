@@ -42,5 +42,3 @@ raycast/custom-extensions/shortcuts/shortcuts.js.map
 # OpenCode local-only dirs (not symlinked from dotfiles)
 opencode/scripts/
 
-# Vercel-internal Raycast extensions (symlinked from work repo)
-raycast/custom-extensions/vercel-*
