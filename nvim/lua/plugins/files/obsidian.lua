@@ -62,6 +62,7 @@ local function create_weekly_note()
     '- [ ] Scanned all documents and tagged them in Paperless',
     '- [ ] Did weekly budgeting',
     '- [ ] Planned private activities for the week',
+    '- [ ] Updated This Week\'s Priorities in [[agent-current-focus]]',
     '',
     '## Week in Review',
     '',
