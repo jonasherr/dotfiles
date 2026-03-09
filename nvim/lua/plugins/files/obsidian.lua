@@ -63,6 +63,7 @@ local function create_weekly_note()
     '- [ ] Did weekly budgeting',
     '- [ ] Planned private activities for the week',
     '- [ ] Updated This Week\'s Priorities in [[agent-current-focus]]',
+    '- [ ] Checked [[agent-learnings-inbox|Obsidian inbox]] and processed notes',
     '',
     '## Week in Review',
     '',
