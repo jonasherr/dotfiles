@@ -15,10 +15,12 @@ async function notify(
   body: string,
   subtitle?: string,
 ): Promise<void> {
-  const args = ["cmux", "notify", "--title", title, "--body", body]
-  if (subtitle) args.push("--subtitle", subtitle)
   try {
-    await $`${args}`
+    if (subtitle) {
+      await $`cmux notify --title ${title} --body ${body} --subtitle ${subtitle}`
+    } else {
+      await $`cmux notify --title ${title} --body ${body}`
+    }
   } catch {
     // cmux not available or command failed — silent
   }
