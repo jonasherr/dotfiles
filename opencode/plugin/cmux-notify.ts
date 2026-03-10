@@ -26,32 +26,77 @@ async function notify(
   }
 }
 
+/**
+ * Extract sessionID from any event's properties.
+ * Events use different property shapes, but sessionID is always at
+ * properties.sessionID or properties.info.sessionID.
+ */
+function getEventSessionID(event: { type: string; properties?: any }): string | undefined {
+  const props = event.properties
+  if (!props) return undefined
+  if (typeof props.sessionID === "string") return props.sessionID
+  if (typeof props.info?.sessionID === "string") return props.info.sessionID
+  return undefined
+}
+
+/**
+ * Check if a session.status event represents an idle transition.
+ * OpenCode sometimes sends session.status(idle) instead of / in addition to
+ * session.idle. oh-my-opencode normalizes these internally; we do the same.
+ */
+function isIdleStatusEvent(event: { type: string; properties?: any }): boolean {
+  if (event.type !== "session.status") return false
+  return event.properties?.status?.type === "idle"
+}
+
 export const CmuxNotifyPlugin: Plugin = async ({ $ }) => {
   if (!isCmux()) return {}
 
   // Debounce idle notifications — mirrors oh-my-opencode's idle confirmation delay.
   // Without this, CMUX notification would fire on every transient idle event.
   let idleTimer: ReturnType<typeof setTimeout> | null = null
+  // Track which session triggered the pending idle notification.
+  // Only cancel the timer when the SAME session produces a non-idle event.
+  // Without this, background agent message.updated events cancel the main session's idle.
+  let idleSessionID: string | null = null
+
+  function startIdleTimer(sessionID: string | undefined) {
+    if (idleTimer) clearTimeout(idleTimer)
+    idleSessionID = sessionID ?? null
+
+    idleTimer = setTimeout(async () => {
+      idleTimer = null
+      idleSessionID = null
+      await notify($, "OpenCode", "Agent is ready for input")
+    }, IDLE_DEBOUNCE_MS)
+  }
+
+  function cancelIdleTimer() {
+    if (idleTimer) {
+      clearTimeout(idleTimer)
+      idleTimer = null
+      idleSessionID = null
+    }
+  }
 
   return {
     event: async ({ event }) => {
-      if (event.type === "session.idle") {
-        if (idleTimer) clearTimeout(idleTimer)
-
-        idleTimer = setTimeout(async () => {
-          idleTimer = null
-          await notify($, "OpenCode", "Agent is ready for input")
-        }, IDLE_DEBOUNCE_MS)
+      // Handle both native session.idle and session.status(idle) events.
+      // OpenCode may emit either or both for the same idle transition.
+      if (event.type === "session.idle" || isIdleStatusEvent(event)) {
+        startIdleTimer(getEventSessionID(event))
         return
       }
 
-      if (
-        event.type === "message.updated" ||
-        event.type === "session.created"
-      ) {
-        if (idleTimer) {
-          clearTimeout(idleTimer)
-          idleTimer = null
+      // Only cancel the debounce for activity in the SAME session.
+      // Background agent events (different sessionID) must not cancel the
+      // main session's idle notification.
+      if (event.type === "message.updated" || event.type === "session.created") {
+        if (idleTimer && idleSessionID) {
+          const eventSessionID = getEventSessionID(event)
+          if (eventSessionID === idleSessionID) {
+            cancelIdleTimer()
+          }
         }
       }
     },
@@ -69,10 +114,7 @@ export const CmuxNotifyPlugin: Plugin = async ({ $ }) => {
       // so if status is still "ask" here, it genuinely needs attention.
       if (output.status !== "ask") return
 
-      if (idleTimer) {
-        clearTimeout(idleTimer)
-        idleTimer = null
-      }
+      cancelIdleTimer()
 
       const description =
         input.type === "bash" && typeof input.metadata?.command === "string"
