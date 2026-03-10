@@ -18,7 +18,6 @@ opencode/
 ├── plugin/
 │   └── sound-notification.ts  # Custom plugin: sound + notification on session idle
 ├── skills/                  # Public skills (committed, symlinked into ~/.config/opencode/skills/)
-│   ├── agent-browser/
 │   ├── full-review/
 │   ├── vercel-react-best-practices/
 │   ├── web-design-guidelines/
@@ -78,7 +77,7 @@ cat links.prop                       # Check what's mapped where
 Main OpenCode config. Notable sections:
 - `model`: Default model (`vercel/anthropic/claude-opus-4.6`)
 - `provider`: Vercel (cloud) + Ollama (local) model providers
-- `mcp`: MCP server configs (none currently — browser automation via agent-browser skill)
+- `mcp`: MCP server configs (none currently — browser automation via oh-my-opencode built-in playwright skill)
 - `plugin`: Plugin load order (sound-notification → md-table-formatter → oh-my-opencode)
 - `permission`: Granular bash command permissions (allow/ask/deny per command pattern)
 

@@ -46,11 +46,11 @@
       }
     }
   },
-  // Playwriter removed — using agent-browser skill instead
+  // Browser automation via oh-my-opencode built-in playwright skill (see oh-my-opencode.json browser_automation_engine)
   "plugin": [
-    "./plugin/sound-notification.ts",
     "@franlol/opencode-md-table-formatter@0.0.3",
     "./plugin/damage-control.ts",
+    "./plugin/cmux-notify.ts",
     "oh-my-opencode@latest"
   ],
   "permission": {

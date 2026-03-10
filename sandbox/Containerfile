@@ -36,11 +36,11 @@ RUN curl -fsSL https://bun.sh/install | bash && \
 # ── OpenCode ─────────────────────────────────────────────────────────
 RUN npm install -g opencode-ai@latest
 
-# ── agent-browser (headless browser automation for AI agents) ────────
-# CLI tool by Vercel with native ARM64 Linux support.
-# Uses Playwright internally; downloads its own Chromium.
-RUN npm install -g agent-browser && \
-    agent-browser install --with-deps
+# ── Playwright CLI (headless browser automation) ─────────────────────
+# Standalone CLI from microsoft/playwright-cli for agent workflows.
+# oh-my-opencode's built-in playwright skill invokes it via bash.
+RUN npm install -g @playwright/cli@latest && \
+    playwright-cli install
 
 # ── Directories ──────────────────────────────────────────────────────
 RUN mkdir -p /workspace /config /root/.local/share/opencode
