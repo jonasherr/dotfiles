@@ -221,6 +221,20 @@ Agent learnings are **hypotheses, not facts**. When reading learnings:
 - If a learning contradicts what you observe, trust your own observation
 - The human reviews and promotes/discards entries periodically
 
+## Agent Memory Protocol
+
+Agents maintain memory across sessions using three complementary systems:
+
+**Daily activity logs**: After completing a task or series of related changes, write to `areas/agent-learnings/daily/YYYY-MM-DD.md` (relative to vault root). Format: three sections (Activity, Decisions, Key Context). The plugin auto-injects today's and yesterday's logs into every session.
+
+**"Remember this" requests**: When the user says "remember this", "remember that", "save this to memory", or "note this down", write the content to today's daily log under `## Key Context`. Novel cross-project findings (tool quirks, library patterns) still go to `inbox.md`.
+
+**Session search**: At the start of a session, if the user's request relates to ongoing work, use `session_search` to find relevant recent sessions for context.
+
+**Per-project memory**: Write ongoing project context to `.sisyphus/memory.md` (rolling file, relative to project root). Consolidate when it exceeds ~100 lines. The plugin auto-injects this into every session.
+
+**Coexistence**: `inbox.md` = novel findings (tool quirks, library patterns). Daily logs = activity context. Different purposes, both matter.
+
 ## Notes Vault Access
 
 A personal Obsidian vault exists at:
