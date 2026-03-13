@@ -51,6 +51,7 @@
     "@franlol/opencode-md-table-formatter@0.0.3",
     "./plugin/damage-control.ts",
     "./plugin/cmux-notify.ts",
+    "./plugin/memory-engine.ts",
     "oh-my-opencode@latest"
   ],
   "permission": {
@@ -79,9 +80,9 @@
       "rm *": "ask",
       "rm -rf *": "ask",
       "chmod *": "ask",
-      // Git — write operations (ask)
-      "git commit *": "ask",
-      "git push *": "ask",
+      // Git — commits auto-allowed, push requires approval
+      "git commit *": "allow",
+"git push *": "ask",
       // GitHub — block PR merging (requires human approval)
       "gh pr merge *": "deny",
       // agent-slack — write operations
