@@ -11,7 +11,8 @@
       "model": "github-copilot/gpt-5.3-codex"
     },
     "oracle": {
-      "model": "github-copilot/claude-opus-4.6"
+      "model": "github-copilot/gpt-5.4",
+      "variant": "high"
     },
     "librarian": {
       "model": "github-copilot/gpt-5-mini"
@@ -51,12 +52,12 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "unspecified-high": {
-      "model": "github-copilot/claude-sonnet-4.6",
-      "variant": "max"
+      "model": "github-copilot/gpt-5.4",
+      "variant": "high"
     },
     "deep": {
       "model": "github-copilot/gpt-5.3-codex",
-      "variant": "max"
+      "variant": "medium"
     },
     "writing": {
       "model": "github-copilot/gpt-5-mini"

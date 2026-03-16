@@ -11,13 +11,14 @@
       "model": "vercel/anthropic/claude-opus-4.6"
     },
     "oracle": {
-      "model": "vercel/anthropic/claude-opus-4.6"
+      "model": "vercel/openai/gpt-5.4",
+      "variant": "high"
     },
     "librarian": {
       "model": "vercel/anthropic/claude-sonnet-4.6"
     },
     "explore": {
-      "model": "vercel/anthropic/claude-sonnet-4.6"
+      "model": "vercel/openai/gpt-5-mini"
     },
     "multimodal-looker": {
       "model": "vercel/google/gemini-3-flash"
@@ -51,12 +52,12 @@
       "model": "vercel/anthropic/claude-sonnet-4.6"
     },
     "unspecified-high": {
-      "model": "vercel/anthropic/claude-opus-4.6",
-      "variant": "max"
+      "model": "vercel/openai/gpt-5.4",
+      "variant": "high"
     },
     "deep": {
-      "model": "vercel/anthropic/claude-opus-4.6",
-      "variant": "max"
+      "model": "vercel/openai/gpt-5.3-codex",
+      "variant": "medium"
     },
     "writing": {
       "model": "vercel/google/gemini-3-flash"
