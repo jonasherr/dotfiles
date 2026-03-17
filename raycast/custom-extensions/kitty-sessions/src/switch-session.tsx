@@ -21,13 +21,21 @@ import {
   unlinkSync,
   writeFileSync,
 } from "fs";
+import { createConnection } from "net";
 import { homedir } from "os";
 import { join, basename } from "path";
-import { useState, useEffect, useMemo } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 
 const SESSIONS_DIR = join(homedir(), ".config", "kitty", "sessions");
 const PROJECTS_DIR = join(homedir(), "Projects");
 const KITTEN = "/Applications/kitty.app/Contents/MacOS/kitten";
+const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock";
 const HOME = homedir();
 
 interface Session {
@@ -42,9 +50,109 @@ interface ProjectDir {
   relativePath: string;
 }
 
+interface SidebarNotification {
+  session_name: string;
+  type: string;
+  message: string;
+  timestamp: number;
+  read?: boolean;
+}
+
+interface NotificationsStateResponse {
+  notifications?: Record<string, SidebarNotification[]>;
+}
+
+interface ClearNotificationsResponse {
+  status?: string;
+}
+
+function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
+  return new Promise((resolve) => {
+    let socket: ReturnType<typeof createConnection> | null = null;
+    let settled = false;
+    let buffer = "";
+
+    const finish = (value: T | null) => {
+      if (settled) return;
+      settled = true;
+      try {
+        socket?.destroy();
+      } catch {}
+      resolve(value);
+    };
+
+    const parseBuffer = () => {
+      const newlineIndex = buffer.indexOf("\n");
+      const message =
+        newlineIndex >= 0 ? buffer.slice(0, newlineIndex).trim() : buffer.trim();
+      if (!message) {
+        finish(null);
+        return;
+      }
+      try {
+        finish(JSON.parse(message) as T);
+      } catch {
+        finish(null);
+      }
+    };
+
+    try {
+      socket = createConnection(KITTY_SIDEBAR_SOCK);
+      socket.setTimeout(2000);
+      socket.on("connect", () => {
+        socket?.end(`${JSON.stringify(payload)}\n`);
+      });
+      socket.on("data", (chunk: { toString(): string }) => {
+        buffer += chunk.toString();
+        if (buffer.includes("\n")) {
+          parseBuffer();
+        }
+      });
+      socket.on("end", () => {
+        if (!settled) {
+          parseBuffer();
+        }
+      });
+      socket.on("error", () => {
+        finish(null);
+      });
+      socket.on("timeout", () => {
+        finish(null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function getNotifications(): Promise<Record<string, number>> {
+  const response = await requestNotificationDaemon<NotificationsStateResponse>({
+    type: "get_state",
+  });
+  if (!response?.notifications) return {};
+
+  return Object.fromEntries(
+    Object.entries(response.notifications)
+      .map(([sessionName, items]) => [
+        sessionName,
+        items.filter((item) => item.read !== true).length,
+      ] as const)
+      .filter(([, count]) => count > 0),
+  );
+}
+
+async function clearNotifications(sessionName: string): Promise<void> {
+  await requestNotificationDaemon<ClearNotificationsResponse>({
+    type: "clear",
+    session_name: sessionName,
+  });
+}
+
 function getKittySocket(): string | null {
   try {
-    const files = readdirSync("/tmp").filter((f) => f.startsWith("mykitty-"));
+    const files = readdirSync("/tmp").filter((f: string) =>
+      f.startsWith("mykitty-"),
+    );
     return files.length > 0 ? join("/tmp", files[0]) : null;
   } catch {
     return null;
@@ -101,9 +209,10 @@ function getSessionFiles(): Session[] {
   try {
     return readdirSync(SESSIONS_DIR)
       .filter(
-        (f) => f.endsWith(".kitty-session") && f !== "template.kitty-session",
+        (f: string) =>
+          f.endsWith(".kitty-session") && f !== "template.kitty-session",
       )
-      .map((f) => {
+      .map((f: string) => {
         const fullPath = join(SESSIONS_DIR, f);
         return {
           name: basename(f, ".kitty-session"),
@@ -111,7 +220,7 @@ function getSessionFiles(): Session[] {
           content: readFileSync(fullPath, "utf-8").trim(),
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a: Session, b: Session) => a.name.localeCompare(b.name));
   } catch {
     return [];
   }
@@ -242,11 +351,15 @@ function SessionsList({
   sessions,
   setSessions,
   activeCwds,
+  notifications,
+  refreshNotifications,
   showActiveIndicator,
 }: {
   sessions: Session[];
-  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+  setSessions: Dispatch<SetStateAction<Session[]>>;
   activeCwds: Set<string>;
+  notifications: Record<string, number>;
+  refreshNotifications: () => Promise<void>;
   showActiveIndicator: boolean;
 }) {
   const { push } = useNavigation();
@@ -261,6 +374,30 @@ function SessionsList({
       ) : (
         sessions.map((session) => {
           const active = isSessionActive(session, activeCwds);
+          const notificationCount = notifications[session.name] ?? 0;
+          const accessories = [] as List.Item.Accessory[];
+
+          if (notificationCount > 0) {
+            accessories.push({
+              icon: {
+                source: Icon.Bell,
+                tintColor: Color.Red,
+              },
+              text: String(notificationCount),
+              tooltip: `${notificationCount} notification${notificationCount === 1 ? "" : "s"}`,
+            });
+          }
+
+          if (showActiveIndicator && active) {
+            accessories.push({
+              icon: {
+                source: Icon.CircleFilled,
+                tintColor: Color.Green,
+              },
+              tooltip: "Running",
+            });
+          }
+
           return (
             <List.Item
               key={session.name}
@@ -272,19 +409,7 @@ function SessionsList({
                   ?.replace("cd ", "") || ""
               }
               icon={Icon.Terminal}
-              accessories={
-                showActiveIndicator && active
-                  ? [
-                      {
-                        icon: {
-                          source: Icon.CircleFilled,
-                          tintColor: Color.Green,
-                        },
-                        tooltip: "Running",
-                      },
-                    ]
-                  : []
-              }
+              accessories={accessories}
               actions={
                 <ActionPanel>
                   <Action
@@ -300,6 +425,17 @@ function SessionsList({
                     title="Copy Session Path"
                     content={session.path}
                   />
+                  {notificationCount > 0 ? (
+                    <Action
+                      title="Clear Notifications"
+                      icon={Icon.Bell}
+                      shortcut={{ modifiers: ["ctrl"], key: "n" }}
+                      onAction={async () => {
+                        await clearNotifications(session.name);
+                        await refreshNotifications();
+                      }}
+                    />
+                  ) : null}
                   <Action
                     title="Rename Session"
                     icon={Icon.Pencil}
@@ -331,8 +467,8 @@ function SessionsList({
                       ) {
                         try {
                           unlinkSync(session.path);
-                          setSessions((prev) =>
-                            prev.filter((s) => s.name !== session.name),
+                          setSessions((prev: Session[]) =>
+                            prev.filter((s: Session) => s.name !== session.name),
                           );
                           showToast({
                             style: Toast.Style.Success,
@@ -364,7 +500,7 @@ function RenameSessionForm({
   setSessions,
 }: {
   session: Session;
-  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+  setSessions: Dispatch<SetStateAction<Session[]>>;
 }) {
   const { pop } = useNavigation();
   return (
@@ -411,7 +547,7 @@ function ProjectsList({
           icon={Icon.Folder}
         />
       ) : (
-        projects.map((project) => (
+        projects.map((project: ProjectDir) => (
           <List.Item
             key={project.path}
             title={project.name}
@@ -443,18 +579,42 @@ function ProjectsList({
 export default function Command() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeCwds, setActiveCwds] = useState<Set<string>>(new Set());
+  const [notifications, setNotifications] = useState<Record<string, number>>({});
   const [tab, setTab] = useState<string>("active");
+
+  const refreshNotifications = async () => {
+    setNotifications(await getNotifications());
+  };
 
   useEffect(() => {
     setSessions(getSessionFiles());
     setActiveCwds(getActiveCwds());
+    void getNotifications().then(setNotifications);
   }, []);
 
-  const sessionNames = new Set(sessions.map((s) => s.name));
+  const sessionNames = new Set<string>(sessions.map((s: Session) => s.name));
+
+  const sortedSessions = useMemo(
+    () =>
+      [...sessions].sort((a, b) => {
+        const notificationDiff =
+          (notifications[b.name] ?? 0) - (notifications[a.name] ?? 0);
+        if (notificationDiff !== 0) return notificationDiff;
+
+        const activeDiff =
+          Number(isSessionActive(b, activeCwds)) -
+          Number(isSessionActive(a, activeCwds));
+        if (activeDiff !== 0) return activeDiff;
+
+        return a.name.localeCompare(b.name);
+      }),
+    [sessions, notifications, activeCwds],
+  );
 
   const activeSessions = useMemo(
-    () => sessions.filter((s) => isSessionActive(s, activeCwds)),
-    [sessions, activeCwds],
+    () =>
+      sortedSessions.filter((s: Session) => isSessionActive(s, activeCwds)),
+    [sortedSessions, activeCwds],
   );
 
   const placeholders: Record<string, string> = {
@@ -491,13 +651,17 @@ export default function Command() {
           sessions={activeSessions}
           setSessions={setSessions}
           activeCwds={activeCwds}
+          notifications={notifications}
+          refreshNotifications={refreshNotifications}
           showActiveIndicator={false}
         />
       ) : tab === "all" ? (
         <SessionsList
-          sessions={sessions}
+          sessions={sortedSessions}
           setSessions={setSessions}
           activeCwds={activeCwds}
+          notifications={notifications}
+          refreshNotifications={refreshNotifications}
           showActiveIndicator={true}
         />
       ) : (
