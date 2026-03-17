@@ -77,14 +77,18 @@ function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
       settled = true;
       try {
         socket?.destroy();
-      } catch {}
+      } catch {
+        // socket may already be destroyed — ignore
+      }
       resolve(value);
     };
 
     const parseBuffer = () => {
       const newlineIndex = buffer.indexOf("\n");
       const message =
-        newlineIndex >= 0 ? buffer.slice(0, newlineIndex).trim() : buffer.trim();
+        newlineIndex >= 0
+          ? buffer.slice(0, newlineIndex).trim()
+          : buffer.trim();
       if (!message) {
         finish(null);
         return;
@@ -133,10 +137,13 @@ async function getNotifications(): Promise<Record<string, number>> {
 
   return Object.fromEntries(
     Object.entries(response.notifications)
-      .map(([sessionName, items]) => [
-        sessionName,
-        items.filter((item) => item.read !== true).length,
-      ] as const)
+      .map(
+        ([sessionName, items]) =>
+          [
+            sessionName,
+            items.filter((item) => item.read !== true).length,
+          ] as const,
+      )
       .filter(([, count]) => count > 0),
   );
 }
@@ -468,7 +475,9 @@ function SessionsList({
                         try {
                           unlinkSync(session.path);
                           setSessions((prev: Session[]) =>
-                            prev.filter((s: Session) => s.name !== session.name),
+                            prev.filter(
+                              (s: Session) => s.name !== session.name,
+                            ),
                           );
                           showToast({
                             style: Toast.Style.Success,
@@ -579,7 +588,9 @@ function ProjectsList({
 export default function Command() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeCwds, setActiveCwds] = useState<Set<string>>(new Set());
-  const [notifications, setNotifications] = useState<Record<string, number>>({});
+  const [notifications, setNotifications] = useState<Record<string, number>>(
+    {},
+  );
   const [tab, setTab] = useState<string>("active");
 
   const refreshNotifications = async () => {
@@ -612,8 +623,7 @@ export default function Command() {
   );
 
   const activeSessions = useMemo(
-    () =>
-      sortedSessions.filter((s: Session) => isSessionActive(s, activeCwds)),
+    () => sortedSessions.filter((s: Session) => isSessionActive(s, activeCwds)),
     [sortedSessions, activeCwds],
   );
 
