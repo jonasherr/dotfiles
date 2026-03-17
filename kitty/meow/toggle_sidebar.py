@@ -26,7 +26,7 @@ def handle_result(
             boss.call_remote_control(None, ("close-window", "--match", f"id:{window.id}"))
             return
 
-    # Sidebar not found — open it as a vsplit in the current tab
+    # Sidebar not found — open it, then move to left edge for full height
     sidebar_path = os.path.expanduser("~/.config/kitty/meow/sidebar.py")
     boss.call_remote_control(boss.active_window, (
         "launch",
@@ -36,3 +36,18 @@ def handle_result(
         "--dont-take-focus",
         "python3", sidebar_path,
     ))
+
+    # Find the newly created sidebar window and move it to the left screen edge.
+    # This restructures the split tree so the sidebar is a root-level left column
+    # spanning the full tab height.
+    for window in tab:
+        wd = window.as_dict()
+        if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
+            boss.call_remote_control(window, (
+                "action", "layout_action", "splits", "move_to_screen_edge", "left",
+            ))
+            # Restore focus to the original window
+            boss.call_remote_control(None, (
+                "focus-window", "--match", f"id:{target_window_id}",
+            ))
+            break
