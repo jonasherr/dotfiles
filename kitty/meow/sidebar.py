@@ -2,31 +2,23 @@
 """Kitty sidebar panel — session list with notification badges."""
 
 import curses
+import glob
 import importlib
+import json
 import os
+import socket
 import subprocess
 import sys
 import threading
-from typing import TYPE_CHECKING, Optional, cast
+import time
+from typing import Optional, cast
 
 sys.path.insert(0, os.path.dirname(__file__))
 notification_schema = importlib.import_module("notification_schema")
-sidebar_server_module = importlib.import_module("sidebar_server")
-
-PANEL_SOCKET_PATH: str = notification_schema.PANEL_SOCKET_PATH
-SidebarServer = sidebar_server_module.SidebarServer
-
-if TYPE_CHECKING:
-    from typing import Protocol
-
-    class SidebarServerType(Protocol):
-        def poll_sessions(self) -> list[dict[str, object]]: ...
-
-        def get_unread_sessions(self) -> list[str]: ...
-
-        def find_main_kitty_socket(self) -> Optional[str]: ...
-
-        def clear_session(self, session_name: str) -> None: ...
+MAIN_KITTY_SOCKET_GLOB = cast(str, notification_schema.MAIN_KITTY_SOCKET_GLOB)
+MSG_CLEAR = cast(str, notification_schema.MSG_CLEAR)
+MSG_GET_STATE = cast(str, notification_schema.MSG_GET_STATE)
+PANEL_SOCKET_PATH = cast(str, notification_schema.PANEL_SOCKET_PATH)
 
 KITTY_APP_BIN = "/Applications/kitty.app/Contents/MacOS/kitty"
 SESSIONS_DIR = os.path.expanduser("~/.config/kitty/sessions")
@@ -67,7 +59,7 @@ def apply_tab_color(main_socket: Optional[str], session_name: str, color: Option
         return
 
     if color:
-        run_kitty(
+        _ = run_kitty(
             "@",
             "--to",
             main_socket,
@@ -78,7 +70,7 @@ def apply_tab_color(main_socket: Optional[str], session_name: str, color: Option
         )
         return
 
-    run_kitty(
+    _ = run_kitty(
         "@",
         "--to",
         main_socket,
@@ -112,9 +104,9 @@ def init_colors() -> None:
 
 
 class SidebarApp:
-    def __init__(self, server: "SidebarServerType"):
-        self.server: SidebarServerType = server
+    def __init__(self):
         self.sessions: list[dict[str, object]] = []
+        self.unread_sessions: set[str] = set()
         self.current_session: Optional[str] = None
         self.selected_idx: int = 0
         self.main_socket: Optional[str] = None
@@ -122,10 +114,88 @@ class SidebarApp:
         self._stop_event: threading.Event = threading.Event()
         self._poll_thread: Optional[threading.Thread] = None
 
+    def _query_server(self, msg: dict[str, object]) -> dict[str, object]:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.settimeout(1.0)
+            sock.connect(PANEL_SOCKET_PATH)
+            sock.sendall((json.dumps(msg) + "\n").encode("utf-8"))
+            payload = sock.recv(65536).decode("utf-8").strip()
+            if not payload:
+                return {}
+            parsed = cast(object, json.loads(payload))
+            return cast(dict[str, object], parsed) if isinstance(parsed, dict) else {}
+        except (OSError, json.JSONDecodeError):
+            return {}
+        finally:
+            sock.close()
+
+    def _get_session_files(self) -> list[tuple[str, str]]:
+        pattern = os.path.join(SESSIONS_DIR, "*.kitty-session")
+        results: list[tuple[str, str]] = []
+        for full_path in sorted(glob.glob(pattern)):
+            basename = os.path.basename(full_path)
+            if basename == "template.kitty-session":
+                continue
+            name = basename.removesuffix(".kitty-session")
+            results.append((name, full_path))
+        return results
+
+    def _poll_sessions(self) -> list[dict[str, object]]:
+        loaded_sessions: list[dict[str, object]] = []
+        for name, path in self._get_session_files():
+            result = run_kitty("@", "ls", "--match", f"session:{name}")
+            if result.returncode != 0:
+                continue
+
+            try:
+                parsed = cast(object, json.loads(result.stdout.strip("\n")))
+            except json.JSONDecodeError:
+                continue
+
+            tab_ids: list[int] = []
+            active_window_id: Optional[int] = None
+            if isinstance(parsed, list):
+                for os_window_obj in cast(list[object], parsed):
+                    if not isinstance(os_window_obj, dict):
+                        continue
+                    os_window = cast(dict[str, object], os_window_obj)
+                    tabs_obj = os_window.get("tabs", [])
+                    if not isinstance(tabs_obj, list):
+                        continue
+                    for tab_obj in cast(list[object], tabs_obj):
+                        if not isinstance(tab_obj, dict):
+                            continue
+                        tab = cast(dict[str, object], tab_obj)
+                        tab_id = tab.get("id")
+                        if isinstance(tab_id, int):
+                            tab_ids.append(tab_id)
+                        windows_obj = tab.get("windows", [])
+                        if not isinstance(windows_obj, list):
+                            continue
+                        for window_obj in cast(list[object], windows_obj):
+                            if not isinstance(window_obj, dict):
+                                continue
+                            window = cast(dict[str, object], window_obj)
+                            window_id = window.get("id")
+                            if isinstance(window_id, int) and (window.get("is_active") or window.get("is_focused")):
+                                active_window_id = window_id
+
+            if tab_ids:
+                loaded_sessions.append({"name": name, "path": path, "tab_ids": tab_ids, "active_window_id": active_window_id})
+
+        return loaded_sessions
+
     def poll(self) -> None:
         """Poll sessions and re-apply unread tab colors."""
-        sessions = self.server.poll_sessions()
-        unread = set(self.server.get_unread_sessions())
+        sessions = self._poll_sessions()
+        state = self._query_server({"type": MSG_GET_STATE})
+        notifications = state.get("notifications", {})
+        unread: set[str] = set()
+        if isinstance(notifications, dict):
+            for name, items in cast(dict[object, object], notifications).items():
+                if isinstance(name, str) and isinstance(items, list) and items:
+                    unread.add(name)
 
         current: Optional[str] = None
         for session in sessions:
@@ -135,6 +205,7 @@ class SidebarApp:
 
         with self._lock:
             self.sessions = sessions
+            self.unread_sessions = unread
             if current:
                 self.current_session = current
             elif self.current_session is not None and not any(s.get("name") == self.current_session for s in sessions):
@@ -158,9 +229,10 @@ class SidebarApp:
         def loop() -> None:
             while not self._stop_event.is_set():
                 self.poll()
-                self._stop_event.wait(POLL_INTERVAL)
+                _ = self._stop_event.wait(POLL_INTERVAL)
 
-        self.main_socket = self.server.find_main_kitty_socket()
+        sockets = glob.glob(MAIN_KITTY_SOCKET_GLOB)
+        self.main_socket = sockets[0] if sockets else None
         self.poll()
         self._poll_thread = threading.Thread(target=loop, daemon=True)
         self._poll_thread.start()
@@ -185,8 +257,8 @@ class SidebarApp:
         if not os.path.exists(session_file):
             return
 
-        run_kitty("@", "action", "goto_session", session_file)
-        self.server.clear_session(session_name)
+        _ = run_kitty("@", "action", "goto_session", session_file)
+        _ = self._query_server({"type": MSG_CLEAR, "session_name": session_name})
         apply_tab_color(self.main_socket, session_name, None)
 
         with self._lock:
@@ -208,8 +280,7 @@ class SidebarApp:
             sessions = list(self.sessions)
             current_session = self.current_session
             selected_idx = self.selected_idx
-
-        unread = set(self.server.get_unread_sessions())
+            unread = set(self.unread_sessions)
 
         def safe_addstr(row: int, col: int, text: str, attr: int = 0) -> None:
             try:
@@ -276,7 +347,7 @@ class SidebarApp:
 
     def run(self, stdscr: "curses.window") -> None:
         """Main curses event loop."""
-        curses.curs_set(0)
+        _ = curses.curs_set(0)
         stdscr.keypad(True)
         stdscr.nodelay(True)
         stdscr.timeout(200)
@@ -309,18 +380,37 @@ class SidebarApp:
 
 
 def main() -> None:
-    # Ensures schema import stays active and discoverable in this entrypoint.
-    _ = PANEL_SOCKET_PATH
+    if not is_daemon_running():
+        _ = subprocess.Popen(
+            [sys.executable, os.path.join(os.path.dirname(__file__), "sidebar_daemon.py")],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        time.sleep(0.5)
 
-    server = SidebarServer()
-    server.start()
-    app = SidebarApp(server)
+    app = SidebarApp()
     app.start_polling()
     try:
         curses.wrapper(app.run)
     finally:
         app.stop()
-        server.stop()
+
+
+def is_daemon_running() -> bool:
+    if not os.path.exists(PANEL_SOCKET_PATH):
+        return False
+
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.settimeout(1.0)
+        sock.connect(PANEL_SOCKET_PATH)
+        sock.sendall((json.dumps({"type": MSG_GET_STATE}) + "\n").encode("utf-8"))
+        data = sock.recv(4096)
+        return bool(data)
+    except OSError:
+        return False
+    finally:
+        sock.close()
 
 
 if __name__ == "__main__":
