@@ -37,7 +37,7 @@ def handle_result(
             window.close()
             return
 
-    # Sidebar not found — open it, then move to left edge for full height
+    # Sidebar not found — open it
     sidebar_path = os.path.expanduser("~/.config/kitty/meow/sidebar.py")
     boss.call_remote_control(boss.active_window, (
         "launch",
@@ -47,13 +47,14 @@ def handle_result(
         "python3", sidebar_path,
     ))
 
-    # Move sidebar to left screen edge for full height, then focus it
+    # Focus sidebar, then move it to the left edge (move_to_screen_edge
+    # operates on the ACTIVE window, so we must focus it first)
     for window in tab:
         if _is_sidebar_window(window):
-            boss.call_remote_control(window, (
-                "action", "layout_action", "splits", "move_to_screen_edge", "left",
-            ))
             boss.call_remote_control(None, (
                 "focus-window", "--match", f"id:{window.id}",
+            ))
+            boss.call_remote_control(None, (
+                "action", "layout_action", "splits", "move_to_screen_edge", "left",
             ))
             break
