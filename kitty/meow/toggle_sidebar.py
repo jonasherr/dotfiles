@@ -6,10 +6,21 @@ from typing import List
 from kitty.boss import Boss
 
 SIDEBAR_VAR = "is_sidebar"
+SIDEBAR_SCRIPT = "sidebar.py"
 
 
 def main(args: List[str]) -> str:
     return "toggle"
+
+
+def _is_sidebar_window(window) -> bool:
+    wd = window.as_dict()
+    # Check user vars first
+    if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
+        return True
+    # Fallback: check cmdline for sidebar.py
+    cmdline = wd.get("cmdline", [])
+    return any(SIDEBAR_SCRIPT in str(arg) for arg in cmdline)
 
 
 def handle_result(
@@ -19,10 +30,9 @@ def handle_result(
     if tab is None:
         return
 
-    # Check if sidebar already exists in this tab via user_vars
+    # Check if sidebar already exists in this tab — close it
     for window in tab:
-        wd = window.as_dict()
-        if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
+        if _is_sidebar_window(window):
             boss.call_remote_control(None, ("close-window", "--match", f"id:{window.id}"))
             return
 
@@ -37,16 +47,12 @@ def handle_result(
         "python3", sidebar_path,
     ))
 
-    # Find the newly created sidebar window and move it to the left screen edge.
-    # This restructures the split tree so the sidebar is a root-level left column
-    # spanning the full tab height.
+    # Find the newly created sidebar and move it to the left screen edge
     for window in tab:
-        wd = window.as_dict()
-        if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
+        if _is_sidebar_window(window):
             boss.call_remote_control(window, (
                 "action", "layout_action", "splits", "move_to_screen_edge", "left",
             ))
-            # Restore focus to the original window
             boss.call_remote_control(None, (
                 "focus-window", "--match", f"id:{target_window_id}",
             ))
