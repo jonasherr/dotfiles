@@ -6,7 +6,6 @@ from typing import List
 from kitty.boss import Boss
 
 SIDEBAR_VAR = "is_sidebar"
-SIDEBAR_SCRIPT = "sidebar.py"
 
 
 def main(args: List[str]) -> str:
@@ -15,12 +14,16 @@ def main(args: List[str]) -> str:
 
 def _is_sidebar_window(window) -> bool:
     wd = window.as_dict()
-    # Check user vars first
+    # Check user vars
     if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
         return True
-    # Fallback: check cmdline for sidebar.py
+    # Fallback: check cmdline ends with /sidebar.py (not toggle_sidebar.py)
     cmdline = wd.get("cmdline", [])
-    return any(SIDEBAR_SCRIPT in str(arg) for arg in cmdline)
+    for arg in cmdline:
+        s = str(arg)
+        if s.endswith("/sidebar.py") or s == "sidebar.py":
+            return True
+    return False
 
 
 def handle_result(
