@@ -350,6 +350,9 @@ def main(args: List[str]) -> str:
 def handle_result(
     args: List[str], answer: str, target_window_id: int, boss: Boss
 ) -> None:
+    # Always restore splits layout (keybind switches to stack before launching kitten)
+    boss.call_remote_control(None, ("goto-layout", "splits"))
+
     if not answer:
         return
     session_file = os.path.join(SESSIONS_DIR, f"{answer}.kitty-session")
