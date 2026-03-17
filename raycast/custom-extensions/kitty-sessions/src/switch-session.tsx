@@ -12,6 +12,7 @@ import {
   closeMainWindow,
   useNavigation,
 } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 import { execSync } from "child_process";
 import {
   existsSync,
@@ -24,13 +25,7 @@ import {
 import { createConnection } from "net";
 import { homedir } from "os";
 import { join, basename } from "path";
-import {
-  useState,
-  useEffect,
-  useMemo,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 const SESSIONS_DIR = join(homedir(), ".config", "kitty", "sessions");
 const PROJECTS_DIR = join(homedir(), "Projects");
@@ -354,19 +349,30 @@ function renameSession(session: Session, newName: string): boolean {
   }
 }
 
+interface SessionsData {
+  sessions: Session[];
+  activeCwds: string[];
+  notifications: Record<string, number>;
+}
+
+async function fetchSessionsData(): Promise<SessionsData> {
+  const sessions = getSessionFiles();
+  const activeCwds = [...getActiveCwds()];
+  const notifications = await getNotifications();
+  return { sessions, activeCwds, notifications };
+}
+
 function SessionsList({
   sessions,
-  setSessions,
+  revalidate,
   activeCwds,
   notifications,
-  refreshNotifications,
   showActiveIndicator,
 }: {
   sessions: Session[];
-  setSessions: Dispatch<SetStateAction<Session[]>>;
+  revalidate: () => void;
   activeCwds: Set<string>;
   notifications: Record<string, number>;
-  refreshNotifications: () => Promise<void>;
   showActiveIndicator: boolean;
 }) {
   const { push } = useNavigation();
@@ -422,7 +428,12 @@ function SessionsList({
                   <Action
                     title="Switch to Session"
                     icon={Icon.ArrowRight}
-                    onAction={() => switchToSession(session.path)}
+                    onAction={async () => {
+                      if (notificationCount > 0) {
+                        await clearNotifications(session.name);
+                      }
+                      switchToSession(session.path);
+                    }}
                   />
                   <Action.ShowInFinder
                     title="Show Session File"
@@ -439,7 +450,7 @@ function SessionsList({
                       shortcut={{ modifiers: ["ctrl"], key: "n" }}
                       onAction={async () => {
                         await clearNotifications(session.name);
-                        await refreshNotifications();
+                        revalidate();
                       }}
                     />
                   ) : null}
@@ -451,7 +462,7 @@ function SessionsList({
                       push(
                         <RenameSessionForm
                           session={session}
-                          setSessions={setSessions}
+                          revalidate={revalidate}
                         />,
                       )
                     }
@@ -474,11 +485,7 @@ function SessionsList({
                       ) {
                         try {
                           unlinkSync(session.path);
-                          setSessions((prev: Session[]) =>
-                            prev.filter(
-                              (s: Session) => s.name !== session.name,
-                            ),
-                          );
+                          revalidate();
                           showToast({
                             style: Toast.Style.Success,
                             title: "Deleted",
@@ -506,10 +513,10 @@ function SessionsList({
 
 function RenameSessionForm({
   session,
-  setSessions,
+  revalidate,
 }: {
   session: Session;
-  setSessions: Dispatch<SetStateAction<Session[]>>;
+  revalidate: () => void;
 }) {
   const { pop } = useNavigation();
   return (
@@ -521,7 +528,7 @@ function RenameSessionForm({
             title="Rename"
             onSubmit={(values: { name: string }) => {
               if (renameSession(session, values.name)) {
-                setSessions(getSessionFiles());
+                revalidate();
                 pop();
               }
             }}
@@ -536,16 +543,12 @@ function RenameSessionForm({
 
 function ProjectsList({
   sessionNames,
-  onSessionCreated,
+  revalidate,
 }: {
   sessionNames: Set<string>;
-  onSessionCreated: () => void;
+  revalidate: () => void;
 }) {
-  const [projects, setProjects] = useState<ProjectDir[]>([]);
-
-  useEffect(() => {
-    setProjects(getProjectDirs(sessionNames));
-  }, [sessionNames]);
+  const projects = useMemo(() => getProjectDirs(sessionNames), [sessionNames]);
 
   return (
     <>
@@ -569,7 +572,7 @@ function ProjectsList({
                   icon={Icon.Plus}
                   onAction={() => {
                     const sessionPath = createSessionFromTemplate(project.path);
-                    switchToSession(sessionPath, onSessionCreated);
+                    switchToSession(sessionPath, revalidate);
                   }}
                 />
                 <Action.ShowInFinder
@@ -585,25 +588,29 @@ function ProjectsList({
   );
 }
 
-export default function Command() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [activeCwds, setActiveCwds] = useState<Set<string>>(new Set());
-  const [notifications, setNotifications] = useState<Record<string, number>>(
-    {},
-  );
-  const [tab, setTab] = useState<string>("active");
+const POLL_INTERVAL = 500;
 
-  const refreshNotifications = async () => {
-    setNotifications(await getNotifications());
-  };
+export default function Command() {
+  const { data, isLoading, revalidate } = useCachedPromise(fetchSessionsData);
+  const [tab, setTab] = useState<string>("active");
+  const revalidateRef = useRef(revalidate);
+  revalidateRef.current = revalidate;
 
   useEffect(() => {
-    setSessions(getSessionFiles());
-    setActiveCwds(getActiveCwds());
-    void getNotifications().then(setNotifications);
+    const id = setInterval(() => revalidateRef.current(), POLL_INTERVAL);
+    return () => clearInterval(id);
   }, []);
 
-  const sessionNames = new Set<string>(sessions.map((s: Session) => s.name));
+  const sessions = data?.sessions ?? [];
+  const activeCwds = useMemo(
+    () => new Set(data?.activeCwds ?? []),
+    [data?.activeCwds],
+  );
+  const notifications = data?.notifications ?? {};
+  const sessionNames = useMemo(
+    () => new Set(sessions.map((s: Session) => s.name)),
+    [sessions],
+  );
 
   const sortedSessions = useMemo(
     () =>
@@ -635,6 +642,7 @@ export default function Command() {
 
   return (
     <List
+      isLoading={isLoading}
       searchBarPlaceholder={placeholders[tab] ?? "Search..."}
       searchBarAccessory={
         <List.Dropdown tooltip="View" onChange={setTab} value={tab}>
@@ -659,26 +667,21 @@ export default function Command() {
       {tab === "active" ? (
         <SessionsList
           sessions={activeSessions}
-          setSessions={setSessions}
+          revalidate={revalidate}
           activeCwds={activeCwds}
           notifications={notifications}
-          refreshNotifications={refreshNotifications}
           showActiveIndicator={false}
         />
       ) : tab === "all" ? (
         <SessionsList
           sessions={sortedSessions}
-          setSessions={setSessions}
+          revalidate={revalidate}
           activeCwds={activeCwds}
           notifications={notifications}
-          refreshNotifications={refreshNotifications}
           showActiveIndicator={true}
         />
       ) : (
-        <ProjectsList
-          sessionNames={sessionNames}
-          onSessionCreated={() => setSessions(getSessionFiles())}
-        />
+        <ProjectsList sessionNames={sessionNames} revalidate={revalidate} />
       )}
     </List>
   );
