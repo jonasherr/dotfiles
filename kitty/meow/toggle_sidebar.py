@@ -4,8 +4,10 @@ import os
 from typing import List
 
 from kitty.boss import Boss
+from kitty.layout.splits import Pair
 
 SIDEBAR_VAR = "is_sidebar"
+SIDEBAR_BIAS = 0.2
 
 
 def main(args: List[str]) -> str:
@@ -37,27 +39,40 @@ def handle_result(
             window.close()
             return
 
-    # Sidebar not found — open it
+    # Sidebar not found — launch it
     sidebar_path = os.path.expanduser("~/.config/kitty/meow/sidebar.py")
     boss.call_remote_control(boss.active_window, (
         "launch",
         "--location=vsplit",
-        "--bias=20",
         f"--var={SIDEBAR_VAR}=1",
         "python3", sidebar_path,
     ))
 
-    # Focus sidebar, then move to left edge via direct layout API
+    # Find the sidebar and directly restructure the split tree
+    # to place it as the root-level left column
+    layout = tab.current_layout
+    if not hasattr(layout, "pairs_root"):
+        return
+
     for window in tab:
         if _is_sidebar_window(window):
-            # Focus the sidebar so it becomes the active window
+            wg = tab.windows.group_for_window(window)
+            if wg is None:
+                break
+
+            # Remove sidebar from its current position in the tree
+            layout.remove_windows(wg.id)
+
+            # Create a new root: sidebar on left, everything else on right
+            new_root = Pair(horizontal=True)
+            new_root.one = wg.id
+            new_root.two = layout.pairs_root
+            new_root.bias = SIDEBAR_BIAS
+            layout.pairs_root = new_root
+
+            # Relayout and focus the sidebar
+            tab.relayout()
             boss.call_remote_control(None, (
                 "focus-window", "--match", f"id:{window.id}",
             ))
-            # Call move_to_screen_edge directly on the layout object
-            layout = tab.current_layout
-            if hasattr(layout, "layout_action"):
-                result = layout.layout_action("move_to_screen_edge", ("left",), tab.windows)
-                if result:
-                    tab.relayout()
             break
