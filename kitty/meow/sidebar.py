@@ -1,4 +1,5 @@
-"""Kitty kitten — notification sidebar overlay with session switching."""
+#!/usr/bin/env python3
+"""Persistent notification sidebar — runs in a vsplit pane."""
 
 import curses
 import glob
@@ -10,7 +11,7 @@ import subprocess
 import sys
 import threading
 import time
-from typing import List, Optional, cast
+from typing import Optional, cast
 
 _schema_dir = os.path.dirname(__file__)
 if _schema_dir not in sys.path:
@@ -20,8 +21,6 @@ MAIN_KITTY_SOCKET_GLOB = cast(str, notification_schema.MAIN_KITTY_SOCKET_GLOB)
 MSG_CLEAR = cast(str, notification_schema.MSG_CLEAR)
 MSG_GET_STATE = cast(str, notification_schema.MSG_GET_STATE)
 PANEL_SOCKET_PATH = cast(str, notification_schema.PANEL_SOCKET_PATH)
-
-from kitty.boss import Boss
 
 KITTY_APP_BIN = "/Applications/kitty.app/Contents/MacOS/kitty"
 SESSIONS_DIR = os.path.expanduser("~/.config/kitty/sessions")
@@ -68,8 +67,7 @@ def query_daemon(msg: dict[str, object]) -> dict[str, object]:
 def ensure_daemon() -> None:
     if os.path.exists(PANEL_SOCKET_PATH):
         try:
-            resp = query_daemon({"type": MSG_GET_STATE})
-            if resp:
+            if query_daemon({"type": MSG_GET_STATE}):
                 return
         except Exception:
             pass
@@ -170,7 +168,6 @@ class SidebarApp:
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self._thread: Optional[threading.Thread] = None
-        self.result: str = ""
 
     def refresh(self) -> None:
         sessions = poll_sessions()
@@ -191,22 +188,19 @@ class SidebarApp:
                 self.selected_idx = 0
 
         sockets = glob.glob(MAIN_KITTY_SOCKET_GLOB)
-        ms = sockets[0] if sockets else None
-        self.main_socket = ms
+        self.main_socket = sockets[0] if sockets else None
         for s in sessions:
             name = str(s.get("name", ""))
             if name and name in unread:
-                apply_tab_color(ms, name, UNREAD_COLOR)
+                apply_tab_color(self.main_socket, name, UNREAD_COLOR)
 
     def start_polling(self) -> None:
         self.refresh()
-
         def loop() -> None:
             while not self._stop.is_set():
                 self._stop.wait(POLL_INTERVAL)
                 if not self._stop.is_set():
                     self.refresh()
-
         self._thread = threading.Thread(target=loop, daemon=True)
         self._thread.start()
 
@@ -215,7 +209,7 @@ class SidebarApp:
         if self._thread and self._thread.is_alive():
             self._thread.join(timeout=1.0)
 
-    def select_current(self) -> None:
+    def switch_to_selected(self) -> None:
         with self._lock:
             if not self.sessions:
                 return
@@ -226,16 +220,18 @@ class SidebarApp:
         session_file = os.path.join(SESSIONS_DIR, f"{name}.kitty-session")
         if not os.path.exists(session_file):
             return
+        run_kitty("@", "action", "goto_session", session_file)
+        run_kitty("@", "set-tab-color", "--match", f"session:{name}",
+                  "active_bg=NONE", "inactive_bg=NONE")
         query_daemon({"type": MSG_CLEAR, "session_name": name})
         apply_tab_color(self.main_socket, name, None)
-        self.result = name
 
     def draw(self, stdscr: "curses.window") -> None:
         stdscr.erase()
         max_y, max_x = stdscr.getmaxyx()
-        if max_y < 4 or max_x < 20:
+        if max_y < 4 or max_x < 10:
             try:
-                stdscr.addstr(0, 0, "Terminal too small")
+                stdscr.addstr(0, 0, "too small")
                 stdscr.refresh()
             except curses.error:
                 pass
@@ -249,15 +245,14 @@ class SidebarApp:
 
         def safe(row: int, col: int, text: str, attr: int = 0) -> None:
             try:
-                stdscr.addstr(row, col, text[: max(0, max_x - col - 1)], attr)
+                stdscr.addstr(row, col, text[: max(0, max_x - col)], attr)
             except curses.error:
                 pass
 
-        title = "Notifications"
-        safe(0, 0, f"┌─ {title} " + "─" * max(0, max_x - len(title) - 5) + "┐",
-             curses.color_pair(PAIR_HEADER) | curses.A_BOLD)
+        safe(0, 0, " Notifications", curses.color_pair(PAIR_HEADER) | curses.A_BOLD)
+        safe(1, 0, "─" * max_x, curses.color_pair(PAIR_TAB))
 
-        row = 1
+        row = 2
         body_bottom = max_y - 2
         for idx, session in enumerate(sessions):
             if row > body_bottom:
@@ -274,33 +269,23 @@ class SidebarApp:
             else:
                 attr = curses.color_pair(PAIR_HEADER)
 
-            safe(row, 0, "│")
-            label = f" {name}"[: max(1, max_x - 4)]
-            safe(row, 1, label, attr)
+            prefix = "▸ " if is_selected else "  "
+            label = f"{prefix}{name}"[: max(1, max_x - 3)]
+            safe(row, 0, label, attr)
             if badge:
-                safe(row, min(max_x - 3, 1 + len(label)), badge,
-                     curses.color_pair(PAIR_BADGE) | curses.A_BOLD)
-            safe(row, max_x - 1, "│")
+                safe(row, len(label), badge, curses.color_pair(PAIR_BADGE) | curses.A_BOLD)
             row += 1
 
             if is_active:
                 for tid in cast(list[int], session.get("tab_ids", [])):
                     if row > body_bottom:
                         break
-                    safe(row, 0, "│")
-                    safe(row, 1, f"   └ tab {tid}"[: max(1, max_x - 3)],
+                    safe(row, 0, f"    └ tab {tid}"[: max_x],
                          curses.color_pair(PAIR_TAB))
-                    safe(row, max_x - 1, "│")
                     row += 1
 
-        while row <= body_bottom:
-            safe(row, 0, "│")
-            safe(row, max_x - 1, "│")
-            row += 1
-
-        safe(max_y - 2, 0, "└" + "─" * max(0, max_x - 2) + "┘")
-        footer = "j/k: navigate  Enter: switch  q/Esc: quit"
         safe(max_y - 1, 0, " " * (max_x - 1), curses.color_pair(PAIR_FOOTER))
+        footer = "j/k ↑↓  ⏎ switch"
         safe(max_y - 1, 0, footer[: max_x - 1], curses.color_pair(PAIR_FOOTER))
         stdscr.refresh()
 
@@ -331,12 +316,10 @@ class SidebarApp:
                 else:
                     continue
             if key in (10, 13, curses.KEY_ENTER):
-                self.select_current()
-                if self.result:
-                    return
+                self.switch_to_selected()
 
 
-def main(args: List[str]) -> str:
+def main() -> None:
     ensure_daemon()
     app = SidebarApp()
     app.start_polling()
@@ -344,21 +327,7 @@ def main(args: List[str]) -> str:
         curses.wrapper(app.run)
     finally:
         app.stop()
-    return app.result
 
 
-def handle_result(
-    args: List[str], answer: str, target_window_id: int, boss: Boss
-) -> None:
-    # Always restore splits layout (keybind switches to stack before launching kitten)
-    boss.call_remote_control(None, ("goto-layout", "splits"))
-
-    if not answer:
-        return
-    session_file = os.path.join(SESSIONS_DIR, f"{answer}.kitty-session")
-    if not os.path.exists(session_file):
-        return
-    boss.call_remote_control(None, ("action", "goto_session", session_file))
-    boss.call_remote_control(
-        None, ("set-tab-color", "--self", "active_bg=NONE", "inactive_bg=NONE"),
-    )
+if __name__ == "__main__":
+    main()
