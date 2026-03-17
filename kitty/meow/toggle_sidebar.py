@@ -47,14 +47,17 @@ def handle_result(
         "python3", sidebar_path,
     ))
 
-    # Focus sidebar, then move it to the left edge (move_to_screen_edge
-    # operates on the ACTIVE window, so we must focus it first)
+    # Focus sidebar, then move to left edge via direct layout API
     for window in tab:
         if _is_sidebar_window(window):
+            # Focus the sidebar so it becomes the active window
             boss.call_remote_control(None, (
                 "focus-window", "--match", f"id:{window.id}",
             ))
-            boss.call_remote_control(None, (
-                "action", "layout_action", "splits", "move_to_screen_edge", "left",
-            ))
+            # Call move_to_screen_edge directly on the layout object
+            layout = tab.current_layout
+            if hasattr(layout, "layout_action"):
+                result = layout.layout_action("move_to_screen_edge", ("left",), tab.windows)
+                if result:
+                    tab.relayout()
             break
