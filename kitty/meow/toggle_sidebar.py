@@ -39,7 +39,15 @@ def handle_result(
             window.close()
             return
 
-    # Sidebar not found — launch it
+    # Sidebar not found — open it
+    layout = tab.current_layout
+    if not hasattr(layout, "pairs_root"):
+        return
+
+    # Record tree state before launch
+    ids_before = set(layout.pairs_root.all_window_ids())
+
+    # Launch sidebar
     sidebar_path = os.path.expanduser("~/.config/kitty/meow/sidebar.py")
     boss.call_remote_control(boss.active_window, (
         "launch",
@@ -48,30 +56,28 @@ def handle_result(
         "python3", sidebar_path,
     ))
 
-    # Find the sidebar and directly restructure the split tree
-    # to place it as the root-level left column
-    layout = tab.current_layout
-    if not hasattr(layout, "pairs_root"):
+    # Find the new group ID by diffing the tree
+    ids_after = set(layout.pairs_root.all_window_ids())
+    new_ids = ids_after - ids_before
+    if not new_ids:
         return
+    sidebar_gid = new_ids.pop()
 
+    # Restructure: remove sidebar from wherever it landed,
+    # then make it the root-level left column
+    layout.remove_windows(sidebar_gid)
+    old_root = layout.pairs_root
+    new_root = Pair(horizontal=True)
+    new_root.one = sidebar_gid
+    new_root.two = old_root
+    new_root.bias = SIDEBAR_BIAS
+    layout.pairs_root = new_root
+
+    tab.relayout()
+
+    # Focus the sidebar
     for window in tab:
         if _is_sidebar_window(window):
-            wg = tab.windows.group_for_window(window)
-            if wg is None:
-                break
-
-            # Remove sidebar from its current position in the tree
-            layout.remove_windows(wg.id)
-
-            # Create a new root: sidebar on left, everything else on right
-            new_root = Pair(horizontal=True)
-            new_root.one = wg.id
-            new_root.two = layout.pairs_root
-            new_root.bias = SIDEBAR_BIAS
-            layout.pairs_root = new_root
-
-            # Relayout and focus the sidebar
-            tab.relayout()
             boss.call_remote_control(None, (
                 "focus-window", "--match", f"id:{window.id}",
             ))
