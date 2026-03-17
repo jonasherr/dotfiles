@@ -101,31 +101,33 @@ def get_session_files() -> list[tuple[str, str]]:
 
 
 def poll_sessions() -> list[dict[str, object]]:
-    loaded: list[dict[str, object]] = []
+    sessions: list[dict[str, object]] = []
     for name, path in get_session_files():
+        entry: dict[str, object] = {"name": name, "path": path, "tab_ids": [], "active_window_id": None, "loaded": False}
         result = run_kitty("@", "ls", "--match", f"session:{name}")
-        if result.returncode != 0:
-            continue
-        try:
-            data = json.loads(result.stdout.strip("\n"))
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(data, list):
-            continue
-        tab_ids: list[int] = []
-        active_window_id: Optional[int] = None
-        for os_win in data:
-            for tab in os_win.get("tabs", []):
-                tid = tab.get("id")
-                if isinstance(tid, int):
-                    tab_ids.append(tid)
-                for win in tab.get("windows", []):
-                    wid = win.get("id")
-                    if isinstance(wid, int) and (win.get("is_active") or win.get("is_focused")):
-                        active_window_id = wid
-        if tab_ids:
-            loaded.append({"name": name, "path": path, "tab_ids": tab_ids, "active_window_id": active_window_id})
-    return loaded
+        if result.returncode == 0:
+            try:
+                data = json.loads(result.stdout.strip("\n"))
+            except json.JSONDecodeError:
+                data = []
+            if isinstance(data, list):
+                tab_ids: list[int] = []
+                active_window_id: Optional[int] = None
+                for os_win in data:
+                    for tab in os_win.get("tabs", []):
+                        tid = tab.get("id")
+                        if isinstance(tid, int):
+                            tab_ids.append(tid)
+                        for win in tab.get("windows", []):
+                            wid = win.get("id")
+                            if isinstance(wid, int) and (win.get("is_active") or win.get("is_focused")):
+                                active_window_id = wid
+                if tab_ids:
+                    entry["tab_ids"] = tab_ids
+                    entry["active_window_id"] = active_window_id
+                    entry["loaded"] = True
+        sessions.append(entry)
+    return sessions
 
 
 def get_unread() -> set[str]:
@@ -262,10 +264,14 @@ class SidebarApp:
             is_active = name == current_session
             badge = f" {BADGE}" if name in unread else ""
 
+            is_loaded = bool(session.get("loaded", False))
+
             if is_selected:
                 attr = curses.color_pair(PAIR_SELECTED) | curses.A_BOLD
             elif is_active:
                 attr = curses.color_pair(PAIR_ACTIVE) | curses.A_BOLD
+            elif not is_loaded:
+                attr = curses.color_pair(PAIR_TAB) | curses.A_DIM
             else:
                 attr = curses.color_pair(PAIR_HEADER)
 

@@ -6,7 +6,7 @@ from typing import List
 
 from kitty.boss import Boss
 
-SIDEBAR_TITLE = "notifications"
+SIDEBAR_VAR = "is_sidebar"
 
 
 def main(args: List[str]) -> str:
@@ -20,9 +20,10 @@ def handle_result(
     if tab is None:
         return
 
-    # Check if sidebar already exists in this tab
+    # Check if sidebar already exists in this tab via user_vars
     for window in tab:
-        if window.title == SIDEBAR_TITLE:
+        wd = window.as_dict()
+        if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
             boss.call_remote_control(None, ("close-window", "--match", f"id:{window.id}"))
             return
 
@@ -32,7 +33,7 @@ def handle_result(
         "launch",
         "--location=vsplit",
         "--bias=20",
-        f"--title={SIDEBAR_TITLE}",
+        f"--var={SIDEBAR_VAR}=1",
         "--dont-take-focus",
         sys.executable, sidebar_path,
     ))
