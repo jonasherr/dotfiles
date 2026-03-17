@@ -53,8 +53,11 @@ class SidebarRequestHandler(socketserver.StreamRequestHandler):
 
     def _write_response(self, response: Dict[str, Any]) -> None:
         data = (json.dumps(response) + "\n").encode("utf-8")
-        self.wfile.write(data)
-        self.wfile.flush()
+        try:
+            self.wfile.write(data)
+            self.wfile.flush()
+        except (BrokenPipeError, OSError):
+            pass
 
 
 class ThreadedUnixServer(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
