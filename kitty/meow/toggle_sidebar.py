@@ -1,7 +1,6 @@
 """Kitten to toggle the notification sidebar as a vsplit pane."""
 
 import os
-import sys
 from typing import List
 
 from kitty.boss import Boss
@@ -27,13 +26,13 @@ def handle_result(
             boss.call_remote_control(None, ("close-window", "--match", f"id:{window.id}"))
             return
 
-    # Sidebar not found — open it
+    # Sidebar not found — open it as a vsplit in the current tab
     sidebar_path = os.path.expanduser("~/.config/kitty/meow/sidebar.py")
-    boss.call_remote_control(None, (
+    boss.call_remote_control(boss.active_window, (
         "launch",
         "--location=vsplit",
         "--bias=20",
         f"--var={SIDEBAR_VAR}=1",
         "--dont-take-focus",
-        sys.executable, sidebar_path,
+        "python3", sidebar_path,
     ))
