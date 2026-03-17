@@ -75,19 +75,17 @@ desc = "Open help"
 
 [[mgr.prepend_keymap]]
 on = "<C-p>"
-run = '''
-  shell --confirm 'qlmanage -p "$@"'
-'''
+run = "shell -- qlmanage -p %s"
 desc = "Show file with system quicklook."
 
 [[mgr.prepend_keymap]]
 on   = [ "g", "f" ]
-run  = "shell 'open -R \"$@\"'"
+run  = "shell -- open -R %s"
 desc = "Reveal in Finder"
 
 [[mgr.prepend_keymap]]
 on = "Y"
 run = '''
-  shell --confirm 'for f in "$@"; do osascript -e "set the clipboard to (POSIX file \"$f\")"; done && echo "Copied to clipboard"'
+  shell -- for f in %s; do osascript -e "set the clipboard to (POSIX file \"$f\")"; done && echo "Copied to clipboard"
 '''
 desc = "Copy file to clipboard"
