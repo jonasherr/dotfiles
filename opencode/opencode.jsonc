@@ -41,7 +41,7 @@
   "plugin": [
     "@franlol/opencode-md-table-formatter@0.0.3",
     "./plugin/damage-control.ts",
-    "./plugin/cmux-notify.ts",
+    "./plugin/terminal-notify.ts",
     "./plugin/memory-engine.ts",
     "oh-my-opencode@latest"
   ],
