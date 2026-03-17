@@ -14,10 +14,8 @@ def main(args: List[str]) -> str:
 
 def _is_sidebar_window(window) -> bool:
     wd = window.as_dict()
-    # Check user vars
     if wd.get("user_vars", {}).get(SIDEBAR_VAR) == "1":
         return True
-    # Fallback: check cmdline ends with /sidebar.py (not toggle_sidebar.py)
     cmdline = wd.get("cmdline", [])
     for arg in cmdline:
         s = str(arg)
@@ -36,7 +34,7 @@ def handle_result(
     # Check if sidebar already exists in this tab — close it
     for window in tab:
         if _is_sidebar_window(window):
-            boss.call_remote_control(None, ("close-window", "--match", f"id:{window.id}"))
+            window.close()
             return
 
     # Sidebar not found — open it, then move to left edge for full height
@@ -46,17 +44,16 @@ def handle_result(
         "--location=vsplit",
         "--bias=20",
         f"--var={SIDEBAR_VAR}=1",
-        "--dont-take-focus",
         "python3", sidebar_path,
     ))
 
-    # Find the newly created sidebar and move it to the left screen edge
+    # Move sidebar to left screen edge for full height, then focus it
     for window in tab:
         if _is_sidebar_window(window):
             boss.call_remote_control(window, (
                 "action", "layout_action", "splits", "move_to_screen_edge", "left",
             ))
             boss.call_remote_control(None, (
-                "focus-window", "--match", f"id:{target_window_id}",
+                "focus-window", "--match", f"id:{window.id}",
             ))
             break
