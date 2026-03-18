@@ -1,143 +1,96 @@
 import type { Plugin, PluginInput } from "@opencode-ai/plugin"
-import { existsSync, readdirSync } from "fs"
+import { appendFileSync, existsSync, readdirSync, readFileSync } from "fs"
 import { createConnection } from "net"
 import { homedir } from "os"
 import { basename, join } from "path"
 
+const DEBUG_LOG = "/tmp/terminal-notify-debug.log"
+function debug(msg: string) {
+  appendFileSync(DEBUG_LOG, `${new Date().toISOString()} ${msg}\n`)
+}
+
 const CMUX_SOCK = "/tmp/cmux.sock"
 const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock"
-const KITTY_BIN_PATHS = ["kitty", "/Applications/kitty.app/Contents/MacOS/kitty"]
 const IDLE_DEBOUNCE_MS = 1500
-const RESOLVE_TIMEOUT_MS = 5000
 const QUESTION_TOOLS = new Set(["question", "ask_user_question", "askuserquestion"])
 
 function isCmux(): boolean {
   return existsSync(CMUX_SOCK)
 }
 
-function isKitty(): boolean {
-  // Must be running inside Kitty AND have the sidebar daemon socket available
-  return !!process.env.KITTY_WINDOW_ID && existsSync(KITTY_SIDEBAR_SOCK)
-}
+function resolveKittySession(): string | undefined {
+  const cwd = process.cwd()
+  const home = homedir()
+  const sessionsDir = join(home, ".config", "kitty", "sessions")
 
-function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ])
-}
-
-async function resolveKittySession($: PluginInput["$"]): Promise<string | undefined> {
   try {
-    // Run kitty @ ls to find which session this window belongs to
-    let allWindows: Array<{ tabs?: Array<{ id?: number; windows?: Array<{ is_self?: boolean }> }> }> | undefined
-
-    for (const kittyBin of KITTY_BIN_PATHS) {
-      try {
-        const result = await withTimeout($`${kittyBin} @ ls`, 3000, undefined)
-        if (!result) continue
-        const stdout = typeof result === "string" ? result
-          : typeof result === "object" && result !== null && "stdout" in result
-            ? String(result.stdout)
-            : ""
-        if (!stdout.trim()) continue
-        const parsed = JSON.parse(stdout.trim())
-        if (Array.isArray(parsed)) { allWindows = parsed; break }
-      } catch { continue }
-    }
-    if (!allWindows) return undefined
-
-    // Find our tab ID
-    let selfTabID: number | undefined
-    for (const osWindow of allWindows) {
-      for (const tab of osWindow.tabs ?? []) {
-        for (const window of tab.windows ?? []) {
-          if (window.is_self && typeof tab.id === "number") {
-            selfTabID = tab.id
-          }
-        }
+    const files = readdirSync(sessionsDir).filter(
+      (f: string) => f.endsWith(".kitty-session") && f !== "template.kitty-session",
+    )
+    for (const file of files) {
+      const content = readFileSync(join(sessionsDir, file), "utf-8")
+      const cdLine = content.split("\n").find((l: string) => l.startsWith("cd "))
+      if (!cdLine) continue
+      const sessionDir = cdLine.slice(3).trim().replace(/^~/, home)
+      if (cwd === sessionDir || cwd.startsWith(sessionDir + "/")) {
+        return basename(file, ".kitty-session")
       }
     }
-    if (typeof selfTabID !== "number") return undefined
-
-    // Match to session
-    const sessionsDir = join(homedir(), ".config", "kitty", "sessions")
-    let sessionFiles: string[] = []
-    try {
-      sessionFiles = readdirSync(sessionsDir)
-        .filter((entry: string) => entry.endsWith(".kitty-session"))
-        .map((entry: string) => basename(entry, ".kitty-session"))
-    } catch { return undefined }
-
-    for (const sessionName of sessionFiles) {
-      for (const kittyBin of KITTY_BIN_PATHS) {
-        try {
-          const result = await withTimeout(
-            $`${kittyBin} @ ls --match ${`session:${sessionName}`}`,
-            2000,
-            undefined,
-          )
-          if (!result) continue
-          const stdout = typeof result === "string" ? result
-            : typeof result === "object" && result !== null && "stdout" in result
-              ? String(result.stdout)
-              : ""
-          if (!stdout.trim()) continue
-          const parsed = JSON.parse(stdout.trim())
-          if (!Array.isArray(parsed)) continue
-          for (const osWindow of parsed) {
-            for (const tab of (osWindow as { tabs?: Array<{ id?: number }> }).tabs ?? []) {
-              if (tab.id === selfTabID) return sessionName
-            }
-          }
-          break // parsed successfully from this binary, no need to try next
-        } catch { continue }
-      }
-    }
-    return undefined
   } catch {
     return undefined
   }
+  return undefined
 }
+
+type KittyNotificationType = "idle" | "input" | "permission"
 
 function notifyKitty(
   sessionName: string | undefined,
-  type: string,
+  type: KittyNotificationType,
   message: string,
 ): void {
-  // Fire-and-forget — never await, never block
-  try {
-    const payload = JSON.stringify({
-      type: "notify",
-      session_name: sessionName ?? "",
-      notification_type: type,
-      message,
-    })
+  const payload = JSON.stringify({
+    type: "notify",
+    session_name: sessionName ?? "",
+    notification_type: type,
+    message,
+  })
+  debug(`sending: ${payload}`)
 
+  try {
     const socket = createConnection(KITTY_SIDEBAR_SOCK)
     socket.setTimeout(2000)
     socket.on("connect", () => {
       socket.write(`${payload}\n`)
       socket.end()
     })
-    socket.on("error", () => { try { socket.destroy() } catch {} })
-    socket.on("timeout", () => { try { socket.destroy() } catch {} })
-  } catch {
-    // Silent — notification is best-effort
+    socket.on("error", (err) => {
+      debug(`socket error: ${err}`)
+      try { socket.destroy() } catch {}
+    })
+    socket.on("timeout", () => {
+      debug("socket timeout")
+      try { socket.destroy() } catch {}
+    })
+  } catch (err) {
+    debug(`connect error: ${err}`)
   }
 }
 
 async function notify(
   $: PluginInput["$"],
   kittySessionName: string | undefined,
+  kittyType: KittyNotificationType,
   title: string,
   body: string,
   subtitle?: string,
 ): Promise<void> {
-  if (isKitty()) {
-    notifyKitty(kittySessionName, subtitle ?? title, body)
+  if (existsSync(KITTY_SIDEBAR_SOCK)) {
+    debug(`notify via daemon: type=${kittyType}, session=${kittySessionName}, body=${body}`)
+    notifyKitty(kittySessionName, kittyType, body)
     return
   }
+  debug(`notify via cmux: title=${title}, body=${body}`)
 
   try {
     if (subtitle) {
@@ -160,6 +113,7 @@ function getEventSessionID(event: { type: string; properties?: any }): string | 
   if (!props) return undefined
   if (typeof props.sessionID === "string") return props.sessionID
   if (typeof props.info?.sessionID === "string") return props.info.sessionID
+  if (typeof props.info?.id === "string") return props.info.id
   return undefined
 }
 
@@ -174,22 +128,15 @@ function isIdleStatusEvent(event: { type: string; properties?: any }): boolean {
 }
 
 export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
-  if (!isCmux() && !isKitty()) return {}
+  const hasDaemon = existsSync(KITTY_SIDEBAR_SOCK)
+  if (!isCmux() && !hasDaemon) return {}
 
-  // Resolve Kitty session name eagerly but with a hard timeout.
-  // If resolution hangs or fails, we still send notifications with empty session name.
-  let kittySessionName: string | undefined
-  if (isKitty()) {
-    kittySessionName = await withTimeout(resolveKittySession($), RESOLVE_TIMEOUT_MS, undefined)
-  }
+  const kittySessionName = hasDaemon ? resolveKittySession() : undefined
+  debug(`init: hasDaemon=${hasDaemon}, session=${kittySessionName}, cwd=${process.cwd()}`)
 
-  // Debounce idle notifications — mirrors oh-my-opencode's idle confirmation delay.
-  // Without this, CMUX notification would fire on every transient idle event.
   let idleTimer: ReturnType<typeof setTimeout> | null = null
-  // Track which session triggered the pending idle notification.
-  // Only cancel the timer when the SAME session produces a non-idle event.
-  // Without this, background agent message.updated events cancel the main session's idle.
   let idleSessionID: string | null = null
+  let mainSessionID: string | null = null
 
   function startIdleTimer(sessionID: string | undefined) {
     if (idleTimer) clearTimeout(idleTimer)
@@ -198,7 +145,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     idleTimer = setTimeout(() => {
       idleTimer = null
       idleSessionID = null
-      notify($, kittySessionName, "OpenCode", "Agent is ready for input")
+      notify($, kittySessionName, "idle", "OpenCode", "Agent is ready for input")
     }, IDLE_DEBOUNCE_MS)
   }
 
@@ -212,22 +159,25 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
 
   return {
     event: async ({ event }) => {
-      // Handle both native session.idle and session.status(idle) events.
-      // OpenCode may emit either or both for the same idle transition.
+      debug(`event: ${event.type} sessionID=${getEventSessionID(event)}`)
+      const eventSessionID = getEventSessionID(event)
+
+      if (event.type === "session.created") {
+        const hasParent = !!event.properties?.info?.parentID
+        if (!hasParent && eventSessionID) {
+          mainSessionID = eventSessionID
+        }
+      }
+
       if (event.type === "session.idle" || isIdleStatusEvent(event)) {
-        startIdleTimer(getEventSessionID(event))
+        if (mainSessionID && eventSessionID && eventSessionID !== mainSessionID) return
+        startIdleTimer(eventSessionID)
         return
       }
 
-      // Only cancel the debounce for activity in the SAME session.
-      // Background agent events (different sessionID) must not cancel the
-      // main session's idle notification.
-      if (event.type === "message.updated" || event.type === "session.created") {
-        if (idleTimer && idleSessionID) {
-          const eventSessionID = getEventSessionID(event)
-          if (eventSessionID === idleSessionID) {
-            cancelIdleTimer()
-          }
+      if (event.type === "session.status" && !isIdleStatusEvent(event)) {
+        if (idleTimer && idleSessionID && eventSessionID === idleSessionID) {
+          cancelIdleTimer()
         }
       }
     },
@@ -235,7 +185,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     "tool.execute.before": async (input) => {
       const toolName = input.tool?.toLowerCase()
       if (toolName && QUESTION_TOOLS.has(toolName)) {
-        notify($, kittySessionName, "OpenCode", "Agent is asking a question", "Input Needed")
+        notify($, kittySessionName, "input", "OpenCode", "Agent is asking a question", "Input Needed")
       }
     },
 
@@ -255,6 +205,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
       notify(
         $,
         kittySessionName,
+        "permission",
         "OpenCode",
         String(description),
         "Permission Required",
