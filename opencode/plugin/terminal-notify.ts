@@ -1,13 +1,8 @@
 import type { Plugin, PluginInput } from "@opencode-ai/plugin"
-import { appendFileSync, existsSync, readdirSync, readFileSync } from "fs"
+import { existsSync, readdirSync, readFileSync } from "fs"
 import { createConnection } from "net"
 import { homedir } from "os"
 import { basename, join } from "path"
-
-const DEBUG_LOG = "/tmp/terminal-notify-debug.log"
-function debug(msg: string) {
-  appendFileSync(DEBUG_LOG, `${new Date().toISOString()} ${msg}\n`)
-}
 
 const CMUX_SOCK = "/tmp/cmux.sock"
 const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock"
@@ -55,7 +50,6 @@ function notifyKitty(
     notification_type: type,
     message,
   })
-  debug(`sending: ${payload}`)
 
   try {
     const socket = createConnection(KITTY_SIDEBAR_SOCK)
@@ -64,16 +58,10 @@ function notifyKitty(
       socket.write(`${payload}\n`)
       socket.end()
     })
-    socket.on("error", (err) => {
-      debug(`socket error: ${err}`)
-      try { socket.destroy() } catch {}
-    })
-    socket.on("timeout", () => {
-      debug("socket timeout")
-      try { socket.destroy() } catch {}
-    })
-  } catch (err) {
-    debug(`connect error: ${err}`)
+    socket.on("error", () => { try { socket.destroy() } catch {} })
+    socket.on("timeout", () => { try { socket.destroy() } catch {} })
+  } catch {
+    // silent — notification is best-effort
   }
 }
 
@@ -86,11 +74,9 @@ async function notify(
   subtitle?: string,
 ): Promise<void> {
   if (existsSync(KITTY_SIDEBAR_SOCK)) {
-    debug(`notify via daemon: type=${kittyType}, session=${kittySessionName}, body=${body}`)
     notifyKitty(kittySessionName, kittyType, body)
     return
   }
-  debug(`notify via cmux: title=${title}, body=${body}`)
 
   try {
     if (subtitle) {
@@ -132,7 +118,6 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
   if (!isCmux() && !hasDaemon) return {}
 
   const kittySessionName = hasDaemon ? resolveKittySession() : undefined
-  debug(`init: hasDaemon=${hasDaemon}, session=${kittySessionName}, cwd=${process.cwd()}`)
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null
   let idleSessionID: string | null = null
@@ -159,7 +144,6 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
 
   return {
     event: async ({ event }) => {
-      debug(`event: ${event.type} sessionID=${getEventSessionID(event)}`)
       const eventSessionID = getEventSessionID(event)
 
       if (event.type === "session.created") {
