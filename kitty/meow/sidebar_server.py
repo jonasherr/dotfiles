@@ -27,6 +27,7 @@ MSG_NOTIFY = notification_schema.MSG_NOTIFY
 MSG_GET_STATE = notification_schema.MSG_GET_STATE
 MSG_CLEAR = notification_schema.MSG_CLEAR
 MSG_CLEAR_ALL = notification_schema.MSG_CLEAR_ALL
+MSG_SET_ACTIVE_WINDOW = notification_schema.MSG_SET_ACTIVE_WINDOW
 
 
 class SidebarRequestHandler(socketserver.StreamRequestHandler):
@@ -73,6 +74,7 @@ class SidebarServer:
 
     def __init__(self) -> None:
         self._notifications: Dict[str, List[Notification]] = {}
+        self._active_windows: Dict[str, int] = {}
         self._lock = threading.Lock()
         self._server: Optional[ThreadedUnixServer] = None
         self._thread: Optional[threading.Thread] = None
@@ -111,7 +113,10 @@ class SidebarServer:
             session_name = payload.get("session_name")
             notification_type = payload.get("notification_type")
             message = payload.get("message")
+            window_id = payload.get("window_id")
             if not isinstance(session_name, str) or not isinstance(notification_type, str) or not isinstance(message, str):
+                return {"ok": False, "error": "invalid_notify_payload"}
+            if window_id is not None and not isinstance(window_id, int):
                 return {"ok": False, "error": "invalid_notify_payload"}
 
             try:
@@ -119,7 +124,16 @@ class SidebarServer:
             except ValueError:
                 return {"ok": False, "error": "invalid_notification_type"}
 
-            self.add_notification(session_name, normalized_type, message)
+            self.add_notification(session_name, normalized_type, message, window_id=window_id)
+            return {"ok": True}
+
+        if msg_type == MSG_SET_ACTIVE_WINDOW:
+            session_name = payload.get("session_name")
+            window_id = payload.get("window_id")
+            if not isinstance(session_name, str) or not isinstance(window_id, int):
+                return {"ok": False, "error": "invalid_set_active_window_payload"}
+
+            self.set_active_window(session_name, window_id)
             return {"ok": True}
 
         if msg_type == MSG_GET_STATE:
@@ -139,13 +153,20 @@ class SidebarServer:
 
         return {"ok": False, "error": "unknown_message_type"}
 
-    def add_notification(self, session_name: str, notification_type: str, message: str) -> None:
+    def add_notification(
+        self,
+        session_name: str,
+        notification_type: str,
+        message: str,
+        window_id: Optional[int] = None,
+    ) -> None:
         notification = Notification(
             session_name=session_name,
             type=notification_type,
             message=message,
             timestamp=time.time(),
             read=False,
+            window_id=window_id,
         )
         with self._lock:
             self._notifications.setdefault(session_name, []).append(notification)
@@ -156,8 +177,17 @@ class SidebarServer:
                 "notifications": {
                     session_name: [notification_to_dict(n) for n in notifications]
                     for session_name, notifications in self._notifications.items()
-                }
+                },
+                "active_windows": dict(self._active_windows),
             }
+
+    def set_active_window(self, session_name: str, window_id: int) -> None:
+        with self._lock:
+            self._active_windows[session_name] = window_id
+
+    def get_active_window(self, session_name: str) -> Optional[int]:
+        with self._lock:
+            return self._active_windows.get(session_name)
 
     def clear_session(self, session_name: str) -> None:
         with self._lock:

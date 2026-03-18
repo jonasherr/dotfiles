@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 
 # Socket paths
@@ -14,6 +14,7 @@ MSG_NOTIFY = "notify"
 MSG_GET_STATE = "get_state"
 MSG_CLEAR = "clear"
 MSG_CLEAR_ALL = "clear_all"
+MSG_SET_ACTIVE_WINDOW = "set_active_window"
 
 
 class NotificationType(Enum):
@@ -33,6 +34,7 @@ class Notification:
     message: str
     timestamp: float
     read: bool = False
+    window_id: Optional[int] = None
 
 
 def notification_to_dict(n: Notification) -> Dict[str, Any]:
@@ -43,6 +45,7 @@ def notification_to_dict(n: Notification) -> Dict[str, Any]:
         "message": n.message,
         "timestamp": n.timestamp,
         "read": n.read,
+        "window_id": n.window_id,
     }
 
 
@@ -54,4 +57,5 @@ def dict_to_notification(d: Dict[str, Any]) -> Notification:
         message=d["message"],
         timestamp=d["timestamp"],
         read=d.get("read", False),
+        window_id=d.get("window_id"),
     )
