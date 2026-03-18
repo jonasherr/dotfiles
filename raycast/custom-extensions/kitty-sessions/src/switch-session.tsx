@@ -51,10 +51,12 @@ interface SidebarNotification {
   message: string;
   timestamp: number;
   read?: boolean;
+  window_id?: number | null;
 }
 
 interface NotificationsStateResponse {
   notifications?: Record<string, SidebarNotification[]>;
+  active_windows?: Record<string, number>;
 }
 
 interface ClearNotificationsResponse {
@@ -141,6 +143,31 @@ async function getNotifications(): Promise<Record<string, number>> {
       )
       .filter(([, count]) => count > 0),
   );
+}
+
+async function getWindowToFocus(sessionName: string): Promise<number | undefined> {
+  const response = await requestNotificationDaemon<NotificationsStateResponse>({
+    type: "get_state",
+  });
+  if (!response) return undefined;
+
+  // Priority 1: window_id from the latest unread notification
+  const notifs = response.notifications?.[sessionName] ?? [];
+  const unread = notifs.filter((n) => n.read !== true);
+  const latestWithWindow = [...unread]
+    .reverse()
+    .find((n) => typeof n.window_id === "number");
+  if (latestWithWindow?.window_id != null) {
+    return latestWithWindow.window_id;
+  }
+
+  // Priority 2: last active window in this session
+  const activeWindow = response.active_windows?.[sessionName];
+  if (typeof activeWindow === "number") {
+    return activeWindow;
+  }
+
+  return undefined;
 }
 
 async function clearNotifications(sessionName: string): Promise<void> {
@@ -287,7 +314,7 @@ function createSessionFromTemplate(dirPath: string): string {
   return sessionPath;
 }
 
-function switchToSession(sessionPath: string, onSuccess?: () => void) {
+function switchToSession(sessionPath: string, onSuccess?: () => void, windowId?: number) {
   const socket = getKittySocket();
   if (!socket) {
     showToast({
@@ -301,6 +328,15 @@ function switchToSession(sessionPath: string, onSuccess?: () => void) {
     execSync(
       `"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`,
     );
+    if (windowId !== undefined) {
+      try {
+        execSync(
+          `"${KITTEN}" @ --to "unix:${socket}" focus-window --match id:${windowId}`,
+        );
+      } catch {
+        // window may no longer exist — ignore
+      }
+    }
     execSync(`osascript -e 'tell application "kitty" to activate'`);
     closeMainWindow();
     showToast({
@@ -429,10 +465,11 @@ function SessionsList({
                     title="Switch to Session"
                     icon={Icon.ArrowRight}
                     onAction={async () => {
+                      const windowId = await getWindowToFocus(session.name);
                       if (notificationCount > 0) {
                         await clearNotifications(session.name);
                       }
-                      switchToSession(session.path);
+                      switchToSession(session.path, undefined, windowId);
                     }}
                   />
                   <Action.ShowInFinder
