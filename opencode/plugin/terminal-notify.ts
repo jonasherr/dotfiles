@@ -122,7 +122,7 @@ async function resolveKittyWindowId($: PluginInput["$"]): Promise<number | undef
         const parsed = JSON.parse(stdout.trim())
         if (!Array.isArray(parsed)) continue
         for (const osWindow of parsed) {
-          for (const tab of (osWindow as any).tabs ?? []) {
+          for (const tab of (osWindow as { tabs?: Array<{ windows?: Array<{ is_self?: boolean; id?: number }> }> }).tabs ?? []) {
             for (const window of tab.windows ?? []) {
               if (window.is_self && typeof window.id === "number") return window.id
             }
