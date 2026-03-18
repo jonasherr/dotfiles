@@ -100,6 +100,41 @@ async function resolveKittySession($: PluginInput["$"]): Promise<string | undefi
   }
 }
 
+async function resolveKittyWindowId($: PluginInput["$"]): Promise<number | undefined> {
+  // Fast path: env var
+  const envVal = process.env.KITTY_WINDOW_ID
+  if (envVal) {
+    const parsed = parseInt(envVal, 10)
+    if (!Number.isNaN(parsed)) return parsed
+  }
+
+  // Fallback: kitten @ ls to find is_self window
+  try {
+    for (const kittyBin of KITTY_BIN_PATHS) {
+      try {
+        const result = await withTimeout($`${kittyBin} @ ls`, 3000, undefined)
+        if (!result) continue
+        const stdout = typeof result === "string" ? result
+          : typeof result === "object" && result !== null && "stdout" in result
+            ? String(result.stdout)
+            : ""
+        if (!stdout.trim()) continue
+        const parsed = JSON.parse(stdout.trim())
+        if (!Array.isArray(parsed)) continue
+        for (const osWindow of parsed) {
+          for (const tab of (osWindow as any).tabs ?? []) {
+            for (const window of tab.windows ?? []) {
+              if (window.is_self && typeof window.id === "number") return window.id
+            }
+          }
+        }
+        break
+      } catch { continue }
+    }
+  } catch { /* silent */ }
+  return undefined
+}
+
 function notifyKitty(
   sessionName: string | undefined,
   type: string,
@@ -185,13 +220,12 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
   if (isKitty()) {
     kittySessionName = await withTimeout(resolveKittySession($), RESOLVE_TIMEOUT_MS, undefined)
   }
-  const parsedKittyWindowId = process.env.KITTY_WINDOW_ID
-    ? parseInt(process.env.KITTY_WINDOW_ID, 10)
-    : undefined
-  const kittyWindowId =
-    parsedKittyWindowId !== undefined && !Number.isNaN(parsedKittyWindowId)
-      ? parsedKittyWindowId
-      : undefined
+
+  // Resolve Kitty window ID: try env var first, then fallback to kitten @ ls
+  let kittyWindowId: number | undefined
+  if (isKitty()) {
+    kittyWindowId = await withTimeout(resolveKittyWindowId($), RESOLVE_TIMEOUT_MS, undefined)
+  }
 
   // Debounce idle notifications — mirrors oh-my-opencode's idle confirmation delay.
   // Without this, CMUX notification would fire on every transient idle event.
