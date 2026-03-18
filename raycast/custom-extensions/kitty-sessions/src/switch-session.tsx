@@ -12,6 +12,7 @@ import {
   closeMainWindow,
   useNavigation,
 } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
 import { execSync } from "child_process";
 import {
   existsSync,
@@ -21,13 +22,15 @@ import {
   unlinkSync,
   writeFileSync,
 } from "fs";
+import { createConnection } from "net";
 import { homedir } from "os";
 import { join, basename } from "path";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 
 const SESSIONS_DIR = join(homedir(), ".config", "kitty", "sessions");
 const PROJECTS_DIR = join(homedir(), "Projects");
 const KITTEN = "/Applications/kitty.app/Contents/MacOS/kitten";
+const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock";
 const HOME = homedir();
 
 interface Session {
@@ -42,39 +45,119 @@ interface ProjectDir {
   relativePath: string;
 }
 
-interface NotificationState {
-  notifications: Record<string, Array<{ window_id?: number | null }>>;
-  active_windows: Record<string, number>;
+interface SidebarNotification {
+  session_name: string;
+  type: string;
+  message: string;
+  timestamp: number;
+  read?: boolean;
+}
+
+interface NotificationsStateResponse {
+  notifications?: Record<string, SidebarNotification[]>;
+}
+
+interface ClearNotificationsResponse {
+  status?: string;
+}
+
+function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
+  return new Promise((resolve) => {
+    let socket: ReturnType<typeof createConnection> | null = null;
+    let settled = false;
+    let buffer = "";
+
+    const finish = (value: T | null) => {
+      if (settled) return;
+      settled = true;
+      try {
+        socket?.destroy();
+      } catch {
+        // socket may already be destroyed — ignore
+      }
+      resolve(value);
+    };
+
+    const parseBuffer = () => {
+      const newlineIndex = buffer.indexOf("\n");
+      const message =
+        newlineIndex >= 0
+          ? buffer.slice(0, newlineIndex).trim()
+          : buffer.trim();
+      if (!message) {
+        finish(null);
+        return;
+      }
+      try {
+        finish(JSON.parse(message) as T);
+      } catch {
+        finish(null);
+      }
+    };
+
+    try {
+      socket = createConnection(KITTY_SIDEBAR_SOCK);
+      socket.setTimeout(2000);
+      socket.on("connect", () => {
+        socket?.end(`${JSON.stringify(payload)}\n`);
+      });
+      socket.on("data", (chunk: { toString(): string }) => {
+        buffer += chunk.toString();
+        if (buffer.includes("\n")) {
+          parseBuffer();
+        }
+      });
+      socket.on("end", () => {
+        if (!settled) {
+          parseBuffer();
+        }
+      });
+      socket.on("error", () => {
+        finish(null);
+      });
+      socket.on("timeout", () => {
+        finish(null);
+      });
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+async function getNotifications(): Promise<Record<string, number>> {
+  const response = await requestNotificationDaemon<NotificationsStateResponse>({
+    type: "get_state",
+  });
+  if (!response?.notifications) return {};
+
+  return Object.fromEntries(
+    Object.entries(response.notifications)
+      .map(
+        ([sessionName, items]) =>
+          [
+            sessionName,
+            items.filter((item) => item.read !== true).length,
+          ] as const,
+      )
+      .filter(([, count]) => count > 0),
+  );
+}
+
+async function clearNotifications(sessionName: string): Promise<void> {
+  await requestNotificationDaemon<ClearNotificationsResponse>({
+    type: "clear",
+    session_name: sessionName,
+  });
 }
 
 function getKittySocket(): string | null {
   try {
-    const files = readdirSync("/tmp").filter((f) => f.startsWith("mykitty-"));
+    const files = readdirSync("/tmp").filter((f: string) =>
+      f.startsWith("mykitty-"),
+    );
     return files.length > 0 ? join("/tmp", files[0]) : null;
   } catch {
     return null;
-  }
-}
-
-function getNotifications(): NotificationState {
-  try {
-    const output = execSync(
-      `printf '{"type":"get_state"}\n' | nc -U /tmp/kitty-sidebar.sock`,
-      {
-        encoding: "utf-8",
-        timeout: 2000,
-      },
-    );
-    const data = JSON.parse(output.trim()) as Partial<NotificationState>;
-    return {
-      notifications: data.notifications ?? {},
-      active_windows: data.active_windows ?? {},
-    };
-  } catch {
-    return {
-      notifications: {},
-      active_windows: {},
-    };
   }
 }
 
@@ -128,9 +211,10 @@ function getSessionFiles(): Session[] {
   try {
     return readdirSync(SESSIONS_DIR)
       .filter(
-        (f) => f.endsWith(".kitty-session") && f !== "template.kitty-session",
+        (f: string) =>
+          f.endsWith(".kitty-session") && f !== "template.kitty-session",
       )
-      .map((f) => {
+      .map((f: string) => {
         const fullPath = join(SESSIONS_DIR, f);
         return {
           name: basename(f, ".kitty-session"),
@@ -138,7 +222,7 @@ function getSessionFiles(): Session[] {
           content: readFileSync(fullPath, "utf-8").trim(),
         };
       })
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .sort((a: Session, b: Session) => a.name.localeCompare(b.name));
   } catch {
     return [];
   }
@@ -203,11 +287,7 @@ function createSessionFromTemplate(dirPath: string): string {
   return sessionPath;
 }
 
-function switchToSession(
-  sessionPath: string,
-  onSuccess?: () => void,
-  windowId?: number,
-) {
+function switchToSession(sessionPath: string, onSuccess?: () => void) {
   const socket = getKittySocket();
   if (!socket) {
     showToast({
@@ -221,11 +301,6 @@ function switchToSession(
     execSync(
       `"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`,
     );
-    if (windowId !== undefined) {
-      execSync(
-        `"${KITTEN}" @ --to "unix:${socket}" focus-window --match id:${windowId}`,
-      );
-    }
     execSync(`osascript -e 'tell application "kitty" to activate'`);
     closeMainWindow();
     showToast({
@@ -274,15 +349,30 @@ function renameSession(session: Session, newName: string): boolean {
   }
 }
 
+interface SessionsData {
+  sessions: Session[];
+  activeCwds: string[];
+  notifications: Record<string, number>;
+}
+
+async function fetchSessionsData(): Promise<SessionsData> {
+  const sessions = getSessionFiles();
+  const activeCwds = [...getActiveCwds()];
+  const notifications = await getNotifications();
+  return { sessions, activeCwds, notifications };
+}
+
 function SessionsList({
   sessions,
-  setSessions,
+  revalidate,
   activeCwds,
+  notifications,
   showActiveIndicator,
 }: {
   sessions: Session[];
-  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+  revalidate: () => void;
   activeCwds: Set<string>;
+  notifications: Record<string, number>;
   showActiveIndicator: boolean;
 }) {
   const { push } = useNavigation();
@@ -297,6 +387,30 @@ function SessionsList({
       ) : (
         sessions.map((session) => {
           const active = isSessionActive(session, activeCwds);
+          const notificationCount = notifications[session.name] ?? 0;
+          const accessories = [] as List.Item.Accessory[];
+
+          if (notificationCount > 0) {
+            accessories.push({
+              icon: {
+                source: Icon.Bell,
+                tintColor: Color.Red,
+              },
+              text: String(notificationCount),
+              tooltip: `${notificationCount} notification${notificationCount === 1 ? "" : "s"}`,
+            });
+          }
+
+          if (showActiveIndicator && active) {
+            accessories.push({
+              icon: {
+                source: Icon.CircleFilled,
+                tintColor: Color.Green,
+              },
+              tooltip: "Running",
+            });
+          }
+
           return (
             <List.Item
               key={session.name}
@@ -308,34 +422,17 @@ function SessionsList({
                   ?.replace("cd ", "") || ""
               }
               icon={Icon.Terminal}
-              accessories={
-                showActiveIndicator && active
-                  ? [
-                      {
-                        icon: {
-                          source: Icon.CircleFilled,
-                          tintColor: Color.Green,
-                        },
-                        tooltip: "Running",
-                      },
-                    ]
-                  : []
-              }
+              accessories={accessories}
               actions={
                 <ActionPanel>
                   <Action
                     title="Switch to Session"
                     icon={Icon.ArrowRight}
-                    onAction={() => {
-                      const state = getNotifications();
-                      const notifications = state.notifications[session.name] ?? [];
-                      const latestNotificationWithWindow = [...notifications]
-                        .reverse()
-                        .find((notification) => typeof notification.window_id === "number");
-                      const windowId =
-                        latestNotificationWithWindow?.window_id ??
-                        state.active_windows[session.name];
-                      switchToSession(session.path, undefined, windowId);
+                    onAction={async () => {
+                      if (notificationCount > 0) {
+                        await clearNotifications(session.name);
+                      }
+                      switchToSession(session.path);
                     }}
                   />
                   <Action.ShowInFinder
@@ -346,6 +443,17 @@ function SessionsList({
                     title="Copy Session Path"
                     content={session.path}
                   />
+                  {notificationCount > 0 ? (
+                    <Action
+                      title="Clear Notifications"
+                      icon={Icon.Bell}
+                      shortcut={{ modifiers: ["ctrl"], key: "n" }}
+                      onAction={async () => {
+                        await clearNotifications(session.name);
+                        revalidate();
+                      }}
+                    />
+                  ) : null}
                   <Action
                     title="Rename Session"
                     icon={Icon.Pencil}
@@ -354,7 +462,7 @@ function SessionsList({
                       push(
                         <RenameSessionForm
                           session={session}
-                          setSessions={setSessions}
+                          revalidate={revalidate}
                         />,
                       )
                     }
@@ -377,9 +485,7 @@ function SessionsList({
                       ) {
                         try {
                           unlinkSync(session.path);
-                          setSessions((prev) =>
-                            prev.filter((s) => s.name !== session.name),
-                          );
+                          revalidate();
                           showToast({
                             style: Toast.Style.Success,
                             title: "Deleted",
@@ -407,10 +513,10 @@ function SessionsList({
 
 function RenameSessionForm({
   session,
-  setSessions,
+  revalidate,
 }: {
   session: Session;
-  setSessions: React.Dispatch<React.SetStateAction<Session[]>>;
+  revalidate: () => void;
 }) {
   const { pop } = useNavigation();
   return (
@@ -422,7 +528,7 @@ function RenameSessionForm({
             title="Rename"
             onSubmit={(values: { name: string }) => {
               if (renameSession(session, values.name)) {
-                setSessions(getSessionFiles());
+                revalidate();
                 pop();
               }
             }}
@@ -437,16 +543,12 @@ function RenameSessionForm({
 
 function ProjectsList({
   sessionNames,
-  onSessionCreated,
+  revalidate,
 }: {
   sessionNames: Set<string>;
-  onSessionCreated: () => void;
+  revalidate: () => void;
 }) {
-  const [projects, setProjects] = useState<ProjectDir[]>([]);
-
-  useEffect(() => {
-    setProjects(getProjectDirs(sessionNames));
-  }, [sessionNames]);
+  const projects = useMemo(() => getProjectDirs(sessionNames), [sessionNames]);
 
   return (
     <>
@@ -457,7 +559,7 @@ function ProjectsList({
           icon={Icon.Folder}
         />
       ) : (
-        projects.map((project) => (
+        projects.map((project: ProjectDir) => (
           <List.Item
             key={project.path}
             title={project.name}
@@ -470,7 +572,7 @@ function ProjectsList({
                   icon={Icon.Plus}
                   onAction={() => {
                     const sessionPath = createSessionFromTemplate(project.path);
-                    switchToSession(sessionPath, onSessionCreated);
+                    switchToSession(sessionPath, revalidate);
                   }}
                 />
                 <Action.ShowInFinder
@@ -486,21 +588,50 @@ function ProjectsList({
   );
 }
 
+const POLL_INTERVAL = 500;
+
 export default function Command() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [activeCwds, setActiveCwds] = useState<Set<string>>(new Set());
+  const { data, isLoading, revalidate } = useCachedPromise(fetchSessionsData);
   const [tab, setTab] = useState<string>("active");
+  const revalidateRef = useRef(revalidate);
+  revalidateRef.current = revalidate;
 
   useEffect(() => {
-    setSessions(getSessionFiles());
-    setActiveCwds(getActiveCwds());
+    const id = setInterval(() => revalidateRef.current(), POLL_INTERVAL);
+    return () => clearInterval(id);
   }, []);
 
-  const sessionNames = new Set(sessions.map((s) => s.name));
+  const sessions = data?.sessions ?? [];
+  const activeCwds = useMemo(
+    () => new Set(data?.activeCwds ?? []),
+    [data?.activeCwds],
+  );
+  const notifications = data?.notifications ?? {};
+  const sessionNames = useMemo(
+    () => new Set(sessions.map((s: Session) => s.name)),
+    [sessions],
+  );
+
+  const sortedSessions = useMemo(
+    () =>
+      [...sessions].sort((a, b) => {
+        const notificationDiff =
+          (notifications[b.name] ?? 0) - (notifications[a.name] ?? 0);
+        if (notificationDiff !== 0) return notificationDiff;
+
+        const activeDiff =
+          Number(isSessionActive(b, activeCwds)) -
+          Number(isSessionActive(a, activeCwds));
+        if (activeDiff !== 0) return activeDiff;
+
+        return a.name.localeCompare(b.name);
+      }),
+    [sessions, notifications, activeCwds],
+  );
 
   const activeSessions = useMemo(
-    () => sessions.filter((s) => isSessionActive(s, activeCwds)),
-    [sessions, activeCwds],
+    () => sortedSessions.filter((s: Session) => isSessionActive(s, activeCwds)),
+    [sortedSessions, activeCwds],
   );
 
   const placeholders: Record<string, string> = {
@@ -511,6 +642,7 @@ export default function Command() {
 
   return (
     <List
+      isLoading={isLoading}
       searchBarPlaceholder={placeholders[tab] ?? "Search..."}
       searchBarAccessory={
         <List.Dropdown tooltip="View" onChange={setTab} value={tab}>
@@ -535,22 +667,21 @@ export default function Command() {
       {tab === "active" ? (
         <SessionsList
           sessions={activeSessions}
-          setSessions={setSessions}
+          revalidate={revalidate}
           activeCwds={activeCwds}
+          notifications={notifications}
           showActiveIndicator={false}
         />
       ) : tab === "all" ? (
         <SessionsList
-          sessions={sessions}
-          setSessions={setSessions}
+          sessions={sortedSessions}
+          revalidate={revalidate}
           activeCwds={activeCwds}
+          notifications={notifications}
           showActiveIndicator={true}
         />
       ) : (
-        <ProjectsList
-          sessionNames={sessionNames}
-          onSessionCreated={() => setSessions(getSessionFiles())}
-        />
+        <ProjectsList sessionNames={sessionNames} revalidate={revalidate} />
       )}
     </List>
   );
