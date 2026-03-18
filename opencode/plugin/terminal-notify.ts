@@ -104,6 +104,7 @@ function notifyKitty(
   sessionName: string | undefined,
   type: string,
   message: string,
+  windowId?: number,
 ): void {
   // Fire-and-forget — never await, never block
   try {
@@ -112,6 +113,7 @@ function notifyKitty(
       session_name: sessionName ?? "",
       notification_type: type,
       message,
+      ...(windowId !== undefined ? { window_id: windowId } : {}),
     })
 
     const socket = createConnection(KITTY_SIDEBAR_SOCK)
@@ -130,12 +132,13 @@ function notifyKitty(
 async function notify(
   $: PluginInput["$"],
   kittySessionName: string | undefined,
+  kittyWindowId: number | undefined,
   title: string,
   body: string,
   subtitle?: string,
 ): Promise<void> {
   if (isKitty()) {
-    notifyKitty(kittySessionName, subtitle ?? title, body)
+    notifyKitty(kittySessionName, subtitle ?? title, body, kittyWindowId)
     return
   }
 
@@ -182,6 +185,13 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
   if (isKitty()) {
     kittySessionName = await withTimeout(resolveKittySession($), RESOLVE_TIMEOUT_MS, undefined)
   }
+  const parsedKittyWindowId = process.env.KITTY_WINDOW_ID
+    ? parseInt(process.env.KITTY_WINDOW_ID, 10)
+    : undefined
+  const kittyWindowId =
+    parsedKittyWindowId !== undefined && !Number.isNaN(parsedKittyWindowId)
+      ? parsedKittyWindowId
+      : undefined
 
   // Debounce idle notifications — mirrors oh-my-opencode's idle confirmation delay.
   // Without this, CMUX notification would fire on every transient idle event.
@@ -198,7 +208,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     idleTimer = setTimeout(() => {
       idleTimer = null
       idleSessionID = null
-      notify($, kittySessionName, "OpenCode", "Agent is ready for input")
+      notify($, kittySessionName, kittyWindowId, "OpenCode", "Agent is ready for input")
     }, IDLE_DEBOUNCE_MS)
   }
 
@@ -235,7 +245,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     "tool.execute.before": async (input) => {
       const toolName = input.tool?.toLowerCase()
       if (toolName && QUESTION_TOOLS.has(toolName)) {
-        notify($, kittySessionName, "OpenCode", "Agent is asking a question", "Input Needed")
+        notify($, kittySessionName, kittyWindowId, "OpenCode", "Agent is asking a question", "Input Needed")
       }
     },
 
@@ -255,6 +265,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
       notify(
         $,
         kittySessionName,
+        kittyWindowId,
         "OpenCode",
         String(description),
         "Permission Required",
