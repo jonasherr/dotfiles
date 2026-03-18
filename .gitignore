@@ -41,4 +41,5 @@ raycast/custom-extensions/shortcuts/shortcuts.js.map
 
 # OpenCode local-only dirs (not symlinked from dotfiles)
 opencode/scripts/
-
+# Agent memory
+.sisyphus/memory.md
