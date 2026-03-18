@@ -42,12 +42,39 @@ interface ProjectDir {
   relativePath: string;
 }
 
+interface NotificationState {
+  notifications: Record<string, Array<{ window_id?: number | null }>>;
+  active_windows: Record<string, number>;
+}
+
 function getKittySocket(): string | null {
   try {
     const files = readdirSync("/tmp").filter((f) => f.startsWith("mykitty-"));
     return files.length > 0 ? join("/tmp", files[0]) : null;
   } catch {
     return null;
+  }
+}
+
+function getNotifications(): NotificationState {
+  try {
+    const output = execSync(
+      `printf '{"type":"get_state"}\n' | nc -U /tmp/kitty-sidebar.sock`,
+      {
+        encoding: "utf-8",
+        timeout: 2000,
+      },
+    );
+    const data = JSON.parse(output.trim()) as Partial<NotificationState>;
+    return {
+      notifications: data.notifications ?? {},
+      active_windows: data.active_windows ?? {},
+    };
+  } catch {
+    return {
+      notifications: {},
+      active_windows: {},
+    };
   }
 }
 
@@ -176,7 +203,11 @@ function createSessionFromTemplate(dirPath: string): string {
   return sessionPath;
 }
 
-function switchToSession(sessionPath: string, onSuccess?: () => void) {
+function switchToSession(
+  sessionPath: string,
+  onSuccess?: () => void,
+  windowId?: number,
+) {
   const socket = getKittySocket();
   if (!socket) {
     showToast({
@@ -190,6 +221,11 @@ function switchToSession(sessionPath: string, onSuccess?: () => void) {
     execSync(
       `"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`,
     );
+    if (windowId !== undefined) {
+      execSync(
+        `"${KITTEN}" @ --to "unix:${socket}" focus-window --match id:${windowId}`,
+      );
+    }
     execSync(`osascript -e 'tell application "kitty" to activate'`);
     closeMainWindow();
     showToast({
@@ -290,7 +326,17 @@ function SessionsList({
                   <Action
                     title="Switch to Session"
                     icon={Icon.ArrowRight}
-                    onAction={() => switchToSession(session.path)}
+                    onAction={() => {
+                      const state = getNotifications();
+                      const notifications = state.notifications[session.name] ?? [];
+                      const latestNotificationWithWindow = [...notifications]
+                        .reverse()
+                        .find((notification) => typeof notification.window_id === "number");
+                      const windowId =
+                        latestNotificationWithWindow?.window_id ??
+                        state.active_windows[session.name];
+                      switchToSession(session.path, undefined, windowId);
+                    }}
                   />
                   <Action.ShowInFinder
                     title="Show Session File"
