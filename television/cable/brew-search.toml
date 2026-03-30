@@ -1,0 +1,34 @@
+[metadata]
+name = "brew-search"
+description = "Browse and install all available Homebrew formulae and casks"
+requirements = ["brew"]
+
+[source]
+command = [
+  "brew formulae",
+  "brew casks",
+]
+
+[preview]
+command = "brew info '{}'"
+
+[ui]
+layout = "portrait"
+
+[keybindings]
+enter = "actions:install"
+
+[actions.install]
+description = "Install the selected package"
+command = "brew install '{}'"
+mode = "execute"
+
+[actions.homepage]
+description = "Open the package homepage in browser"
+command = "brew home '{}'"
+mode = "fork"
+
+[actions.formula-page]
+description = "Open the Homebrew formula page in browser"
+command = "open 'https://formulae.brew.sh/formula/{}' 2>/dev/null || open 'https://formulae.brew.sh/cask/{}'"
+mode = "fork"

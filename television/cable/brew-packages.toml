@@ -1,6 +1,6 @@
 [metadata]
 name = "brew-packages"
-description = "List and manage Homebrew packages"
+description = "List and manage Homebrew packages (installed)"
 requirements = ["brew"]
 
 [source]
@@ -16,7 +16,6 @@ command = "brew info '{}'"
 layout = "portrait"
 
 [keybindings]
-ctrl-u = "actions:upgrade"
 ctrl-d = "actions:uninstall"
 
 [actions.upgrade]
@@ -27,4 +26,24 @@ mode = "execute"
 [actions.uninstall]
 description = "Uninstall the selected package"
 command = "brew uninstall '{}'"
+mode = "execute"
+
+[actions.homepage]
+description = "Open the package homepage in browser"
+command = "brew home '{}'"
+mode = "fork"
+
+[actions.pin]
+description = "Pin the package (prevent upgrades)"
+command = "brew pin '{}'"
+mode = "fork"
+
+[actions.unpin]
+description = "Unpin the package (allow upgrades)"
+command = "brew unpin '{}'"
+mode = "fork"
+
+[actions.outdated]
+description = "Show outdated packages"
+command = "brew outdated"
 mode = "execute"
