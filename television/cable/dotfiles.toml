@@ -1,0 +1,18 @@
+[metadata]
+name = "dotfiles"
+description = "Browse dotfiles repo"
+requirements = ["fd"]
+
+[source]
+command = "fd -t f . $DOTFILES"
+
+[preview]
+command = "head -100 '{}'"
+
+[keybindings]
+enter = "actions:edit"
+
+[actions.edit]
+description = "Edit the selected dotfile"
+command = "nvim '{}'"
+mode = "execute"

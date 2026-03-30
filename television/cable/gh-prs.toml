@@ -1,0 +1,39 @@
+[metadata]
+name = "gh-prs"
+description = "List GitHub PRs for the current repo"
+requirements = ["gh", "jq"]
+
+[source]
+command = "gh pr list --state open --limit 100 --json number,title,createdAt,author,labels | jq -r 'sort_by(.createdAt) | reverse | .[] | \"  \\u001b[32m#\\(.number)\\u001b[39m   \\(.title) \\u001b[33m@\\(.author.login)\\u001b[39m\" + (if (.labels | length) > 0 then \" \" + ([.labels[] | \"\\u001b[35m\" + .name + \"\\u001b[39m\"] | join(\" \")) else \"\" end)'"
+output = "{strip_ansi|split:#:1|split:   :0}"
+ansi = true
+
+[ui]
+layout = "portrait"
+
+[preview]
+command = "gh pr view '{strip_ansi|split:#:1|split:   :0}'"
+
+[keybindings]
+enter = "actions:open"
+ctrl-o = "actions:checkout"
+
+[actions.open]
+description = "Open the PR in the browser"
+command = "gh pr view {strip_ansi|split:#:1|split:   :0} --web"
+mode = "fork"
+
+[actions.checkout]
+description = "Checkout the PR branch locally"
+command = "gh pr checkout {strip_ansi|split:#:1|split:   :0}"
+mode = "execute"
+
+[actions.merge]
+description = "Merge the selected PR"
+command = "gh pr merge {strip_ansi|split:#:1|split:   :0}"
+mode = "execute"
+
+[actions.diff]
+description = "View the PR diff"
+command = "gh pr diff {strip_ansi|split:#:1|split:   :0}"
+mode = "execute"

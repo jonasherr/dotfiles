@@ -1,0 +1,12 @@
+[metadata]
+name = "zsh-history"
+description = "Browse zsh command history"
+requirements = ["zsh"]
+
+[source]
+command = "fc -l -n 1 | tail -r"
+no_sort = true
+frecency = false
+
+[ui.preview_panel]
+hidden = true

@@ -1,0 +1,18 @@
+[metadata]
+name = "ports"
+description = "List listening ports and associated processes"
+
+[source]
+command = "lsof -iTCP -sTCP:LISTEN -P -n 2>/dev/null | tail -n +2 | awk '{print $9, $1, $2}' | sed 's/.*://' | sort -n -u"
+display = "{split: :0} ({split: :1} pid:{split: :2})"
+
+[preview]
+command = "lsof -iTCP:{split: :0} -sTCP:LISTEN -P -n 2>/dev/null"
+
+[ui.preview_panel]
+size = 40
+
+[actions.kill]
+description = "Kill the process listening on the selected port"
+command = "kill -9 {split: :2}"
+mode = "execute"

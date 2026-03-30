@@ -73,10 +73,9 @@ if [[ -f $DOTFILES/zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zs
   source $DOTFILES/zsh/custom/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh
 fi
 
-# fzf integration (pre-cached for speed)
-# Regenerate with: fzf --zsh > $DOTFILES/zsh/fzf-integration.zsh
-if [[ -f $DOTFILES/zsh/fzf-integration.zsh ]]; then
-  source $DOTFILES/zsh/fzf-integration.zsh
+# television shell integration (ctrl-r history, ctrl-t autocomplete)
+if (( $+commands[tv] )); then
+  eval "$(tv init zsh)"
 fi
 
 # z - directory jumping

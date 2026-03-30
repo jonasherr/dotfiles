@@ -1,0 +1,32 @@
+[metadata]
+name = "brew-services"
+description = "Manage Homebrew services"
+requirements = ["brew"]
+
+[source]
+command = "brew services list | tail -n +2 | awk '{print $1, $2}'"
+display = "{split: :0} ({split: :1})"
+output = "{split: :0}"
+
+[preview]
+command = "brew services info '{}' 2>/dev/null || brew info '{}'"
+
+[keybindings]
+ctrl-s = "actions:start"
+ctrl-x = "actions:stop"
+ctrl-r = "actions:restart"
+
+[actions.start]
+description = "Start the selected service"
+command = "brew services start '{}'"
+mode = "fork"
+
+[actions.stop]
+description = "Stop the selected service"
+command = "brew services stop '{}'"
+mode = "fork"
+
+[actions.restart]
+description = "Restart the selected service"
+command = "brew services restart '{}'"
+mode = "fork"

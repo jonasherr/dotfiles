@@ -1,0 +1,20 @@
+[metadata]
+name = "man-pages"
+description = "Browse and preview system manual pages"
+
+[source]
+command = "(ls /usr/share/man/man1/ /opt/homebrew/share/man/man1/ 2>/dev/null) | grep -v ':' | grep -v '^$' | sed 's/\\.[0-9].*$//' | sort -u"
+
+[preview]
+command = "MANPAGER=cat man '{}' 2>/dev/null | head -200"
+
+[keybindings]
+enter = "actions:open"
+
+[actions.open]
+description = "Open the selected man page"
+command = "man '{}'"
+mode = "execute"
+
+[ui]
+layout = "portrait"
