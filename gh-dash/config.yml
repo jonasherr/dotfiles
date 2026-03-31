@@ -1,0 +1,130 @@
+prSections:
+  - title: My Pull Requests
+    filters: is:open author:@me
+  - title: Needs My Review
+    filters: is:open review-requested:@me
+  - title: Involved
+    filters: is:open involves:@me -author:@me
+issuesSections:
+  - title: My Issues
+    filters: is:open author:@me
+  - title: Assigned
+    filters: is:open assignee:@me
+  - title: Involved
+    filters: is:open involves:@me -author:@me
+notificationsSections:
+  - title: All
+    filters: ""
+  - title: Created
+    filters: reason:author
+  - title: Participating
+    filters: reason:participating
+  - title: Mentioned
+    filters: reason:mention
+  - title: Review Requested
+    filters: reason:review-requested
+  - title: Assigned
+    filters: reason:assign
+  - title: Subscribed
+    filters: reason:subscribed
+  - title: Team Mentioned
+    filters: reason:team-mention
+repoPaths:
+  jonasherr/dotfiles: /Users/jonasherrmansdsoerfer/Projects/dotfiles
+  vercel/internal-agent-skills: /Users/jonasherrmansdsoerfer/Projects/vercel/internal-agent-skills
+  vercel/next.js: /Users/jonasherrmansdsoerfer/Projects/vercel/next.js
+repo:
+  branchesRefetchIntervalSeconds: 30
+  prsRefetchIntervalSeconds: 60
+defaults:
+  preview:
+    open: false
+    width: 70
+  prsLimit: 20
+  prApproveComment: LGTM
+  issuesLimit: 20
+  notificationsLimit: 20
+  view: prs
+  layout:
+    prs:
+      updatedAt:
+        width: 5
+      createdAt:
+        width: 5
+      repo:
+        width: 20
+      author:
+        width: 15
+      authorIcon:
+        hidden: false
+      assignees:
+        width: 20
+        hidden: true
+      base:
+        width: 15
+        hidden: true
+      lines:
+        width: 15
+    issues:
+      updatedAt:
+        width: 5
+      createdAt:
+        width: 5
+      repo:
+        width: 15
+      creator:
+        width: 10
+      creatorIcon:
+        hidden: false
+      assignees:
+        width: 20
+        hidden: true
+  refetchIntervalMinutes: 30
+keybindings:
+  prs:
+    - key: space
+      builtin: checkout
+    - key: C
+      name: code review
+      command: >
+        kitty @ launch --type=tab --hold --title "Review PR #{{.PrNumber}}"
+        bash -lc 'cd "{{.RepoPath}}" &&
+        if [ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" = "true" ]; then
+          gh pr checkout {{.PrNumber}};
+        else
+          if [ -d "pr-{{.PrNumber}}" ]; then
+            git -C "pr-{{.PrNumber}}" fetch origin "pull/{{.PrNumber}}/head" &&
+            git -C "pr-{{.PrNumber}}" reset --hard FETCH_HEAD &&
+            cd "pr-{{.PrNumber}}";
+          else
+            git fetch origin "pull/{{.PrNumber}}/head:pr-{{.PrNumber}}" &&
+            git worktree add "pr-{{.PrNumber}}" "pr-{{.PrNumber}}" &&
+            cd "pr-{{.PrNumber}}";
+          fi;
+        fi &&
+        opencode'
+theme:
+  colors:
+    text:
+      primary: "#D3C6AA"
+      secondary: "#7FBBB3"
+      inverted: "#D3C6AA"
+      faint: "#5D6B66"
+      warning: "#E67E80"
+      success: "#A7C080"
+    background:
+      selected: "#505A60"
+    border:
+      primary: "#A7C080"
+      secondary: "#7FBBB3"
+      faint: "#5D6B66"
+  ui:
+    sectionsShowCount: true
+    table:
+      showSeparator: true
+      compact: true
+pager:
+  diff: diffnav
+confirmQuit: false
+showAuthorIcons: true
+smartFilteringAtLaunch: true
