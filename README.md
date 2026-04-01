@@ -1,18 +1,46 @@
 # Dotfiles
 
-[Here's a description of how my dotfiles work](https://shaky.sh/simple-dotfiles/).
+macOS dotfiles for my development environment. Each tool lives in its own directory with a `links.prop` file that declares where its config gets symlinked.
+
+## What's in here
+
+| Directory | What |
+|-----------|------|
+| `aerospace/` | AeroSpace tiling window manager |
+| `kanata/` | Kanata keyboard remapping |
+| `kitty/` | Kitty terminal |
+| `lazygit/` | LazyGit TUI |
+| `leaderkey/` | LeaderKey launcher |
+| `mouseless/` | Mouseless keyboard-driven mouse replacement |
+| `nvim/` | Neovim (Lua, lazy.nvim) |
+| `opencode/` | OpenCode AI agent config |
+| `claude/` | Claude Code config |
+| `gh-dash/` | GitHub Dashboard TUI |
+| `raycast/` | Raycast config |
+| `sketchybar/` | SketchyBar status bar |
+| `television/` | Television fuzzy finder |
+| `yazi/` | Yazi file manager |
+| `zsh/` | Zsh shell config |
+| `brew/` | Homebrew bundle |
+| `scripts/` | Utility scripts |
 
 ## Install
 
-```
-git clone <this-repo>
-cd <this-repo>
+```sh
+git clone https://github.com/jonasherr/dotfiles.git
+cd dotfiles
 ./install/bootstrap.sh
 ```
 
-## Local ZSH Config
+This symlinks everything declared in `links.prop` files and creates `~/.env.sh` with `$DOTFILES` pointing to the repo.
 
-If there's customization you want ZSH to load on startup that is specific to 
-this machine (stuff you don't want to commit into the repo), create `~/.env.sh`
-and put it in there. It will be loaded near the top of `.zshrc`.
+To install a single tool:
+
+```sh
+./install/bootstrap.sh kanata
+```
+
+## Local config
+
+Machine-specific shell config goes in `~/.env.sh` — it's loaded near the top of `.zshrc` and not committed to the repo.
 
