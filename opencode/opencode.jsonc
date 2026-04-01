@@ -43,7 +43,7 @@
     "./plugin/damage-control.ts",
     "./plugin/terminal-notify.ts",
     "./plugin/memory-engine.ts",
-    "oh-my-opencode@latest"
+    "oh-my-opencode@^3.14.0"
   ],
   "permission": {
     // Permission philosophy: allow by default, plugin/damage-control.ts blocks dangerous ops
