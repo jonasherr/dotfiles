@@ -181,8 +181,8 @@ return {
     ui = {
       enable = false,
       checkboxes = {
-        [' '] = { order = 1, char = '󰄱', hl_group = 'ObsidianTodo' },
-        ['x'] = { order = 2, char = '', hl_group = 'ObsidianDone' },
+        [' '] = { char = '󰄱', hl_group = 'ObsidianTodo' },
+        ['x'] = { char = '', hl_group = 'ObsidianDone' },
       },
     },
 
