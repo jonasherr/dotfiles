@@ -1,5 +1,5 @@
 {
-  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json",
   "agents": {
     "sisyphus": {
       "model": "github-copilot/claude-sonnet-4.6"
@@ -8,20 +8,20 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "prometheus": {
-      "model": "github-copilot/gpt-5.3-codex"
+      "model": "github-copilot/gpt-5.4"
     },
     "oracle": {
       "model": "github-copilot/gpt-5.4",
       "variant": "high"
     },
     "librarian": {
-      "model": "github-copilot/gpt-5-mini"
+      "model": "github-copilot/gpt-5.4-mini"
     },
     "explore": {
-      "model": "github-copilot/gpt-5-mini"
+      "model": "github-copilot/gpt-5.4-mini"
     },
     "multimodal-looker": {
-      "model": "github-copilot/gemini-3-flash"
+      "model": "github-copilot/gpt-5.4"
     },
     "metis": {
       "model": "github-copilot/claude-sonnet-4.6"
@@ -30,7 +30,7 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "hephaestus": {
-      "model": "github-copilot/gpt-5.3-codex"
+      "model": "github-copilot/gpt-5.4"
     }
   },
   "categories": {
@@ -38,7 +38,7 @@
       "model": "github-copilot/gemini-3.1-pro"
     },
     "ultrabrain": {
-      "model": "github-copilot/gpt-5.3-codex",
+      "model": "github-copilot/gpt-5.4",
       "variant": "xhigh"
     },
     "artistry": {
@@ -46,7 +46,7 @@
       "variant": "max"
     },
     "quick": {
-      "model": "github-copilot/gpt-5-mini"
+      "model": "github-copilot/gpt-5.4-mini"
     },
     "unspecified-low": {
       "model": "github-copilot/claude-sonnet-4.6"
@@ -56,11 +56,11 @@
       "variant": "high"
     },
     "deep": {
-      "model": "github-copilot/gpt-5.3-codex",
+      "model": "github-copilot/gpt-5.4",
       "variant": "medium"
     },
     "writing": {
-      "model": "github-copilot/gpt-5-mini"
+      "model": "github-copilot/gemini-3-flash"
     }
   },
   "sisyphus_agent": {

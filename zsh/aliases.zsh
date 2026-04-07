@@ -109,26 +109,26 @@ occ-rebuild() {
   container image rm opencode-sandbox:latest 2>/dev/null
   echo "Image removed. Next 'occ' run will rebuild."
 }
-# Oh-My-OpenCode profile switcher
+# Oh-My-OpenAgent profile switcher
 omo-profile() {
   local profile="${1}"
   local config_dir="$DOTFILES/opencode"
 
   case "$profile" in
     work|w)
-      ln -sf "oh-my-opencode-work.json" "$config_dir/oh-my-opencode.json"
+      ln -sf "oh-my-openagent-work.jsonc" "$config_dir/oh-my-openagent.jsonc"
       echo "🔧 Switched to WORK profile (expensive models)"
-      echo "   Sisyphus: claude-opus-4.6 | Oracle: claude-opus-4.6"
+      echo "   Sisyphus: claude-opus-4.6 | Oracle: gpt-5.4 | Hephaestus: gpt-5.4"
       ;;
     personal|p)
-      ln -sf "oh-my-opencode-personal.json" "$config_dir/oh-my-opencode.json"
+      ln -sf "oh-my-openagent-personal.jsonc" "$config_dir/oh-my-openagent.jsonc"
       echo "💰 Switched to PERSONAL profile (cheap models)"
-      echo "   Haiku orchestration | Kimi workers | Qwen Flash light"
+      echo "   Sonnet orchestration | GPT-5-mini workers | Copilot provider"
       ;;
     "")
       # No argument — show current profile
       local target
-      target=$(readlink "$config_dir/oh-my-opencode.json" 2>/dev/null)
+      target=$(readlink "$config_dir/oh-my-openagent.jsonc" 2>/dev/null)
       case "$target" in
         *work*) echo "Current profile: WORK (expensive)" ;;
         *personal*) echo "Current profile: PERSONAL (cheap)" ;;
@@ -137,8 +137,8 @@ omo-profile() {
       ;;
     *)
       echo "Usage: omo-profile [work|personal]"
-      echo "  work (w)     — Expensive models (Opus, Sonnet, GPT-5.3 Codex)"
-      echo "  personal (p) — Cheap models (Haiku orchestration, Kimi workers, Qwen Flash)"
+      echo "  work (w)     — Expensive models (Opus, GPT-5.4, Gemini Pro)"
+      echo "  personal (p) — Cheap models (Sonnet, GPT-5-mini, Copilot)"
       echo "  (no args)    — Show current profile"
       return 1
       ;;
