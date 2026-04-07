@@ -38,6 +38,13 @@
     }
   },
   // Browser automation via oh-my-opencode built-in playwright skill (see oh-my-opencode.json browser_automation_engine)
+  "mcp": {
+    "notion": {
+      "type": "remote",
+      "url": "https://mcp.notion.com/mcp",
+      "enabled": false
+    }
+  },
   "plugin": [
     "@franlol/opencode-md-table-formatter@0.0.3",
     "./plugin/damage-control.ts",
