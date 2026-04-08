@@ -9,8 +9,11 @@ importers:
   .:
     dependencies:
       '@raycast/api':
-        specifier: ^1.104.11
+        specifier: ^1.104.0
         version: 1.104.11(@types/node@22.13.10)(@types/react@19.0.10)
+      '@raycast/utils':
+        specifier: ^2.2.3
+        version: 2.2.3(@raycast/api@1.104.11(@types/node@22.13.10)(@types/react@19.0.10))(react@19.0.0)
     devDependencies:
       '@raycast/eslint-config':
         specifier: ^2.1.1
@@ -22,13 +25,13 @@ importers:
         specifier: 19.0.10
         version: 19.0.10
       eslint:
-        specifier: ^9.39.4
+        specifier: ^9.0.0
         version: 9.39.4
       prettier:
-        specifier: ^3.8.1
+        specifier: ^3.3.3
         version: 3.8.1
       typescript:
-        specifier: ^5.9.3
+        specifier: ^5.3.2
         version: 5.9.3
 
 packages:
@@ -421,6 +424,15 @@ packages:
     peerDependencies:
       eslint: '>=8.23.0'
 
+  '@raycast/utils@2.2.3':
+    resolution: {integrity: sha512-YwqleVl0Wk/FOq+672gtvswuwMqjNqIr+c63FhouTEHc1LJ3zaohLSkW4+UcfBjPU8HySKQm+kJqZW1iOM9fnA==}
+    peerDependencies:
+      '@raycast/api': '>=1.99.4'
+      react: '>=19.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
@@ -595,6 +607,10 @@ packages:
 
   deep-is@0.1.4:
     resolution: {integrity: sha512-oIPzksmTg4/MriiaYGO+okXDT7ztn/w3Eptv/+gSIdMdKsJo0u4CfYNFJPy+4SKMuCqGw2wxnA+URMg3t8a/bQ==}
+
+  dequal@2.0.3:
+    resolution: {integrity: sha512-0je+qPKHEMohvfRTCEo3CrPG6cAzAYgmzKyxRiYSSDkS6eGJdyVJm7WaYA5ECaAD9wLB2T4EEeymA5aFVcYXCA==}
+    engines: {node: '>=6'}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -1333,6 +1349,13 @@ snapshots:
       - supports-color
       - typescript
 
+  '@raycast/utils@2.2.3(@raycast/api@1.104.11(@types/node@22.13.10)(@types/react@19.0.10))(react@19.0.0)':
+    dependencies:
+      '@raycast/api': 1.104.11(@types/node@22.13.10)(@types/react@19.0.10)
+      dequal: 2.0.3
+    optionalDependencies:
+      react: 19.0.0
+
   '@types/estree@1.0.8': {}
 
   '@types/json-schema@7.0.15': {}
@@ -1522,6 +1545,8 @@ snapshots:
       supports-color: 8.1.1
 
   deep-is@0.1.4: {}
+
+  dequal@2.0.3: {}
 
   ejs@3.1.10:
     dependencies:
