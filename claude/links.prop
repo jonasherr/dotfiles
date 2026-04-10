@@ -1,2 +1,4 @@
 $DOTFILES/claude/settings.json=$HOME/.claude/settings.json
+$DOTFILES/claude/keybindings.json=$HOME/.claude/keybindings.json
+$DOTFILES/claude/hooks=$HOME/.claude/hooks
 $DOTFILES/opencode/AGENTS.md=$HOME/.claude/CLAUDE.md
