@@ -5,5 +5,5 @@ $DOTFILES/opencode/bunfig.toml=$HOME/.config/opencode/bunfig.toml
 $DOTFILES/opencode/bun.lock=$HOME/.config/opencode/bun.lock
 $DOTFILES/opencode/pnpm-lock.yaml=$HOME/.config/opencode/pnpm-lock.yaml
 $DOTFILES/opencode/plugin=$HOME/.config/opencode/plugin
-$DOTFILES/opencode/AGENTS.md=$HOME/.config/opencode/AGENTS.md
+$DOTFILES/opencode/global-agents.md=$HOME/.config/opencode/AGENTS.md
 
