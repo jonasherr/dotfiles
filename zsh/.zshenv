@@ -30,4 +30,10 @@ export PATH="$PATH:$HOME/.lmstudio/bin"
 # Notes directory
 export NOTES="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
 
+# Vercel repos (used by field-report and other agent skills)
+export VERCEL_REPOS_PATH="$HOME/Projects/vercel/agent-help"
+
+# Disable oh-my-openagent telemetry (PostHog, added in v3.17.2)
+export OMO_SEND_ANONYMOUS_TELEMETRY=0
+
 
