@@ -1,20 +1,79 @@
-import type { Plugin, PluginInput } from "@opencode-ai/plugin";
+import type { Plugin } from "@opencode-ai/plugin";
 import { existsSync, readdirSync, readFileSync } from "fs";
+import { spawn } from "child_process";
 import { createConnection } from "net";
 import { homedir } from "os";
 import { basename, join } from "path";
 
-const CMUX_SOCK = "/tmp/cmux.sock";
 const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock";
+const SIDEBAR_DAEMON_PATH = join(
+  homedir(),
+  ".config",
+  "kitty",
+  "meow",
+  "sidebar_daemon.py",
+);
 const IDLE_DEBOUNCE_MS = 1500;
+const HEALTH_CHECK_INTERVAL_MS = 30_000;
 const QUESTION_TOOLS = new Set([
   "question",
   "ask_user_question",
   "askuserquestion",
 ]);
 
-function isCmux(): boolean {
-  return existsSync(CMUX_SOCK);
+let daemonSpawning = false;
+
+function isDaemonReachable(): Promise<boolean> {
+  if (!existsSync(KITTY_SIDEBAR_SOCK)) return Promise.resolve(false);
+
+  return new Promise((resolve) => {
+    const socket = createConnection(KITTY_SIDEBAR_SOCK);
+    socket.setTimeout(2000);
+    socket.on("connect", () => {
+      socket.write('{"type":"get_state"}\n');
+    });
+    socket.on("data", () => {
+      try {
+        socket.destroy();
+      } catch {}
+      resolve(true);
+    });
+    socket.on("error", () => {
+      try {
+        socket.destroy();
+      } catch {}
+      resolve(false);
+    });
+    socket.on("timeout", () => {
+      try {
+        socket.destroy();
+      } catch {}
+      resolve(false);
+    });
+  });
+}
+
+function spawnDaemon(): void {
+  if (daemonSpawning) return;
+  if (!existsSync(SIDEBAR_DAEMON_PATH)) return;
+
+  daemonSpawning = true;
+
+  const child = spawn("python3", [SIDEBAR_DAEMON_PATH], {
+    stdio: "ignore",
+    detached: true,
+  });
+  child.unref();
+
+  // Give the daemon a moment to bind the socket, then clear the flag
+  setTimeout(() => {
+    daemonSpawning = false;
+  }, 2000);
+}
+
+async function ensureDaemon(): Promise<void> {
+  if (await isDaemonReachable()) return;
+  spawnDaemon();
 }
 
 function resolveKittySession(): string | undefined {
@@ -67,50 +126,35 @@ function notifyKitty(
     ...(windowId !== undefined ? { window_id: windowId } : {}),
   });
 
-  try {
-    const socket = createConnection(KITTY_SIDEBAR_SOCK);
-    socket.setTimeout(2000);
-    socket.on("connect", () => {
-      socket.write(`${payload}\n`);
-      socket.end();
-    });
-    socket.on("error", () => {
-      try {
-        socket.destroy();
-      } catch {}
-    });
-    socket.on("timeout", () => {
-      try {
-        socket.destroy();
-      } catch {}
-    });
-  } catch {
-    // silent — notification is best-effort
-  }
-}
-
-async function notify(
-  $: PluginInput["$"],
-  kittySessionName: string | undefined,
-  kittyWindowId: number | undefined,
-  kittyType: KittyNotificationType,
-  title: string,
-  body: string,
-  subtitle?: string,
-): Promise<void> {
-  if (existsSync(KITTY_SIDEBAR_SOCK)) {
-    notifyKitty(kittySessionName, kittyType, body, kittyWindowId);
-    return;
-  }
-
-  try {
-    if (subtitle) {
-      await $`cmux notify --title ${title} --body ${body} --subtitle ${subtitle}`;
-    } else {
-      await $`cmux notify --title ${title} --body ${body}`;
+  const attempt = () => {
+    try {
+      const socket = createConnection(KITTY_SIDEBAR_SOCK);
+      socket.setTimeout(2000);
+      socket.on("connect", () => {
+        socket.write(`${payload}\n`);
+        socket.end();
+      });
+      socket.on("error", () => {
+        try {
+          socket.destroy();
+        } catch {}
+      });
+      socket.on("timeout", () => {
+        try {
+          socket.destroy();
+        } catch {}
+      });
+    } catch {
+      // silent — notification is best-effort
     }
-  } catch {
-    // cmux not available or command failed — silent
+  };
+
+  if (existsSync(KITTY_SIDEBAR_SOCK)) {
+    attempt();
+  } else {
+    // Daemon is down — respawn and retry once after it starts
+    spawnDaemon();
+    setTimeout(attempt, 2500);
   }
 }
 
@@ -141,12 +185,15 @@ function isIdleStatusEvent(event: { type: string; properties?: any }): boolean {
   return event.properties?.status?.type === "idle";
 }
 
-export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
-  const hasDaemon = existsSync(KITTY_SIDEBAR_SOCK);
-  if (!isCmux() && !hasDaemon) return {};
+export const TerminalNotifyPlugin: Plugin = async () => {
+  const kittySessionName = resolveKittySession();
+  const kittyWindowId = resolveKittyWindowId();
 
-  const kittySessionName = hasDaemon ? resolveKittySession() : undefined;
-  const kittyWindowId = hasDaemon ? resolveKittyWindowId() : undefined;
+  await ensureDaemon();
+
+  setInterval(() => {
+    ensureDaemon();
+  }, HEALTH_CHECK_INTERVAL_MS);
 
   let idleTimer: ReturnType<typeof setTimeout> | null = null;
   let idleSessionID: string | null = null;
@@ -160,14 +207,7 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     idleTimer = setTimeout(() => {
       idleTimer = null;
       idleSessionID = null;
-      notify(
-        $,
-        kittySessionName,
-        kittyWindowId,
-        "idle",
-        "OpenCode",
-        "Agent is ready for input",
-      );
+      notifyKitty(kittySessionName, "idle", "Agent is ready for input", kittyWindowId);
     }, IDLE_DEBOUNCE_MS);
   }
 
@@ -206,14 +246,11 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
               ? props.title
               : "Permission required";
 
-        notify(
-          $,
+        notifyKitty(
           kittySessionName,
-          kittyWindowId,
           "permission",
-          "OpenCode",
           String(description),
-          "Permission Required",
+          kittyWindowId,
         );
         return;
       }
@@ -241,14 +278,11 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
     "tool.execute.before": async (input) => {
       const toolName = input.tool?.toLowerCase();
       if (toolName && QUESTION_TOOLS.has(toolName)) {
-        notify(
-          $,
+        notifyKitty(
           kittySessionName,
-          kittyWindowId,
           "input",
-          "OpenCode",
           "Agent is asking a question",
-          "Input Needed",
+          kittyWindowId,
         );
       }
     },
@@ -271,14 +305,11 @@ export const TerminalNotifyPlugin: Plugin = async ({ $ }) => {
           ? input.metadata.command
           : input.title || input.type;
 
-      notify(
-        $,
+      notifyKitty(
         kittySessionName,
-        kittyWindowId,
         "permission",
-        "OpenCode",
         String(description),
-        "Permission Required",
+        kittyWindowId,
       );
     },
   };
