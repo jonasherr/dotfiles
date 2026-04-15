@@ -142,19 +142,13 @@
 				"iconPath": "arrow.right.square",
 				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-window.sh"
 			},
+
 			{
-				"key": "h",
-				"label": "Move Left",
+				"key": "g",
+				"label": "Personal Window",
 				"type": "command",
-				"iconPath": "arrow.left",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-move-tab-left.sh"
-			},
-			{
-				"key": "l",
-				"label": "Move Right",
-				"type": "command",
-				"iconPath": "arrow.right",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-move-tab-right.sh"
+				"iconPath": "envelope",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-new-window-gmail.sh"
 			}
 		]
 	},
