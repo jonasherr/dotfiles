@@ -75,7 +75,7 @@ cat links.prop                       # Check what's mapped where
 
 ### opencode.jsonc
 Main OpenCode config. Notable sections:
-- `model`: Default model (`vercel/anthropic/claude-opus-4.6`)
+- `model`: Default model (`vercel/anthropic/claude-opus-4.7`)
 - `provider`: Vercel (cloud) + Ollama (local) model providers
 - `mcp`: MCP server configs (none currently — browser automation via oh-my-opencode built-in playwright skill)
 - `plugin`: Plugin load order (sound-notification → md-table-formatter → oh-my-opencode)
