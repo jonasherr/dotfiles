@@ -1,3 +1,7 @@
+## Writing Style
+
+- Never use em dashes ("—") or semicolons (";"). Rewrite the sentence instead, using shorter sentences, commas, or parentheses.
+
 ## Core Rules
 
 - YOU MUST ALWAYS STOP and ask for clarification rather than making assumptions.
