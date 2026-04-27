@@ -1,1 +1,2 @@
 $DOTFILES/pi/settings.json=$HOME/.pi/agent/settings.json
+$DOTFILES/pi/extensions=$HOME/.pi/agent/extensions

@@ -5,7 +5,13 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 ## Layout
 
 - `settings.json` → symlinked to `~/.pi/agent/settings.json`
+- `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
+
+## Extensions
+
+- `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns.
+- If no interactive UI is available, matching tool calls are blocked by default.
 
 ## Skills
 
