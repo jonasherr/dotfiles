@@ -1,2 +1,5 @@
 $DOTFILES/pi/settings.json=$HOME/.pi/agent/settings.json
+$DOTFILES/pi/APPEND_SYSTEM.md=$HOME/.pi/agent/APPEND_SYSTEM.md
 $DOTFILES/pi/extensions=$HOME/.pi/agent/extensions
+$DOTFILES/pi/agents=$HOME/.pi/agent/agents
+$DOTFILES/pi/prompts=$HOME/.pi/agent/prompts
