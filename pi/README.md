@@ -16,19 +16,18 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 
 ## Skills
 
-Two locations are wired up:
+`~/.agents/skills` is the cross-agent source of truth.
 
-| Location | Tracked in dotfiles? | Use for |
-|----------|----------------------|---------|
-| `~/Projects/dotfiles/opencode/skills` | ✅ yes | Public skills shared via this repo |
-| `~/.config/opencode/skills`           | ❌ no  | Private skills (work-specific, secrets, customer data) |
+- Pi scans `~/.agents/skills` natively and `settings.json` also points there explicitly.
+- OpenCode uses `~/.config/opencode/skills/<name>` symlinks that point into `~/.agents/skills/<name>`.
+- Claude Code uses `~/.claude/skills/<name>` symlinks that point into `~/.agents/skills/<name>`.
+- Public, committed skills still live in `~/Projects/dotfiles/opencode/skills`; `~/.agents/skills/<name>` points to those directories.
+- Private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout.
 
-Both are auto-shared with opencode since they live in opencode's skill dirs.
+This avoids duplicate pi skill discovery while keeping all agents on the same skill set.
 
-### Adding a private skill
+### Adding a skill
 
-Drop it in `~/.config/opencode/skills/<skill-name>/SKILL.md`. Pi will pick it up
-automatically — no settings change needed.
+Add or install it under `~/.agents/skills/<skill-name>/SKILL.md`, then symlink it into agent-specific dirs if that agent does not scan `~/.agents/skills` directly.
 
-If you'd rather keep private skills *only* visible to pi (not opencode), use
-`~/.pi/agent/skills/` instead (pi's default location, already auto-discovered).
+For public skills committed to this repo, add them under `opencode/skills/<skill-name>/SKILL.md` and create `~/.agents/skills/<skill-name>` as a symlink to that directory.

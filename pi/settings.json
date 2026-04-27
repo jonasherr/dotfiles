@@ -8,9 +8,6 @@
     "vercel-ai-gateway/anthropic/*",
     "vercel-ai-gateway/openai/*"
   ],
-  "skills": [
-    "~/Projects/dotfiles/opencode/skills",
-    "~/.config/opencode/skills"
-  ],
+  "skills": ["~/.agents/skills"],
   "enableSkillCommands": true
 }

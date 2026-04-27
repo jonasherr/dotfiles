@@ -2,20 +2,28 @@ brew install sst/tap/opencode terminal-notifier || true
 
 # https://github.com/sst/opencode
 
-# Create real directories for local-only content (not symlinked from dotfiles)
-mkdir -p "$HOME/.config/opencode/skills"
+# ~/.agents/skills is the cross-agent source of truth.
+# OpenCode gets compatibility symlinks from ~/.config/opencode/skills/<name> to ~/.agents/skills/<name>.
+mkdir -p "$HOME/.agents/skills" "$HOME/.config/opencode/skills"
 
-# Symlink public skills from dotfiles into the real skills directory
 DOTFILES="${DOTFILES:-$(cd "$(dirname "$0")/.." && pwd)}"
+
+# Public skills are committed in dotfiles and exposed via ~/.agents/skills.
 for skill in "$DOTFILES/opencode/skills"/*/; do
   skill_name=$(basename "$skill")
-  target="$HOME/.config/opencode/skills/$skill_name"
-  if [ ! -e "$target" ]; then
-    ln -sf "$skill" "$target"
-    echo "  Linked skill: $skill_name"
+  agents_target="$HOME/.agents/skills/$skill_name"
+  opencode_target="$HOME/.config/opencode/skills/$skill_name"
+
+  if [ ! -e "$agents_target" ] && [ ! -L "$agents_target" ]; then
+    ln -s "$skill" "$agents_target"
+    echo "  Linked shared public skill: $skill_name"
+  fi
+
+  if [ ! -e "$opencode_target" ] && [ ! -L "$opencode_target" ]; then
+    ln -s "$agents_target" "$opencode_target"
+    echo "  Linked OpenCode skill: $skill_name"
   fi
 done
 
-# Internal skills: install manually with
-#   npx skills add vercel/internal-agent-skills --skill <name> -a opencode
-# Choose "Copy" mode when prompted.
+# Other/private skills should be installed under ~/.agents/skills/<name> and then
+# symlinked into ~/.config/opencode/skills/<name> if OpenCode needs them.

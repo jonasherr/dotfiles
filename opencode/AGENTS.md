@@ -109,26 +109,27 @@ Use this endpoint to verify model IDs before adding them to `oh-my-opencode.json
 
 ## Skills Management
 
-Skills are split between **public** (in dotfiles, committed) and **internal** (local-only).
+`~/.agents/skills` is the cross-agent source of truth. Pi scans it natively; OpenCode and Claude Code use compatibility symlinks into it.
 
 ### Architecture
 
-- `dotfiles/opencode/skills/` — Public skills, committed to git
-- `~/.config/opencode/skills/` — Real directory (NOT a symlink), contains:
-  - Symlinks to each public skill from dotfiles (created by `install.sh`)
-  - Internal skills installed directly (from `vercel/internal-agent-skills`)
+- `~/.agents/skills/` — Shared skill registry for all local agents
+- `dotfiles/opencode/skills/` — Public skills committed to git; exposed through `~/.agents/skills/<name>` symlinks
+- `~/.config/opencode/skills/` — OpenCode compatibility symlinks to `~/.agents/skills/<name>`
+- `~/.claude/skills/` — Claude Code compatibility symlinks to `~/.agents/skills/<name>`
 
 ### Public skills (in dotfiles)
 
 Add new public skills directly to `opencode/skills/<name>/SKILL.md`.
-After bootstrap, run `opencode/install.sh` to symlink them into the config dir.
+After bootstrap, run `opencode/install.sh` to expose them through `~/.agents/skills` and OpenCode's skill dir.
 
 ### Internal skills (local-only)
 
-Install from the private repo using copy mode:
+Install or copy private skills into `~/.agents/skills/<name>` first, then symlink them into agent-specific dirs that need compatibility:
 
 ```bash
-npx skills add vercel/internal-agent-skills --skill <name> -a opencode    # select "Copy"
+ln -s "$HOME/.agents/skills/<name>" "$HOME/.config/opencode/skills/<name>"
+ln -s "../../.agents/skills/<name>" "$HOME/.claude/skills/<name>"
 ```
 
 ### General skill commands
