@@ -96,7 +96,7 @@ To check which models are available on the Vercel AI Gateway:
 GET https://ai-gateway.vercel.sh/v1/models
 ```
 
-Use this endpoint to verify model IDs before adding them to `oh-my-opencode.json` or `opencode.jsonc`. Model IDs follow the format `vercel/<provider>/<model>` in config (e.g., `vercel/openai/gpt-5.4`).
+Use this endpoint to verify model IDs before adding them to `oh-my-opencode.json` or `opencode.jsonc`. Model IDs follow the format `vercel/<provider>/<model>` in config (e.g., `vercel/openai/gpt-5.5`).
 
 ## Testing (oh-my-opencode submodule only)
 

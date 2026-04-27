@@ -8,10 +8,10 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "prometheus": {
-      "model": "github-copilot/gpt-5.4"
+      "model": "github-copilot/gpt-5.5"
     },
     "oracle": {
-      "model": "github-copilot/gpt-5.4",
+      "model": "github-copilot/gpt-5.5",
       "variant": "high"
     },
     "librarian": {
@@ -21,7 +21,7 @@
       "model": "github-copilot/gpt-5.4-mini"
     },
     "multimodal-looker": {
-      "model": "github-copilot/gpt-5.4"
+      "model": "github-copilot/gpt-5.5"
     },
     "metis": {
       "model": "github-copilot/claude-sonnet-4.6"
@@ -30,7 +30,7 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "hephaestus": {
-      "model": "github-copilot/gpt-5.4"
+      "model": "github-copilot/gpt-5.5"
     }
   },
   "categories": {
@@ -38,7 +38,7 @@
       "model": "github-copilot/gemini-3.1-pro"
     },
     "ultrabrain": {
-      "model": "github-copilot/gpt-5.4",
+      "model": "github-copilot/gpt-5.5",
       "variant": "xhigh"
     },
     "artistry": {
@@ -52,11 +52,11 @@
       "model": "github-copilot/claude-sonnet-4.6"
     },
     "unspecified-high": {
-      "model": "github-copilot/gpt-5.4",
+      "model": "github-copilot/gpt-5.5",
       "variant": "high"
     },
     "deep": {
-      "model": "github-copilot/gpt-5.4",
+      "model": "github-copilot/gpt-5.5",
       "variant": "medium"
     },
     "writing": {
