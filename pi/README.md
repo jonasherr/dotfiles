@@ -9,6 +9,7 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - `agents/` → symlinked to `~/.pi/agent/agents/`
 - `prompts/` → symlinked to `~/.pi/agent/prompts/`
+- `themes/` → symlinked to `~/.pi/agent/themes/`
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
 
 ## Extensions
