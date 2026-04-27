@@ -1,4 +1,5 @@
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
+import { notifyTerminalPermission } from "./terminal-notify"
 
 // ─── Category 1: Dangerous Bash Commands ─────────────────────────────────────
 const DANGEROUS_BASH_PATTERNS: RegExp[] = [
@@ -224,6 +225,8 @@ function detectWriteRisk(path: string): Risk | undefined {
 }
 
 async function requestApproval(ctx: ExtensionContext, risk: Risk) {
+  notifyTerminalPermission(risk.subject)
+
   const message = [
     `${risk.category} matched damage-control rules.`,
     "",

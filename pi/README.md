@@ -11,6 +11,7 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 ## Extensions
 
 - `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns.
+- `extensions/terminal-notify.ts` mirrors the opencode terminal notification plugin for Kitty/meow: starts the sidebar daemon when needed and sends Kitty/sidebar plus macOS desktop notifications when pi is idle, asking a question, or waiting for damage-control approval.
 - If no interactive UI is available, matching tool calls are blocked by default.
 
 ## Skills
