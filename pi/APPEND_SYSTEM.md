@@ -1,3 +1,7 @@
+# Tool availability
+
+`gh` is installed and authenticated. For GitHub-specific queries, prefer `gh api`, `gh search`, `gh pr`, `gh release`, etc. over raw `curl` when useful.
+
 # Subagent usage
 
 You have access to a `subagent` tool for isolated, disposable subagent runs. Use it proactively when it will speed up work, keep the main context clean, or provide an independent check.
