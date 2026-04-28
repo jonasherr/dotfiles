@@ -2,7 +2,7 @@
 name: reviewer
 description: Read-only review agent for diffs, bugs, safety, maintainability, and missed verification.
 tools: read, grep, find, ls, bash
-model: openai/gpt-5.5
+model: vercel-ai-gateway/openai/gpt-5.5
 thinking: medium
 ---
 

@@ -2,7 +2,7 @@
 name: patcher
 description: Focused write-capable implementation agent for narrow, well-specified changes. Not for parallel mode.
 tools: read, grep, find, ls, bash, edit, write
-model: openai/gpt-5.5
+model: vercel-ai-gateway/openai/gpt-5.5
 thinking: medium
 ---
 

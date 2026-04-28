@@ -2,7 +2,7 @@
 name: planner
 description: Read-only implementation/work plan specialist. Converts requirements and scout findings into concrete steps.
 tools: read, grep, find, ls
-model: openai/gpt-5.5
+model: vercel-ai-gateway/openai/gpt-5.5
 thinking: medium
 ---
 

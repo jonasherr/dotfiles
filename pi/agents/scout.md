@@ -2,7 +2,7 @@
 name: scout
 description: Fast read-only recon. Finds relevant files, facts, and line references with minimal context handoff.
 tools: read, grep, find, ls, bash
-model: openai/gpt-5.4-mini
+model: vercel-ai-gateway/openai/gpt-5.4-mini
 thinking: minimal
 ---
 
