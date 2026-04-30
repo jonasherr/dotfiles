@@ -1,3 +1,7 @@
+# Writing preferences
+
+When writing prose for Jonas, keep it concise and conversational. Do not use em dashes. Use periods, colons, commas, or shorter sentences instead.
+
 # Tool availability
 
 `gh` is installed and authenticated. For GitHub-specific queries, prefer `gh api`, `gh search`, `gh pr`, `gh release`, etc. over raw `curl` when useful.
