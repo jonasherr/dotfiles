@@ -4,7 +4,8 @@ import { stat, mkdir } from "node:fs/promises"
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const VAULT_PATH =
-  "/Users/jonasherrmansdsoerfer/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
+  process.env.NOTES ??
+  `${process.env.HOME}/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes`
 const DAILY_LOG_DIR = VAULT_PATH + "/areas/agent-learnings/daily"
 const MAX_DAILY_LOG_CHARS = 6_000
 const MAX_PROJECT_MEMORY_CHARS = 2_000
