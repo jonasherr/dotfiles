@@ -169,13 +169,9 @@ alias lt="eza --icons=always -T -L 2 --ignore-glob=node_modules"
 alias lsa="eza --icons=always -a"
 alias lta="eza --icons=always -T -L 2 --ignore-glob=node_modules -a"
 
-# corepack
-alias yarn="corepack yarn"
-alias yarnpkg="corepack yarnpkg"
-alias pnpm="corepack pnpm"
-alias pnpx="corepack pnpx"
-alias npm="corepack npm"
-alias npx="corepack npx"
+# Package managers are resolved via PATH/corepack shims.
+# Do not alias npm/pnpm/yarn through corepack here: stale corepack installs in
+# /usr/local can shadow the Homebrew/Node shims and select outdated versions.
 
 # LOCATION ALIASES -----------------------------------------------------------------
 alias desktop="cd ~/Desktop"
