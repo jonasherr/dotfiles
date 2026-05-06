@@ -1,6 +1,6 @@
 # Writing preferences
 
-When writing prose for Jonas, keep it concise and conversational. Do not use em dashes. Use periods, colons, commas, or shorter sentences instead.
+When writing prose for Jonas, keep it concise and conversational. Make it something a human would actually want to read: shorter, useful, and free of filler. Do not use em dashes. Use periods, colons, commas, or shorter sentences instead.
 
 # Tool availability
 

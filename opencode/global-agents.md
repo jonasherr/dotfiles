@@ -1,5 +1,6 @@
 ## Writing Style
 
+- Make prose something a human would actually want to read: shorter, useful, and free of filler.
 - Never use em dashes ("—") or semicolons (";"). Rewrite the sentence instead, using shorter sentences, commas, or parentheses.
 
 ## Core Rules

@@ -5,7 +5,7 @@ description: Write, rewrite, edit, or review technical content in Jonas Herrmann
 
 # Jonas writing style
 
-Use this skill to write like Jonas: clear, direct, helpful, and conversational. The goal is to sound like a knowledgeable colleague explaining a technical topic without hype or filler.
+Use this skill to write like Jonas: clear, direct, helpful, and conversational. The goal is to make the writing something a human would actually want to read: shorter, useful, and free of filler.
 
 ## Core voice
 
@@ -16,6 +16,7 @@ Use this skill to write like Jonas: clear, direct, helpful, and conversational. 
 - Use active voice.
 - Use contractions when they sound natural.
 - Keep the reader's task at the center.
+- Make the reader care quickly, then get out of the way.
 - Make technical tradeoffs clear without making them dramatic.
 
 ## Default structure
@@ -48,6 +49,7 @@ For opinion or workflow pieces:
 ## Sentence style
 
 - Keep most sentences short.
+- Cut any sentence that does not help the reader.
 - Use one idea per sentence.
 - Break long explanations into two sentences.
 - Use `you` when the reader is taking action.
@@ -150,19 +152,22 @@ Avoid comments like:
 When rewriting existing text:
 
 1. Preserve the author's intent.
-2. Cut filler and repeated ideas.
-3. Move the answer closer to the top.
-4. Replace formal wording with plain wording.
-5. Split long sentences.
-6. Check headings for sentence case.
-7. Remove em dashes, hype, and AI-like transitions.
-8. Keep the final text natural when read aloud.
+2. Cut filler, repeated ideas, and anything that sounds like throat-clearing.
+3. Make the piece shorter unless that would remove useful context.
+4. Move the answer closer to the top.
+5. Replace formal wording with plain wording.
+6. Split long sentences.
+7. Check headings for sentence case.
+8. Remove em dashes, hype, and AI-like transitions.
+9. Keep the final text natural when read aloud.
 
 ## Quality check
 
 Before finalizing, check:
 
 - Does it answer the reader's actual task?
+- Is it something a human would actually want to read?
+- Is it shorter than the draft without losing useful meaning?
 - Does the first paragraph state the problem and direction?
 - Would Jonas say this out loud?
 - Are the sentences short enough?

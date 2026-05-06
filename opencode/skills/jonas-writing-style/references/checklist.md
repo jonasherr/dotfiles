@@ -5,11 +5,13 @@ Use this checklist when reviewing or polishing content.
 ## Fast pass
 
 - Lead with the problem and solution.
+- Make it something a human would actually want to read: shorter, useful, and free of filler.
 - Keep the reader's task at the center.
 - Use short, active sentences.
 - Use `you` for instructions.
 - Use `I` only for personal workflow pieces.
 - Cut filler, repetition, and throat-clearing.
+- Make the final version shorter unless that removes useful context.
 - Use sentence case headings.
 - Add blank lines before bullet lists.
 - Remove em dashes in explanations.
@@ -96,4 +98,4 @@ Here's the setup I use.
 
 ## Final read-aloud test
 
-Read each paragraph out loud. Rewrite anything that sounds like a brochure, policy doc, or generic AI answer.
+Read each paragraph out loud. Rewrite anything that sounds like a brochure, policy doc, or generic AI answer. If a paragraph does not help the reader, cut it.
