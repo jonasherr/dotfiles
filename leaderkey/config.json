@@ -142,7 +142,13 @@
 				"iconPath": "arrow.right.square",
 				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-window.sh"
 			},
-
+			{
+				"key": "v",
+				"label": "Toggle Vertical Tabs",
+				"type": "command",
+				"iconPath": "sidebar.left",
+				"value": "$DOTFILES/leaderkey/scripts/chrome-toggle-vertical-tabs.sh"
+			},
 			{
 				"key": "g",
 				"label": "Personal Window",
