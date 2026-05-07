@@ -31,6 +31,7 @@ export type Reminder = {
     radius?: number;
   };
   creationDate?: number | Date;
+  hashtags?: string[];
 };
 
 export type RemindersData = {
@@ -52,6 +53,21 @@ async function runSwiftFunction<T>(
   command: string,
   ...args: unknown[]
 ): Promise<T> {
+  return runHelperFunction<T>("AppleReminders", command, ...args);
+}
+
+async function runNativeTagsFunction<T>(
+  command: string,
+  ...args: unknown[]
+): Promise<T> {
+  return runHelperFunction<T>("AppleRemindersNativeTags", command, ...args);
+}
+
+async function runHelperFunction<T>(
+  helperName: string,
+  command: string,
+  ...args: unknown[]
+): Promise<T> {
   if (process.platform === "win32") {
     return Promise.reject(
       new Error("Swift functions are not supported on Windows"),
@@ -61,7 +77,7 @@ async function runSwiftFunction<T>(
   const swiftPath = join(
     environment.assetsPath,
     "compiled_raycast_swift",
-    "AppleReminders",
+    helperName,
   );
   await chmod(swiftPath, "755");
 
@@ -123,7 +139,39 @@ async function runSwiftFunction<T>(
 }
 
 export async function getData(): Promise<RemindersData> {
-  return runSwiftFunction<RemindersData>("getData");
+  try {
+    return await runNativeTagsFunction<RemindersData>("getData");
+  } catch (error) {
+    console.error("Native Reminders tag helper failed, falling back", error);
+    return runSwiftFunction<RemindersData>("getData");
+  }
+}
+
+export async function getReminderTags(payload: {
+  reminderId: string;
+}): Promise<{ reminderId: string; hashtags: string[] }> {
+  return runNativeTagsFunction("getReminderTags", payload);
+}
+
+export async function addTag(payload: {
+  reminderId: string;
+  tag: string;
+}): Promise<{ reminder: Reminder }> {
+  return runNativeTagsFunction("addTag", payload);
+}
+
+export async function removeTag(payload: {
+  reminderId: string;
+  tag: string;
+}): Promise<{ reminder: Reminder }> {
+  return runNativeTagsFunction("removeTag", payload);
+}
+
+export async function setTags(payload: {
+  reminderId: string;
+  tags: string[];
+}): Promise<{ reminder: Reminder }> {
+  return runNativeTagsFunction("setTags", payload);
 }
 
 export async function setTitleAndNotes(payload: {

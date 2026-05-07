@@ -18,6 +18,7 @@ import {
   Reminder,
   RemindersData,
   setDueDate,
+  setTags,
   setTitleAndNotes,
   toggleCompletionStatus,
 } from "./reminders";
@@ -27,7 +28,7 @@ import {
   getFriendlyTag,
   getTagColor,
   isLinearCandidate,
-  replaceCategoryTag,
+  taskTagToNativeTag,
 } from "./task-model";
 import {
   AREA_TAGS,
@@ -142,37 +143,34 @@ function ReminderActions({
     });
   }
 
-  async function updateNotes(notes: string, toastTitle: string) {
-    await mutate(
-      setTitleAndNotes({
-        reminderId: reminder.id,
-        title: reminder.title,
-        notes,
-      }),
-      {
-        optimisticUpdate(data) {
-          if (!data) return data;
-          return {
-            ...data,
-            reminders: data.reminders.map((item) =>
-              item.id === reminder.id ? { ...item, notes } : item,
-            ),
-          };
-        },
+  async function applyCategoryTag(category: TagCategory, tag: TaskTag | null) {
+    const nextTags = { ...reminder.tags };
+    if (tag) {
+      nextTags[category] = tag;
+    } else {
+      delete nextTags[category];
+    }
+
+    const nativeTags = Object.values(nextTags)
+      .filter((value): value is TaskTag => Boolean(value))
+      .map(taskTagToNativeTag);
+
+    await mutate(setTags({ reminderId: reminder.id, tags: nativeTags }), {
+      optimisticUpdate(data) {
+        if (!data) return data;
+        return {
+          ...data,
+          reminders: data.reminders.map((item) =>
+            item.id === reminder.id ? { ...item, hashtags: nativeTags } : item,
+          ),
+        };
       },
-    );
+    });
     await showToast({
       style: Toast.Style.Success,
-      title: toastTitle,
+      title: tag ? `Set ${category} tag` : `Cleared ${category} tag`,
       message: reminder.title,
     });
-  }
-
-  async function applyCategoryTag(category: TagCategory, tag: TaskTag | null) {
-    await updateNotes(
-      replaceCategoryTag(reminder, category, tag),
-      tag ? `Set ${category} tag` : `Cleared ${category} tag`,
-    );
   }
 
   async function applyDueDate(date: Date | null) {

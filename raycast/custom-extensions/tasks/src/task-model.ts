@@ -4,7 +4,6 @@ import {
   AreaTag,
   CORE_TAG_CATEGORIES,
   MatrixTag,
-  TAG_CATEGORY_PREFIXES,
   TAG_DEFINITIONS,
   TagCategory,
   TaskTag,
@@ -16,19 +15,27 @@ export type TaskReminder = Reminder & {
   needsTriageReasons: string[];
 };
 
-const TAG_PATTERN = /#[A-Za-z0-9_]+/g;
+export function nativeTagToTaskTag(tag: string): TaskTag | null {
+  const normalized = tag.startsWith("#") ? tag : `#${tag}`;
+  return TAG_DEFINITIONS.has(normalized as TaskTag)
+    ? (normalized as TaskTag)
+    : null;
+}
+
+export function taskTagToNativeTag(tag: TaskTag): string {
+  return tag.replace(/^#/, "");
+}
 
 export function extractTags(
-  reminder: Pick<Reminder, "title" | "notes">,
+  reminder: Pick<Reminder, "title" | "notes" | "hashtags">,
 ): TaskTag[] {
-  const text = `${reminder.title}\n${reminder.notes ?? ""}`;
-  const matches = text.match(TAG_PATTERN) ?? [];
   const tags: TaskTag[] = [];
-  for (const match of matches) {
-    if (TAG_DEFINITIONS.has(match as TaskTag)) {
-      tags.push(match as TaskTag);
-    }
+
+  for (const nativeTag of reminder.hashtags ?? []) {
+    const taskTag = nativeTagToTaskTag(nativeTag);
+    if (taskTag) tags.push(taskTag);
   }
+
   return Array.from(new Set<TaskTag>(tags));
 }
 
@@ -162,23 +169,6 @@ export function getFriendlyTag(tag?: TaskTag): string | undefined {
 
 export function getTagColor(tag?: TaskTag) {
   return tag ? TAG_DEFINITIONS.get(tag)?.color : undefined;
-}
-
-export function replaceCategoryTag(
-  reminder: Reminder,
-  category: TagCategory,
-  tag: TaskTag | null,
-): string {
-  const prefix = TAG_CATEGORY_PREFIXES[category];
-  const escapedPrefix = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const tagPattern = new RegExp(`(^|\\s)${escapedPrefix}[A-Za-z0-9_]+`, "g");
-  const notesWithoutCategory = (reminder.notes ?? "")
-    .replace(tagPattern, " ")
-    .replace(/[ \t]{2,}/g, " ")
-    .trim();
-
-  if (!tag) return notesWithoutCategory;
-  return [notesWithoutCategory, tag].filter(Boolean).join("\n");
 }
 
 export function withoutLinearMigrated(reminder: TaskReminder): boolean {

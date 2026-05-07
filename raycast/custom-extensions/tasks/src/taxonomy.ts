@@ -1,7 +1,5 @@
 import { Color, Icon, Image } from "@raycast/api";
 
-export const TAG_PREFIX = "#";
-
 export type TagCategory = "area" | "matrix" | "freelance" | "effort" | "status";
 export type AreaTag = "#area_personal" | "#area_freelance" | "#area_work";
 export type MatrixTag =
@@ -171,13 +169,5 @@ export const TAGS_BY_CATEGORY: Record<TagCategory, TagDefinition[]> = {
 export const TAG_DEFINITIONS = new Map<TaskTag, TagDefinition>(
   ALL_TAGS.map((definition) => [definition.tag, definition]),
 );
-
-export const TAG_CATEGORY_PREFIXES: Record<TagCategory, string> = {
-  area: "#area_",
-  matrix: "#matrix_",
-  freelance: "#freelance_",
-  effort: "#effort_",
-  status: "#status_",
-};
 
 export const CORE_TAG_CATEGORIES: TagCategory[] = ["area", "matrix"];
