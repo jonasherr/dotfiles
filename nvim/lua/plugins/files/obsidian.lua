@@ -15,19 +15,17 @@ local function create_weekly_note()
   local last_monday = yesterday - days_since_monday * 86400
 
   -- ISO calendar week and year of that Monday.
-  local kw   = tonumber(os.date('%V', last_monday))
+  local kw = tonumber(os.date('%V', last_monday))
   local year = tonumber(os.date('%G', last_monday)) -- ISO week-year (differs from %Y near Jan 1)
 
   -- Build list of embeds for daily notes that exist.
   local review_lines = {}
   for offset = 0, 6 do
     local day = last_monday + offset * 86400
-    local rel = string.format('projects/planning/daily/%s/%s/%s.md',
-      os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
+    local rel = string.format('projects/planning/daily/%s/%s/%s.md', os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
     local abs = vault .. '/' .. rel
     if vim.fn.filereadable(abs) == 1 then
-      review_lines[#review_lines + 1] = string.format('![[%s/%s/%s]]',
-        os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
+      review_lines[#review_lines + 1] = string.format('![[%s/%s/%s]]', os.date('%Y', day), os.date('%m', day), os.date('%Y-%m-%d', day))
     end
   end
   if #review_lines == 0 then
@@ -35,7 +33,7 @@ local function create_weekly_note()
   end
 
   -- Target path: projects/planning/weekly/YYYY/KW NN.md
-  local dir  = string.format('%s/projects/planning/weekly/%d', vault, year)
+  local dir = string.format('%s/projects/planning/weekly/%d', vault, year)
   local path = string.format('%s/KW %02d.md', dir, kw)
 
   if vim.fn.filereadable(path) == 1 then
@@ -62,10 +60,11 @@ local function create_weekly_note()
     '- [ ] Scanned all documents and tagged them in Paperless',
     '- [ ] Did weekly budgeting',
     '- [ ] Planned private activities for the week',
-    '- [ ] Updated This Week\'s Priorities in [[agent-current-focus]]',
+    "- [ ] Updated This Week's Priorities in [[agent-current-focus]]",
     '- [ ] Checked [[agent-learnings-inbox|Obsidian inbox]] and processed notes',
     '',
     '## Week in Review',
+    '- [ ] Checked apple recordings for new notes (can be transcribed with Whispering)',
     '',
   }
   for _, l in ipairs(review_lines) do
@@ -85,7 +84,7 @@ return {
   ft = 'markdown',
   config = function(_, opts)
     require('obsidian').setup(opts)
-    vim.api.nvim_create_user_command('WeeklyNote', create_weekly_note, { desc = 'Open or create this week\'s weekly note' })
+    vim.api.nvim_create_user_command('WeeklyNote', create_weekly_note, { desc = "Open or create this week's weekly note" })
   end,
   -- Replace the above line with this if you only want to load obsidian.nvim for markdown files in your vault:
   -- event = {
@@ -205,7 +204,5 @@ return {
       -- vim.fn.jobstart({"xdg-open", url})  -- linux
       -- vim.cmd(':silent exec "!start ' .. url .. '"') -- Windows
     end,
-
-
   },
 }
