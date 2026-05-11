@@ -10,7 +10,7 @@ export BIN_PATH="/opt/homebrew/bin"
 
 # PATH configuration
 export PATH="/opt/homebrew/bin:$PATH"
-export PATH="$PATH:/usr/local/sbin:$DOTFILES/bin:$HOME/.local/bin:$DOTFILES/scripts/"
+export PATH="$PATH:/usr/local/sbin:$HOME/.local/bin:$DOTFILES/scripts/"
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
 
