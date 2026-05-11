@@ -309,7 +309,7 @@ function createSessionFromTemplate(dirPath: string): string {
   const sessionPath = join(SESSIONS_DIR, `${sessionName}.kitty-session`);
   const template = existsSync(templatePath)
     ? readFileSync(templatePath, "utf-8").replace("{directory}", dirPath)
-    : `layout horizontal\ncd ${dirPath}\nlaunch opencode\nlaunch\n`;
+    : `layout horizontal\ncd ${dirPath}\nlaunch pi\nlaunch\n`;
   writeFileSync(sessionPath, template);
   return sessionPath;
 }

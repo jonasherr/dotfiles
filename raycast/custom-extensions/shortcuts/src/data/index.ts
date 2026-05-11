@@ -315,33 +315,14 @@ export const neovimData: AppData = {
   ],
 };
 
-export const opencodeData: AppData = {
-  name: "OpenCode",
-  icon: "🤖",
+export const piData: AppData = {
+  name: "pi",
+  icon: "🥧",
   shortcuts: [
-    { key: "i", command: "Focus input", category: "Input" },
-    { key: "Esc", command: "Blur input / Cancel", category: "Input" },
-    { key: "Enter", command: "Send message", category: "Input" },
-    { key: "⌘ Enter", command: "Send with newline", category: "Input" },
-    { key: "@", command: "Mention file", category: "Input" },
-    { key: "/", command: "Commands menu", category: "Input" },
-    { key: "k / j", command: "Scroll up/down", category: "Navigation" },
-    { key: "g / G", command: "Top/bottom of chat", category: "Navigation" },
-    { key: "⌃U / ⌃D", command: "Page up/down", category: "Navigation" },
-    { key: "?", command: "Show help", category: "Help" },
-    { key: ":", command: "Command mode", category: "Commands" },
-    { key: "a", command: "Apply last diff", category: "Actions" },
-    { key: "A", command: "Apply all diffs", category: "Actions" },
-    { key: "e", command: "Edit last message", category: "Actions" },
-    { key: "r", command: "Retry last message", category: "Actions" },
-    { key: "y", command: "Copy last response", category: "Actions" },
-    { key: "d", command: "Toggle diff view", category: "View" },
-    { key: "f", command: "Toggle files panel", category: "View" },
-    { key: "c", command: "Clear chat", category: "Session" },
-    { key: "n", command: "New session", category: "Session" },
-    { key: "s", command: "Sessions list", category: "Session" },
-    { key: "q", command: "Quit", category: "General" },
+    { key: "⌃P", command: "Cycle model", category: "Model" },
+    { key: "⌃X T", command: "Toggle thinking", category: "Model" },
     { key: "⌃C", command: "Interrupt generation", category: "General" },
+    { key: "⌃D", command: "Exit", category: "General" },
   ],
 };
 
@@ -496,7 +477,7 @@ export const apps: AppData[] = [
   linearData,
   mouselessData,
   neovimData,
-  opencodeData,
+  piData,
   yaziData,
   zshData,
 ];

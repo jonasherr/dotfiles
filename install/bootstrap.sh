@@ -101,8 +101,20 @@ link_file () {
 
   if [ "$skip" != "true" ]  # "false" or empty
   then
-    ln -s "$1" "$2"
-    success "linked $1 to $2"
+    local link_src="$1"
+    if [[ "$link_src" == "$HOME/"* ]] && [[ "$2" == "$HOME/"* ]]; then
+      link_src=$(python3 - "$link_src" "$(dirname "$2")" <<'PY'
+import os
+import sys
+
+src = os.path.abspath(os.path.expanduser(sys.argv[1]))
+dst_dir = os.path.abspath(os.path.expanduser(sys.argv[2]))
+print(os.path.relpath(src, dst_dir))
+PY
+)
+    fi
+    ln -s "$link_src" "$2"
+    success "linked $link_src to $2"
   fi
 }
 

@@ -1,7 +1,7 @@
 """
 Custom kitten to reset the focused tab's color override.
 
-Used in combine keybinds to clear the opencode attention indicator
+Used in combine keybinds to clear the agent attention indicator
 when switching to a tab.
 """
 

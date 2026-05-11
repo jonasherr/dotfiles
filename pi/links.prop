@@ -2,3 +2,4 @@ $DOTFILES/pi/settings.json=$HOME/.pi/agent/settings.json
 $DOTFILES/pi/APPEND_SYSTEM.md=$HOME/.pi/agent/APPEND_SYSTEM.md
 $DOTFILES/pi/extensions=$HOME/.pi/agent/extensions
 $DOTFILES/pi/themes=$HOME/.pi/agent/themes
+$DOTFILES/pi/skills=$HOME/.pi/agent/skills

@@ -34,8 +34,7 @@ bash -n path/to/script.sh
 | Directory | Language | Formatter |
 |-----------|----------|-----------|
 | kanata/ | Kanata KBD (S-expressions) | - |
-| opencode/ | TypeScript (Bun) | - | See `opencode/AGENTS.md` |
-| opencode/plugin/ | TypeScript | Prettier |
+| pi/ | TypeScript, Markdown | Prettier for TypeScript |
 | nvim/lua/ | Lua | StyLua (see .stylua.toml) |
 | yazi/ | Lua | StyLua |
 | sketchybar/ | Bash | - |

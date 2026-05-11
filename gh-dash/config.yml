@@ -30,9 +30,9 @@ notificationsSections:
   - title: Team Mentioned
     filters: reason:team-mention
 repoPaths:
-  jonasherr/dotfiles: /Users/jonasherrmansdsoerfer/Projects/dotfiles
-  vercel/internal-agent-skills: /Users/jonasherrmansdsoerfer/Projects/vercel/internal-agent-skills
-  vercel/next.js: /Users/jonasherrmansdsoerfer/Projects/vercel/next.js
+  jonasherr/dotfiles: ~/Projects/dotfiles
+  vercel/internal-agent-skills: ~/Projects/vercel/internal-agent-skills
+  vercel/next.js: ~/Projects/vercel/next.js
 repo:
   branchesRefetchIntervalSeconds: 30
   prsRefetchIntervalSeconds: 60
@@ -102,7 +102,7 @@ keybindings:
             cd "pr-{{.PrNumber}}";
           fi;
         fi &&
-        opencode'
+        pi'
 theme:
   colors:
     text:

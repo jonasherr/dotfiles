@@ -13,7 +13,7 @@ macOS dotfiles for my development environment. Each tool lives in its own direct
 | `leaderkey/` | LeaderKey launcher |
 | `mouseless/` | Mouseless keyboard-driven mouse replacement |
 | `nvim/` | Neovim (Lua, lazy.nvim) |
-| `opencode/` | OpenCode AI agent config |
+| `pi/` | pi coding agent config and shared public skills |
 | `claude/` | Claude Code config |
 | `gh-dash/` | GitHub Dashboard TUI |
 | `raycast/` | Raycast config |

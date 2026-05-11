@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+DOTFILES="${DOTFILES:-$(cd "$(dirname "$0")/.." && pwd)}"
+DOTFILES_TILDE="${DOTFILES/#$HOME/~}"
+SKILLS_DIR="$DOTFILES/pi/skills"
+AGENTS_SKILLS_DIR="$HOME/.agents/skills"
+CLAUDE_SKILLS_DIR="$HOME/.claude/skills"
+
+mkdir -p "$AGENTS_SKILLS_DIR" "$CLAUDE_SKILLS_DIR"
+
+for skill in "$SKILLS_DIR"/*/; do
+  [ -d "$skill" ] || continue
+
+  skill_name=$(basename "$skill")
+  agents_target="$AGENTS_SKILLS_DIR/$skill_name"
+  claude_target="$CLAUDE_SKILLS_DIR/$skill_name"
+
+  if [ -L "$agents_target" ]; then
+    link_target=$(readlink "$agents_target")
+    case "$link_target" in
+      "$DOTFILES/opencode/skills/$skill_name"|"$DOTFILES/opencode/skills/$skill_name/"|"$DOTFILES_TILDE/opencode/skills/$skill_name"|"$DOTFILES_TILDE/opencode/skills/$skill_name/"|"$SKILLS_DIR/$skill_name"|"$SKILLS_DIR/$skill_name/"|"$DOTFILES_TILDE/pi/skills/$skill_name"|"$DOTFILES_TILDE/pi/skills/$skill_name/"|"../../Projects/dotfiles/pi/skills/$skill_name")
+        rm "$agents_target"
+        ;;
+      *)
+        echo "  Skipped shared skill with custom symlink: $skill_name -> $link_target"
+        continue
+        ;;
+    esac
+  elif [ -e "$agents_target" ]; then
+    echo "  Skipped shared skill with existing directory: $skill_name"
+    continue
+  fi
+
+  ln -s "../../Projects/dotfiles/pi/skills/$skill_name" "$agents_target"
+  echo "  Linked shared skill: $skill_name"
+
+  if [ -L "$claude_target" ]; then
+    claude_link_target=$(readlink "$claude_target")
+    case "$claude_link_target" in
+      ../../.agents/skills/$skill_name|"$agents_target"|"$DOTFILES/opencode/skills/$skill_name"|"$DOTFILES/opencode/skills/$skill_name/"|"$DOTFILES_TILDE/opencode/skills/$skill_name"|"$DOTFILES_TILDE/opencode/skills/$skill_name/"|"$SKILLS_DIR/$skill_name"|"$SKILLS_DIR/$skill_name/"|"$DOTFILES_TILDE/pi/skills/$skill_name"|"$DOTFILES_TILDE/pi/skills/$skill_name/"|"../../Projects/dotfiles/pi/skills/$skill_name")
+        rm "$claude_target"
+        ln -s "../../.agents/skills/$skill_name" "$claude_target"
+        echo "  Refreshed Claude skill link: $skill_name"
+        ;;
+    esac
+  fi
+done
+
+# Remove stale compatibility skill links that point into old repo locations.
+for compatibility_dir in "$HOME/.config/opencode/skills"; do
+  [ -d "$compatibility_dir" ] || continue
+
+  for skill in "$compatibility_dir"/*; do
+    [ -L "$skill" ] || continue
+    link_target=$(readlink "$skill")
+    case "$link_target" in
+      "$DOTFILES/opencode/skills/"*|"$DOTFILES_TILDE/opencode/skills/"*|"$DOTFILES/pi/skills/"*|"$DOTFILES_TILDE/pi/skills/"*)
+        rm "$skill"
+        echo "  Removed stale skill link: $(basename "$skill")"
+        ;;
+    esac
+  done
+done
