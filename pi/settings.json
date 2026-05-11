@@ -8,10 +8,7 @@
     "vercel-ai-gateway/anthropic/*",
     "vercel-ai-gateway/openai/*"
   ],
-  "skills": [
-    "~/.agents/skills",
-    "~/Projects/dotfiles/pi/skills"
-  ],
+  "skills": ["~/.agents/skills"],
   "enableSkillCommands": true,
   "theme": "everforest-dark-soft",
   "hideThinkingBlock": false

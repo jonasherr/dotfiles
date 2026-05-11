@@ -8,7 +8,8 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `APPEND_SYSTEM.md` → symlinked to `~/.pi/agent/APPEND_SYSTEM.md`
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - `themes/` → symlinked to `~/.pi/agent/themes/`
-- `skills/` → committed public skills, exposed through `~/.agents/skills/`
+- `skills/` → committed Jonas-authored skills, exposed through `~/.agents/skills/`
+- `skills.public.json` → source manifest for public skills installed directly into `~/.agents/skills` with the skills CLI.
 - `install-skills.sh` → refreshes shared skill symlinks and cleans up old skill links.
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
 
@@ -33,16 +34,18 @@ There are no specialized agent files or prompt templates. The tool takes either 
 
 ## Skills
 
-`~/.agents/skills` is the shared runtime registry. Public, committed skills live in `pi/skills/`, and `~/.agents/skills/<name>` points to those directories. Private/internal skills can live directly in `~/.agents/skills/<name>` or point to their external source checkout.
+`~/.agents/skills` is the shared runtime registry. Jonas-authored skills live in `pi/skills/`, and `~/.agents/skills/<name>` points to those directories. Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout.
 
-Pi scans both `~/.agents/skills` and `~/Projects/dotfiles/pi/skills` via `settings.json`. Claude Code compatibility links can still point at `~/.agents/skills/<name>`.
+Pi scans only `~/.agents/skills` via `settings.json`. Claude Code compatibility links can still point at `~/.agents/skills/<name>`.
+
+Public skills installed from skills.sh are recorded in `pi/skills.public.json` and installed directly into `~/.agents/skills` with the skills CLI. Private/internal skills, such as `vercel/internal-agent-skills`, stay out of dotfiles and are managed by the global skills CLI lockfile at `~/.agents/.skill-lock.json` or by symlinks to private checkouts.
 
 ### Adding a skill
 
-Add public skills under `pi/skills/<skill-name>/SKILL.md`, then run:
+Add Jonas-authored skills under `pi/skills/<skill-name>/SKILL.md`, then run:
 
 ```sh
 ./pi/install-skills.sh
 ```
 
-Install or copy private skills into `~/.agents/skills/<skill-name>`.
+Add public skills from skills.sh with the install commands in `pi/skills.public.json`. Install or copy private skills into `~/.agents/skills/<skill-name>`.

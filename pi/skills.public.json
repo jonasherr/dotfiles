@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "description": "Public skills installed into ~/.agents/skills with the skills CLI. Jonas-authored skills live in pi/skills. Internal/private skills stay out of dotfiles and are managed by ~/.agents/.skill-lock.json or private checkouts.",
+  "publicRuntimeOnly": {
+    "grill-me": {
+      "path": "~/.agents/skills/grill-me",
+      "source": "mattpocock/skills",
+      "skill": "grill-me",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/mattpocock/skills/grill-me",
+      "install": "npx skills add mattpocock/skills --skill grill-me -g --agent cline -y"
+    },
+    "skill-creator": {
+      "path": "~/.agents/skills/skill-creator",
+      "source": "anthropics/skills",
+      "skill": "skill-creator",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/anthropics/skills/skill-creator",
+      "install": "npx skills add anthropics/skills --skill skill-creator -g --agent cline -y"
+    },
+    "vercel-react-best-practices": {
+      "path": "~/.agents/skills/vercel-react-best-practices",
+      "source": "vercel-labs/agent-skills",
+      "skill": "vercel-react-best-practices",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel-labs/agent-skills/vercel-react-best-practices",
+      "install": "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices -g --agent cline -y"
+    },
+    "web-design-guidelines": {
+      "path": "~/.agents/skills/web-design-guidelines",
+      "source": "vercel-labs/agent-skills",
+      "skill": "web-design-guidelines",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel-labs/agent-skills/web-design-guidelines",
+      "install": "npx skills add vercel-labs/agent-skills --skill web-design-guidelines -g --agent cline -y"
+    },
+    "next-cache-components": {
+      "path": "~/.agents/skills/next-cache-components",
+      "source": "vercel-labs/next-skills",
+      "skill": "next-cache-components",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel-labs/next-skills/next-cache-components",
+      "install": "npx skills add vercel-labs/next-skills --skill next-cache-components -g --agent cline -y"
+    },
+    "vercel-sandbox": {
+      "path": "~/.agents/skills/vercel-sandbox",
+      "source": "vercel/vercel-plugin",
+      "skill": "vercel-sandbox",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel/vercel-plugin/vercel-sandbox",
+      "install": "npx skills add vercel/vercel-plugin --skill vercel-sandbox -g --agent cline -y",
+      "note": "Local copy may differ from current public upstream. Review before updating."
+    }
+  }
+}
