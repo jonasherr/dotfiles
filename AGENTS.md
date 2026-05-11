@@ -5,6 +5,7 @@ macOS dotfiles: Neovim, Kanata, Kitty, Zsh, SketchyBar, and related tools.
 ## Critical Rules
 
 - **macOS-only** - scripts use `afplay`, `system_profiler`, Homebrew
+- **Never hardcode user home paths** - do not write `/Users/<name>/...` paths. Use `$HOME`, `~`, `$DOTFILES`, or portable relative symlinks.
 - **`$DOTFILES` env var** is set in `~/.env.sh` and used throughout
 
 ## Package Managers & Corepack
