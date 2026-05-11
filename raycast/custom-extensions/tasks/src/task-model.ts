@@ -26,6 +26,12 @@ export function taskTagToNativeTag(tag: TaskTag): string {
   return tag.replace(/^#/, "");
 }
 
+export function isCfpReminder(reminder: Pick<Reminder, "hashtags">): boolean {
+  return (reminder.hashtags ?? []).some(
+    (tag) => tag.toLocaleLowerCase() === "cfp",
+  );
+}
+
 export function extractTags(
   reminder: Pick<Reminder, "title" | "notes" | "hashtags">,
 ): TaskTag[] {
@@ -58,6 +64,7 @@ export function toTaskReminder(reminder: Reminder): TaskReminder {
   const needsTriageReasons: string[] = [];
 
   for (const category of CORE_TAG_CATEGORIES) {
+    if (category === "area" && isCfpReminder(reminder)) continue;
     if (!tags[category]) {
       needsTriageReasons.push(`Missing ${category} tag`);
     }
