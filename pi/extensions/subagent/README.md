@@ -1,31 +1,28 @@
 # Subagent extension
 
-User-level subagents for pi with isolated context windows.
+Generic background agents for pi with isolated context windows.
 
-## Design choices
+The tool starts disposable `pi -p --no-session` processes. There are no specialized agent files or project-local agent discovery.
 
-- Only loads agents from `~/.pi/agent/agents`.
-- Project-local agents are intentionally disabled.
-- Subagents run with `--no-session`.
-- Parallel mode supports up to 8 tasks / 4 concurrent tasks.
-- Parallel mode blocks write-capable agents (`patcher`).
-- Agent frontmatter supports `model`, `thinking`, and `tools`.
+## Modes
 
-## Agents
+- Single: `{ "task": "..." }`
+- Parallel: `{ "tasks": [{ "task": "..." }, { "task": "..." }] }`
 
-The tracked agents live in `pi/agents/` and are symlinked to `~/.pi/agent/agents`:
+## Defaults
 
-- `scout` — read-only compact recon.
-- `planner` — read-only concrete plans.
-- `patcher` — focused file edits, no commits.
-- `reviewer` — read-only independent review.
+- Max 8 parallel tasks, 4 concurrent processes.
+- Read-only by default with `read`, `grep`, `find`, `ls`, and `bash`.
+- Set `readOnly: false` to allow `edit` and `write`.
+- Optional per-task `cwd`, `model`, `thinking`, and `tools`.
 
-## Prompts
+## Example
 
-The tracked prompt templates live in `pi/prompts/` and are symlinked to `~/.pi/agent/prompts`:
-
-- `/scout`
-- `/scout-and-plan`
-- `/implement`
-- `/implement-and-review`
-- `/review-changes`
+```json
+{
+  "tasks": [
+    { "task": "Inspect the subagent extension API and summarize the relevant files." },
+    { "task": "Inspect the README and APPEND_SYSTEM subagent guidance." }
+  ]
+}
+```

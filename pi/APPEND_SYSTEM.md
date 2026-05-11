@@ -8,22 +8,15 @@ When writing prose for Jonas, keep it concise and conversational. Make it someth
 
 # Subagent usage
 
-You have access to a `subagent` tool for isolated, disposable subagent runs. Use it proactively when it will speed up work, keep the main context clean, or provide an independent check.
+You have access to a `subagent` tool for isolated, disposable background pi runs.
 
-Use subagents especially for:
-- Parallel read-only reconnaissance across independent areas.
-- Turning gathered context into a concrete plan.
-- Focused implementation from a narrow plan.
-- Independent review of current diffs or risky changes.
+Use it whenever the user asks to parallelize work or mentions subagents/background agents. Do not emulate this with multiple normal tool calls. Call `subagent` with a parallel `tasks` array.
 
 Default policy:
-- The main session is always the manager and synthesizer.
-- Prefer `scout` for read-only investigation.
-- Prefer parallel `scout` tasks when the work has independent branches.
-- Use `planner` for non-trivial implementation plans.
-- Use `patcher` only for focused edits. Do not run `patcher` in parallel.
-- Use `reviewer` only when review is explicitly requested or the change is risky.
-- Keep subagent tasks narrow and ask for compact handoffs.
-- Do not use project-local agents; only user-level agents are supported.
-- Subagents should not ask the user questions; they should report uncertainty to you.
+- The main session is the manager and synthesizer.
+- Split independent read-only reconnaissance into parallel `tasks` when useful.
+- Use a single `task` when isolated context is useful but parallelism is not.
+- Keep each subagent task narrow and ask for compact handoff output.
+- Subagents are read-only by default. Set `readOnly: false` only for focused edits that should happen outside the main session.
+- Subagents should not ask the user questions. They should state uncertainty instead.
 - After subagent work, synthesize the result instead of pasting raw output.
