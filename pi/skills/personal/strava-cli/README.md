@@ -4,13 +4,7 @@ Conservative local TypeScript CLI for the Strava API.
 
 ## Setup
 
-Keep credentials outside this repo. Example with 1Password:
-
-```bash
-export STRAVA_CLIENT_ID="$(op read 'op://Personal/Strava API/client_id')"
-export STRAVA_CLIENT_SECRET="$(op read 'op://Personal/Strava API/client_secret')"
-export STRAVA_REFRESH_TOKEN="$(op read 'op://Personal/Strava API/refresh_token')"
-```
+Keep credentials outside this repo. The CLI reads `STRAVA_CLIENT_ID`, `STRAVA_CLIENT_SECRET`, and `STRAVA_REFRESH_TOKEN` from the environment. If they are unset, it falls back to 1Password CLI fields at `op://Private/Strava API/{client_id,client_secret,refresh_token}` when a command needs Strava auth.
 
 ## Install/build
 

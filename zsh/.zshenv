@@ -36,9 +36,3 @@ export VERCEL_REPOS_PATH="$HOME/Projects/vercel/agent-help"
 # Disable oh-my-openagent telemetry (PostHog, added in v3.17.2)
 export OMO_SEND_ANONYMOUS_TELEMETRY=0
 
-# Strava local CLI credentials, optional and stored outside the repo in 1Password
-if command -v op >/dev/null 2>&1; then
-  export STRAVA_CLIENT_ID="${STRAVA_CLIENT_ID:-$(op read 'op://Private/Strava API/client_id' 2>/dev/null || true)}"
-  export STRAVA_CLIENT_SECRET="${STRAVA_CLIENT_SECRET:-$(op read 'op://Private/Strava API/client_secret' 2>/dev/null || true)}"
-  export STRAVA_REFRESH_TOKEN="${STRAVA_REFRESH_TOKEN:-$(op read 'op://Private/Strava API/refresh_token' 2>/dev/null || true)}"
-fi
