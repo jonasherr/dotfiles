@@ -1,3 +1,4 @@
+import { redactSecrets } from "./redact.js"
 import type { TokenResponse } from "./types.js"
 
 function requireEnv(name: string): string {
@@ -29,7 +30,7 @@ export async function refreshAccessToken(): Promise<TokenResponse> {
 
   const data = await response.json().catch(() => ({}))
   if (!response.ok) {
-    throw new Error(`Token refresh failed (${response.status}): ${JSON.stringify(data)}`)
+    throw new Error(`Token refresh failed (${response.status}): ${JSON.stringify(redactSecrets(data))}`)
   }
 
   return data as TokenResponse

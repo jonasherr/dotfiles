@@ -1,9 +1,9 @@
 import { refreshAccessToken } from "./auth.js"
+import { redactSecrets } from "./redact.js"
 import type { HttpMethod, JsonValue } from "./types.js"
 
 const API_BASE = "https://www.strava.com/api/v3"
 const BLOCKED_METHODS = new Set<HttpMethod>(["DELETE", "PUT", "PATCH", "POST"])
-const SECRET_FIELD_PATTERN = /(access_token|refresh_token|client_secret|authorization|token)/i
 
 function assertApiPath(path: string): void {
   if (!path.startsWith("/")) {
@@ -19,17 +19,6 @@ function assertSafe(method: HttpMethod, path: string): void {
   if (BLOCKED_METHODS.has(method)) {
     throw new Error(`${method} is blocked. This CLI only performs read-only Strava API requests.`)
   }
-}
-
-function redactSecrets(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(redactSecrets)
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, SECRET_FIELD_PATTERN.test(key) ? "[redacted]" : redactSecrets(entry)]),
-    )
-  }
-  if (typeof value === "string" && /[A-Za-z0-9_-]{24,}/.test(value)) return "[redacted]"
-  return value
 }
 
 export interface ApiResult<T = JsonValue> {

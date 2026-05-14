@@ -90,6 +90,13 @@ function intFlag(flags: Record<string, string | boolean>, name: string, fallback
   return value
 }
 
+function positiveNumberFlag(flags: Record<string, string | boolean>, name: string): number {
+  const raw = requireFlag(flags, name)
+  const value = Number(raw)
+  if (!Number.isFinite(value) || value <= 0) throw new Error(`--${name} must be a positive number`)
+  return value
+}
+
 function perPage(flags: Record<string, string | boolean>): number {
   return Math.min(intFlag(flags, "per-page", 30), MAX_PER_PAGE)
 }
@@ -397,7 +404,7 @@ async function run(parsed: ParsedArgs): Promise<void> {
         start: requireFlag(flags, "start"),
         finish: stringFlag(flags, "finish") ?? null,
         loop: boolFlag(flags, "loop", !stringFlag(flags, "finish")),
-        target_distance_km: Number(requireFlag(flags, "distance-km")),
+        target_distance_km: positiveNumberFlag(flags, "distance-km"),
         bike: stringFlag(flags, "bike") ?? "road",
         surface: stringFlag(flags, "surface") ?? "paved",
         elevation_preference: stringFlag(flags, "elevation") ?? null,
