@@ -2,14 +2,71 @@ import { refreshAccessToken } from "./auth.js"
 import type { HttpMethod, JsonValue } from "./types.js"
 
 const API_BASE = "https://www.strava.com/api/v3"
-const BLOCKED_METHODS = new Set<HttpMethod>(["DELETE", "PUT", "PATCH"])
+const BLOCKED_METHODS = new Set<HttpMethod>(["DELETE", "PUT", "PATCH", "POST"])
+const SECRET_FIELD_PATTERN = /(access_token|refresh_token|client_secret|authorization|token)/i
+
+function assertApiPath(path: string): void {
+  if (!path.startsWith("/")) {
+    throw new Error("API path must start with /. Absolute URLs are blocked.")
+  }
+  if (path.startsWith("//")) {
+    throw new Error("Protocol-relative API URLs are blocked.")
+  }
+}
 
 function assertSafe(method: HttpMethod, path: string): void {
+  assertApiPath(path)
   if (BLOCKED_METHODS.has(method)) {
-    throw new Error(`${method} is blocked. This CLI does not edit or delete Strava data.`)
+    throw new Error(`${method} is blocked. This CLI only performs read-only Strava API requests.`)
   }
-  if (method === "POST" && path !== "/routes") {
-    throw new Error(`POST ${path} is not allowed. Only explicit route creation is permitted.`)
+}
+
+function redactSecrets(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(redactSecrets)
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [key, SECRET_FIELD_PATTERN.test(key) ? "[redacted]" : redactSecrets(entry)]),
+    )
+  }
+  if (typeof value === "string" && /[A-Za-z0-9_-]{24,}/.test(value)) return "[redacted]"
+  return value
+}
+
+export interface ApiResult<T = JsonValue> {
+  data: T
+  rateLimit?: string
+  rateLimitUsage?: string
+}
+
+export async function apiRequestWithMeta<T = JsonValue>(
+  method: HttpMethod,
+  path: string,
+  query: Record<string, string | number | boolean | undefined> = {},
+): Promise<ApiResult<T>> {
+  assertSafe(method, path)
+
+  const token = await refreshAccessToken()
+  const url = new URL(`${API_BASE}${path}`)
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined) url.searchParams.set(key, String(value))
+  }
+
+  const response = await fetch(url, {
+    method,
+    headers: { authorization: `Bearer ${token.access_token}` },
+  })
+
+  const contentType = response.headers.get("content-type") ?? ""
+  const data = contentType.includes("application/json") ? await response.json() : await response.text()
+
+  if (!response.ok) {
+    throw new Error(`Strava API error ${response.status} ${method} ${path}: ${JSON.stringify(redactSecrets(data))}`)
+  }
+
+  return {
+    data: data as T,
+    rateLimit: response.headers.get("x-ratelimit-limit") ?? undefined,
+    rateLimitUsage: response.headers.get("x-ratelimit-usage") ?? undefined,
   }
 }
 
@@ -17,33 +74,8 @@ export async function apiRequest<T = JsonValue>(
   method: HttpMethod,
   path: string,
   query: Record<string, string | number | boolean | undefined> = {},
-  body?: JsonValue,
 ): Promise<T> {
-  assertSafe(method, path)
-
-  const token = await refreshAccessToken()
-  const url = new URL(path.startsWith("http") ? path : `${API_BASE}${path}`)
-  for (const [key, value] of Object.entries(query)) {
-    if (value !== undefined) url.searchParams.set(key, String(value))
-  }
-
-  const response = await fetch(url, {
-    method,
-    headers: {
-      authorization: `Bearer ${token.access_token}`,
-      ...(body ? { "content-type": "application/json" } : {}),
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  })
-
-  const contentType = response.headers.get("content-type") ?? ""
-  const data = contentType.includes("application/json") ? await response.json() : await response.text()
-
-  if (!response.ok) {
-    throw new Error(`Strava API error ${response.status} ${method} ${path}: ${JSON.stringify(data)}`)
-  }
-
-  return data as T
+  return (await apiRequestWithMeta<T>(method, path, query)).data
 }
 
 export function assertReadOnlyApiMethod(method: string): HttpMethod {
