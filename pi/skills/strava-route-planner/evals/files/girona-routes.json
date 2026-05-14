@@ -1,0 +1,23 @@
+[
+  {
+    "id": 101,
+    "name": "Girona Els Angels Endurance Loop",
+    "distance": 72000,
+    "elevation_gain": 850,
+    "description": "Road endurance loop from Girona, paved, steady climbing, good for 3 hours."
+  },
+  {
+    "id": 102,
+    "name": "Girona Rocacorba Climb Day",
+    "distance": 105000,
+    "elevation_gain": 2100,
+    "description": "Hard climbing route, not ideal for endurance-only days."
+  },
+  {
+    "id": 103,
+    "name": "Costa Brava Cafe Spin",
+    "distance": 48000,
+    "elevation_gain": 420,
+    "description": "Shorter coastal cafe ride from Girona, paved."
+  }
+]
