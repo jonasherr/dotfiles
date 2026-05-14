@@ -1,0 +1,64 @@
+{
+  "skill_name": "strava-training-analyst",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Look at my last 8 weeks of Strava rides and tell me if I\u2019m building endurance or just riding randomly. Use mocked exports, not real private data.",
+      "expected_output": "A coaching-style report with date range, data availability, weekly trends, endurance assessment, strengths, watch-outs, recommendations, next-week guidance, and caveats.",
+      "files": [],
+      "assertions": [
+        "Output states the date range, activity types, and data availability or sensor caveats.",
+        "Output includes weekly distance/time/elevation or equivalent weekly progression evidence.",
+        "Output explicitly judges whether endurance is building versus random riding and supports the judgment with trends.",
+        "Output includes strengths, watch-outs, recommendations, and caveats.",
+        "Output avoids using real private Strava data and identifies mocked data or local exports."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Analyze my cycling training for climbing. Use distance, elevation, HR, power, and cadence if available. What should I improve next month? Use mocked Strava exports.",
+      "expected_output": "A climbing-focused cycling analysis that considers weekly elevation, elevation density, long/hard rides, HR/power/cadence availability, and gives practical next-month recommendations.",
+      "files": [],
+      "assertions": [
+        "Output is climbing-focused and analyzes elevation gain or elevation density across the training window.",
+        "Output considers distance, elevation, heart rate, power, and cadence, or clearly notes when any are unavailable.",
+        "Output gives next-month recommendations specific to climbing improvement.",
+        "Output includes practical conservative coaching advice and caveats about terrain, sensors, or mocked data.",
+        "Output avoids using real private Strava data and identifies mocked data or local exports."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a 160 km road ride in 10 weeks. Based on my Strava history, suggest next week\u2019s training and explain the reasoning. Use mocked data instead of real private data.",
+      "expected_output": "An event-prep analysis with baseline assessment, readiness caveats, and a simple next-week training table with purpose for each session.",
+      "files": [],
+      "assertions": [
+        "Output assesses current baseline against the 160 km ride goal and 10-week timeline.",
+        "Output includes a next-week training plan as a table or day-by-day schedule with purposes.",
+        "Output explains the reasoning behind the recommended week using Strava history metrics.",
+        "Output keeps recommendations conservative and includes recovery/easy days.",
+        "Output includes data caveats and avoids medical claims."
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Using the provided mocked Strava fixture files, analyze my last 4 weeks of cycling intensity. I care less about average HR/power and more about how much time I spent in HR zones and power zones. Tell me whether the distribution supports endurance building or if I am riding too hard too often.",
+      "expected_output": "A cycling intensity report that uses mocked zone exports, separates HR and power zones, reports time and percent in each zone, and interprets the distribution for endurance vs too-hard riding.",
+      "files": [
+        "evals/files/zone-distribution/activities.json",
+        "evals/files/zone-distribution/zones-1001.json",
+        "evals/files/zone-distribution/zones-1002.json",
+        "evals/files/zone-distribution/zones-1003.json",
+        "evals/files/zone-distribution/zones-1004.json"
+      ],
+      "assertions": [
+        "Output uses the provided mocked fixture files and does not invent a different dataset or use real private Strava data.",
+        "Output reports heart-rate zones separately from power zones.",
+        "Output includes exact or near-exact aggregate HR zone percentages from fixtures: Z1 about 7%, Z2 about 44%, Z3 about 30%, Z4 about 16%, Z5 about 4%.",
+        "Output includes exact or near-exact aggregate power zone percentages from fixtures: Z1 about 37%, Z2 about 36%, Z3 about 19%, Z4 about 7%, Z5 about 2%.",
+        "Output interprets that the distribution is mostly endurance-supportive but has meaningful tempo/hard work that should be managed.",
+        "Output treats averages as secondary context and includes caveats about mocked data and zone availability."
+      ]
+    }
+  ]
+}

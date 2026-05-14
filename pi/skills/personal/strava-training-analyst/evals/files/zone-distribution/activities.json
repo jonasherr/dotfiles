@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-05-14T00:00:00Z",
+  "date_range": {"after": "2026-04-16", "before": "2026-05-14"},
+  "source": {"cli": "strava-local", "api": "mock fixture", "normalized": true},
+  "activities": [
+    {"id": 1001, "name": "Easy endurance", "start_date": "2026-04-18T08:00:00Z", "sport_type": "Ride", "distance_m": 52000, "moving_time_s": 7200, "elevation_gain_m": 420, "average_heartrate": 128, "average_watts": 142, "weighted_average_watts": 155, "average_cadence": 86},
+    {"id": 1002, "name": "Tempo hills", "start_date": "2026-04-25T08:00:00Z", "sport_type": "Ride", "distance_m": 68000, "moving_time_s": 9000, "elevation_gain_m": 980, "average_heartrate": 148, "average_watts": 188, "weighted_average_watts": 215, "average_cadence": 79},
+    {"id": 1003, "name": "Long aerobic ride", "start_date": "2026-05-02T07:30:00Z", "sport_type": "Ride", "distance_m": 96000, "moving_time_s": 14400, "elevation_gain_m": 1100, "average_heartrate": 134, "average_watts": 158, "weighted_average_watts": 172, "average_cadence": 84},
+    {"id": 1004, "name": "Hard group ride", "start_date": "2026-05-09T08:30:00Z", "sport_type": "Ride", "distance_m": 74000, "moving_time_s": 9600, "elevation_gain_m": 760, "average_heartrate": 156, "average_watts": 205, "weighted_average_watts": 238, "average_cadence": 88}
+  ]
+}
