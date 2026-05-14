@@ -3,3 +3,4 @@ $DOTFILES/pi/APPEND_SYSTEM.md=$HOME/.pi/agent/APPEND_SYSTEM.md
 $DOTFILES/pi/extensions=$HOME/.pi/agent/extensions
 $DOTFILES/pi/themes=$HOME/.pi/agent/themes
 $DOTFILES/pi/skills=$HOME/.pi/agent/skills
+$DOTFILES/pi/skills/personal/strava-cli/strava-local=$HOME/.local/bin/strava-local
