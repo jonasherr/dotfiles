@@ -44,11 +44,12 @@ strava-local routes get <route-id> --out route.json
 strava-local routes export <route-id> --format gpx --out route.gpx
 strava-local routes prepare-upload --name "Sunday loop" --gpx route.gpx --out upload-instructions.json
 
-strava-local training export --after 2026-01-01 --before 2026-03-01 --out activities-normalized.json
-strava-local training weekly --after 2026-01-01 --before 2026-03-01 --out weekly.json
-strava-local training summary --after 2026-01-01 --before 2026-03-01 --out summary.json
+strava-local training export --after 2026-01-01 --before 2026-03-01 --sport cycling --out activities-normalized.json
+strava-local training weekly --after 2026-01-01 --before 2026-03-01 --from-file activities.json --out weekly.json
+strava-local training summary --after 2026-01-01 --before 2026-03-01 --from-file activities-normalized.json --out summary.json
 
 strava-local route-plan scaffold --start "Munich, Germany" --distance-km 80 --bike road --surface paved --elevation max-1200 --out plan.json
+strava-local route-plan validate --plan plan-with-geometry.json
 strava-local route-plan gpx --plan plan-with-geometry.json --out route.gpx
 ```
 
@@ -64,3 +65,12 @@ Blocked before token refresh or any Strava API request:
 `routes create` was intentionally removed. Use `routes prepare-upload` plus the generated GPX for manual Strava route upload.
 
 API error output redacts token-looking fields.
+
+## Stable output shapes
+
+- `training export`: `{ generated_at, date_range, source, activities }`, where each activity contains normalized fields like `id`, `sport_type`, `distance_m`, `moving_time_s`, `elevation_gain_m`, HR, power, cadence, and sensor availability values.
+- `training weekly`: `{ generated_at, date_range, source, weeks }`, where each week contains counts, distance, moving/elapsed time, elevation, longest activity, and unweighted activity means for HR/power/cadence.
+- `training summary`: `{ generated_at, date_range, source, totals, consistency, longest_activity, weekly_progression, data_availability, caveats }`.
+- `route-plan validate`: `{ ok, schema, waypoint_count, trackpoint_count }`.
+
+`--sport cycling` expands to common cycling variants like `Ride`, `VirtualRide`, and `GravelRide`. `--sport running` expands to `Run`, `TrailRun`, and `VirtualRun`.

@@ -15,7 +15,7 @@ type Point = { lat: number; lon: number; name?: string }
 
 const ACTIVITY_COMMANDS = new Set(["list", "get", "streams", "zones"])
 const ROUTE_COMMANDS = new Set(["list", "get", "export", "prepare-upload"])
-const ROUTE_PLAN_COMMANDS = new Set(["scaffold", "gpx"])
+const ROUTE_PLAN_COMMANDS = new Set(["scaffold", "gpx", "validate"])
 const TRAINING_COMMANDS = new Set(["export", "weekly", "summary"])
 const DEFAULT_STREAM_KEYS = "time,distance,altitude,velocity_smooth,heartrate,cadence,watts,temp"
 const MAX_PER_PAGE = 200
@@ -36,11 +36,12 @@ Commands:
   strava-local routes get <route-id> [--out file]
   strava-local routes export <route-id> --format gpx|tcx [--out file]
   strava-local routes prepare-upload --gpx route.gpx --name NAME [--out upload-instructions.json]
-  strava-local training export --after YYYY-MM-DD --before YYYY-MM-DD [--sport Ride,Run] [--out activities-normalized.json]
-  strava-local training weekly --after YYYY-MM-DD --before YYYY-MM-DD [--sport Ride,Run] [--out weekly.json]
-  strava-local training summary --after YYYY-MM-DD --before YYYY-MM-DD [--sport Ride,Run] [--out summary.json]
+  strava-local training export --after YYYY-MM-DD --before YYYY-MM-DD [--sport cycling,running] [--from-file activities.json] [--out activities-normalized.json]
+  strava-local training weekly --after YYYY-MM-DD --before YYYY-MM-DD [--sport cycling,running] [--from-file activities.json] [--out weekly.json]
+  strava-local training summary --after YYYY-MM-DD --before YYYY-MM-DD [--sport cycling,running] [--from-file activities.json] [--out summary.json]
   strava-local route-plan scaffold --start PLACE --distance-km 80 [--finish PLACE|--loop true] --out plan.json
   strava-local route-plan gpx --plan plan.json --out route.gpx
+  strava-local route-plan validate --plan plan.json
 
 Safety:
   Absolute API URLs, POST, DELETE, PUT, PATCH, activity edits, route deletes, and profile changes are blocked.`
@@ -108,6 +109,15 @@ function epochSeconds(date: string | undefined, endOfDay = false): number | unde
   return Math.floor(ms / 1000)
 }
 
+function dateRange(flags: Record<string, string | boolean>): { after: string; before: string; afterEpoch: number; beforeEpoch: number } {
+  const after = requireFlag(flags, "after")
+  const before = requireFlag(flags, "before")
+  const afterEpoch = epochSeconds(after) ?? 0
+  const beforeEpoch = epochSeconds(before, true) ?? 0
+  if (afterEpoch > beforeEpoch) throw new Error("--after must be on or before --before")
+  return { after, before, afterEpoch, beforeEpoch }
+}
+
 async function athleteId(flags: Record<string, string | boolean>): Promise<string> {
   const requested = stringFlag(flags, "athlete-id") ?? "me"
   if (requested !== "me") return requested
@@ -150,30 +160,51 @@ function printRateLimit(limit?: string, usage?: string): void {
 }
 
 async function loadActivities(flags: Record<string, string | boolean>): Promise<Activity[]> {
-  const activities = await pagedGet<Activity[]>("/athlete/activities", { ...flags, all: flags.all ?? true }, {
-    after: epochSeconds(requireFlag(flags, "after")),
-    before: epochSeconds(requireFlag(flags, "before"), true),
+  const range = dateRange(flags)
+  const fromFile = stringFlag(flags, "from-file")
+  const loaded = fromFile
+    ? (JSON.parse(await readFile(fromFile, "utf8")) as Activity[] | { activities?: Activity[] })
+    : await pagedGet<Activity[]>("/athlete/activities", { ...flags, all: flags.all ?? true }, { after: range.afterEpoch, before: range.beforeEpoch })
+  const activities = Array.isArray(loaded) ? loaded : loaded.activities
+  if (!Array.isArray(activities)) throw new Error("Activity input must be a JSON array or an object with an activities array")
+
+  const inRange = activities.filter((activity) => {
+    const start = activityDate(activity)
+    if (!start) return false
+    const epoch = Math.floor(Date.parse(start) / 1000)
+    return Number.isFinite(epoch) && epoch >= range.afterEpoch && epoch <= range.beforeEpoch
   })
-  const sports = (stringFlag(flags, "sport") ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-  if (sports.length === 0) return activities
-  return activities.filter((activity) => sports.includes(String(activity.sport_type ?? activity.type ?? "")))
+  const sports = expandSports(stringFlag(flags, "sport"))
+  if (sports.size === 0) return inRange
+  return inRange.filter((activity) => sports.has(String(activity.sport_type ?? activity.type ?? "")))
+}
+
+function expandSports(raw: string | undefined): Set<string> {
+  const aliases: Record<string, string[]> = {
+    cycling: ["Ride", "VirtualRide", "GravelRide", "MountainBikeRide", "EBikeRide", "EMountainBikeRide"],
+    riding: ["Ride", "VirtualRide", "GravelRide", "MountainBikeRide", "EBikeRide", "EMountainBikeRide"],
+    running: ["Run", "TrailRun", "VirtualRun"],
+    run: ["Run", "TrailRun", "VirtualRun"],
+  }
+  const sports = new Set<string>()
+  for (const token of (raw ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
+    for (const sport of aliases[token.toLowerCase()] ?? [token]) sports.add(sport)
+  }
+  return sports
 }
 
 function normalizedActivity(activity: Activity): Record<string, JsonValue> {
   return {
     id: activity.id ?? null,
     name: activity.name ?? null,
-    start_date: activity.start_date ?? activity.start_date_local ?? null,
+    start_date: activityDate(activity) ?? null,
     sport_type: activity.sport_type ?? activity.type ?? null,
-    distance_m: numberValue(activity.distance),
-    moving_time_s: numberValue(activity.moving_time),
-    elapsed_time_s: numberValue(activity.elapsed_time),
-    elevation_gain_m: numberValue(activity.total_elevation_gain),
-    average_speed_mps: numberValue(activity.average_speed),
-    max_speed_mps: numberValue(activity.max_speed),
+    distance_m: activityNumber(activity, "distance"),
+    moving_time_s: activityNumber(activity, "moving_time"),
+    elapsed_time_s: activityNumber(activity, "elapsed_time"),
+    elevation_gain_m: activityNumber(activity, "total_elevation_gain"),
+    average_speed_mps: activityNumber(activity, "average_speed"),
+    max_speed_mps: activityNumber(activity, "max_speed"),
     average_heartrate: numberValue(activity.average_heartrate),
     max_heartrate: numberValue(activity.max_heartrate),
     average_watts: numberValue(activity.average_watts),
@@ -185,10 +216,11 @@ function normalizedActivity(activity: Activity): Record<string, JsonValue> {
 }
 
 function metadata(flags: Record<string, string | boolean>): Record<string, JsonValue> {
+  const range = dateRange(flags)
   return {
     generated_at: new Date().toISOString(),
-    date_range: { after: requireFlag(flags, "after"), before: requireFlag(flags, "before") },
-    source: { cli: "strava-local", api: "Strava v3", normalized: true },
+    date_range: { after: range.after, before: range.before },
+    source: { cli: "strava-local", api: stringFlag(flags, "from-file") ? "local file" : "Strava v3", normalized: true },
   }
 }
 
@@ -203,13 +235,13 @@ function weekKey(date: string): string {
 function trainingWeekly(activities: Activity[], flags: Record<string, string | boolean>): Record<string, JsonValue> {
   const weeks = new Map<string, { items: Activity[]; distance: number; moving: number; elapsed: number; elevation: number }>()
   for (const activity of activities) {
-    const key = weekKey(String(activity.start_date ?? activity.start_date_local))
+    const key = weekKey(String(activityDate(activity)))
     const week = weeks.get(key) ?? { items: [], distance: 0, moving: 0, elapsed: 0, elevation: 0 }
     week.items.push(activity)
-    week.distance += numberValue(activity.distance)
-    week.moving += numberValue(activity.moving_time)
-    week.elapsed += numberValue(activity.elapsed_time)
-    week.elevation += numberValue(activity.total_elevation_gain)
+    week.distance += activityNumber(activity, "distance")
+    week.moving += activityNumber(activity, "moving_time")
+    week.elapsed += activityNumber(activity, "elapsed_time")
+    week.elevation += activityNumber(activity, "total_elevation_gain")
     weeks.set(key, week)
   }
   return {
@@ -217,7 +249,7 @@ function trainingWeekly(activities: Activity[], flags: Record<string, string | b
     weeks: Array.from(weeks.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([week_start, week]) => {
-        const long = [...week.items].sort((a, b) => numberValue(b.distance) - numberValue(a.distance))[0]
+        const long = [...week.items].sort((a, b) => activityNumber(b, "distance") - activityNumber(a, "distance"))[0]
         return {
           week_start,
           activity_count: week.items.length,
@@ -236,8 +268,8 @@ function trainingWeekly(activities: Activity[], flags: Record<string, string | b
 
 function trainingSummary(activities: Activity[], flags: Record<string, string | boolean>): Record<string, JsonValue> {
   const weekly = trainingWeekly(activities, flags).weeks as JsonValue[]
-  const activeDays = new Set(activities.map((a) => String(a.start_date_local ?? a.start_date ?? "").slice(0, 10)).filter(Boolean))
-  const longest = [...activities].sort((a, b) => numberValue(b.distance) - numberValue(a.distance))[0]
+  const activeDays = new Set(activities.map((a) => String(activityDate(a) ?? "").slice(0, 10)).filter(Boolean))
+  const longest = [...activities].sort((a, b) => activityNumber(b, "distance") - activityNumber(a, "distance"))[0]
   const sportCounts = countBy(activities.map((a) => String(a.sport_type ?? a.type ?? "Unknown")))
   return {
     ...metadata(flags),
@@ -265,10 +297,23 @@ function trainingSummary(activities: Activity[], flags: Record<string, string | 
   }
 }
 
+function validateRoutePlan(plan: Record<string, JsonValue>): { waypoints: Point[]; trackpoints: Point[] } {
+  if (plan.schema !== "strava-local.route-plan.v1") throw new Error("Route plan schema must be strava-local.route-plan.v1")
+  for (const field of ["name", "start", "bike", "surface"]) {
+    if (typeof plan[field] !== "string" || !plan[field]) throw new Error(`Route plan requires non-empty string field: ${field}`)
+  }
+  if (typeof plan.finish !== "string" && typeof plan.loop !== "boolean") throw new Error("Route plan requires either finish string or loop boolean")
+  if (typeof plan.target_distance_km !== "number" || !Number.isFinite(plan.target_distance_km) || plan.target_distance_km <= 0) {
+    throw new Error("Route plan requires positive numeric target_distance_km")
+  }
+  if (plan.waypoints !== undefined && !Array.isArray(plan.waypoints)) throw new Error("Route plan waypoints must be an array")
+  if (plan.trackpoints !== undefined && !Array.isArray(plan.trackpoints)) throw new Error("Route plan trackpoints must be an array")
+  return { waypoints: pointArray(plan.waypoints), trackpoints: pointArray(plan.trackpoints) }
+}
+
 function routePlanToGpx(plan: Record<string, JsonValue>): string {
-  const name = String(plan.name ?? `Route from ${plan.start ?? "unknown start"}`)
-  const waypoints = pointArray(plan.waypoints)
-  const trackpoints = pointArray(plan.trackpoints)
+  const { waypoints, trackpoints } = validateRoutePlan(plan)
+  const name = String(plan.name)
   if (waypoints.length === 0 && trackpoints.length === 0) throw new Error("Route plan has no waypoints or trackpoints. Add geometry before generating GPX.")
   const rte = waypoints.length
     ? `  <rte>\n    <name>${escapeXml(name)}</name>\n${waypoints.map((p) => `    <rtept lat="${p.lat}" lon="${p.lon}">${p.name ? `<name>${escapeXml(p.name)}</name>` : ""}</rtept>`).join("\n")}\n  </rte>\n`
@@ -286,6 +331,7 @@ function pointArray(value: JsonValue | undefined): Point[] {
     const lat = Number(entry.lat)
     const lon = Number(entry.lon)
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) throw new Error("Route geometry points require numeric lat and lon")
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) throw new Error("Route geometry points must use valid lat/lon ranges")
     return { lat, lon, name: typeof entry.name === "string" ? entry.name : undefined }
   })
 }
@@ -298,6 +344,23 @@ function numberValue(value: JsonValue | undefined): number {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
 }
 
+function activityDate(activity: Activity): string | undefined {
+  const value = activity.start_date ?? activity.start_date_local
+  return typeof value === "string" ? value : undefined
+}
+
+function activityNumber(activity: Activity, rawField: string): number {
+  const normalized: Record<string, string> = {
+    distance: "distance_m",
+    moving_time: "moving_time_s",
+    elapsed_time: "elapsed_time_s",
+    total_elevation_gain: "elevation_gain_m",
+    average_speed: "average_speed_mps",
+    max_speed: "max_speed_mps",
+  }
+  return numberValue(activity[rawField] ?? activity[normalized[rawField]])
+}
+
 function round(value: number): number {
   return Math.round(value * 100) / 100
 }
@@ -308,7 +371,7 @@ function average(values: number[]): number | null {
 }
 
 function sum(activities: Activity[], field: string): number {
-  return activities.reduce((total, activity) => total + numberValue(activity[field]), 0)
+  return activities.reduce((total, activity) => total + activityNumber(activity, field), 0)
 }
 
 function countBy(values: string[]): Record<string, JsonValue> {
@@ -342,10 +405,13 @@ async function run(parsed: ParsedArgs): Promise<void> {
   if (domain === "activities") {
     const command = assertKnown(action, ACTIVITY_COMMANDS, "activities")
     if (command === "list") {
+      const after = stringFlag(flags, "after")
+      const before = stringFlag(flags, "before")
+      if (after && before && (epochSeconds(after) ?? 0) > (epochSeconds(before, true) ?? 0)) throw new Error("--after must be on or before --before")
       return writeOutput(
         await pagedGet<Activity[]>("/athlete/activities", flags, {
-          after: epochSeconds(stringFlag(flags, "after")),
-          before: epochSeconds(stringFlag(flags, "before"), true),
+          after: epochSeconds(after),
+          before: epochSeconds(before, true),
         }),
         options,
       )
@@ -415,6 +481,10 @@ async function run(parsed: ParsedArgs): Promise<void> {
       return writeOutput(plan, options)
     }
     const plan = JSON.parse(await readFile(requireFlag(flags, "plan"), "utf8")) as Record<string, JsonValue>
+    if (command === "validate") {
+      const geometry = validateRoutePlan(plan)
+      return writeOutput({ ok: true, schema: plan.schema ?? null, waypoint_count: geometry.waypoints.length, trackpoint_count: geometry.trackpoints.length }, options)
+    }
     return writeOutput(routePlanToGpx(plan), options)
   }
 
