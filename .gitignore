@@ -25,6 +25,8 @@ __pycache__/
 
 # OpenCode session exports
 session-ses_*.md
+# Pi session exports (HTML)
+pi-session-*.html
 
 # Sandbox runtime state
 sandbox/.sandbox-state.json

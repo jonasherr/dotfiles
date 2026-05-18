@@ -1,0 +1,13 @@
+{
+  "name": "mail-cli",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Read-only Mail.app CLI. Run via the `inbox` shim in bin/. Requires global tsx (already provided via pnpm).",
+  "bin": {
+    "inbox": "./bin/inbox"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
