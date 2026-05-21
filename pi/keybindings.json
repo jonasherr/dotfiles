@@ -1,0 +1,15 @@
+{
+  "app.model.cycleForward": [],
+  "app.model.cycleBackward": [],
+  "app.session.fork": ["ctrl+shift+f"],
+
+  "tui.select.up": ["up", "ctrl+p"],
+  "tui.select.down": ["down", "ctrl+n"],
+  "tui.select.pageUp": ["pageUp", "ctrl+u"],
+  "tui.select.pageDown": ["pageDown", "ctrl+d"],
+
+  "app.exit": [],
+  "app.session.togglePath": [],
+  "app.session.toggleNamedFilter": [],
+  "app.session.delete": []
+}
