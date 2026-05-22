@@ -45,3 +45,7 @@ raycast/custom-extensions/shortcuts/shortcuts.js.map
 opencode/scripts/
 # Agent memory
 .sisyphus/memory.md
+
+# Pi local MCP config and OAuth tokens
+pi/mcp.json
+pi/mcp-oauth/
