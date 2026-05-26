@@ -412,9 +412,9 @@
 				{
 					"key": "l",
 					"label": "LeaderKey",
-					"type": "url",
+					"type": "command",
 					"iconPath": "keyboard",
-					"value": "leaderkey://config-reload"
+					"value": "open \"leaderkey://config-reload\""
 				},
 				{
 					"key": "a",
