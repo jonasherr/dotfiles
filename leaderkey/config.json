@@ -34,130 +34,194 @@
 					"iconPath": "note.text.badge.plus",
 					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/new-note"
 				},
-			{
-				"key": "n",
-				"label": "Search Notes",
-				"type": "url",
-				"iconPath": "magnifyingglass",
-				"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
-			},
-			{
-				"key": "k",
-				"label": "Kitty Sessions",
-				"type": "url",
-				"iconPath": "terminal",
-				"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
-			}
-		]
+				{
+					"key": "n",
+					"label": "Search Notes",
+					"type": "url",
+					"iconPath": "magnifyingglass",
+					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
+				},
+				{
+					"key": "k",
+					"label": "Kitty Sessions",
+					"type": "url",
+					"iconPath": "terminal",
+					"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
+				}
+			]
 		},
-	{
-		"key": "w",
-		"label": "Aerospace",
-		"type": "group",
-		"iconPath": "rectangle.3.group",
-		"actions": [
-			{
-				"key": "r",
-				"label": "Reset Layout",
-				"type": "command",
-				"iconPath": "arrow.counterclockwise",
-				"value": "$DOTFILES/leaderkey/scripts/aerospace-reset.sh"
-			},
-			{
-				"key": "f",
-				"label": "Toggle Floating",
-				"type": "command",
-				"iconPath": "rectangle.on.rectangle",
-				"value": "$DOTFILES/leaderkey/scripts/aerospace-toggle-floating.sh"
-			},
-			{
-				"key": "e",
-				"label": "Balance Sizes",
-				"type": "command",
-				"iconPath": "rectangle.split.3x1",
-				"value": "$DOTFILES/leaderkey/scripts/aerospace-balance.sh"
-			},
-			{
-				"key": "b",
-				"label": "Close Others",
-				"type": "command",
-				"iconPath": "xmark.circle",
-				"value": "$DOTFILES/leaderkey/scripts/aerospace-close-others.sh"
-			},
-			{
-				"key": "s",
-				"label": "Resize Mode",
-				"type": "command",
-				"iconPath": "arrow.up.left.and.arrow.down.right",
-				"value": "$DOTFILES/leaderkey/scripts/aerospace-resize-mode.sh"
-			}
-		]
-	},
-	{
-		"key": "a",
-		"label": "Apps",
-		"type": "group",
-		"iconPath": "app.badge",
-		"actions": [
-			{
-				"key": "n",
-				"label": "Notion Search",
-				"type": "url",
-				"iconPath": "doc.text.magnifyingglass",
-				"value": "raycast://extensions/notion/notion/search-page"
-			},
-			{
-				"key": "g",
-				"label": "Granola",
-				"type": "application",
-				"iconPath": "note.text",
-				"value": "/Applications/Granola.app"
-			},
-			{
-				"key": "l",
-				"label": "Linear Issues",
-				"type": "url",
-				"iconPath": "list.bullet.rectangle",
-				"value": "raycast://extensions/linear/linear/search-issues"
-			}
-		]
-	},
-	{
-		"key": "c",
-		"label": "Chrome",
-		"type": "group",
-		"iconPath": "globe",
-		"actions": [
-			{
-				"key": "n",
-				"label": "New Window",
-				"type": "command",
-				"iconPath": "macwindow.badge.plus",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-new-window.sh"
-			},
-			{
-				"key": "w",
-				"label": "Move to Window",
-				"type": "command",
-				"iconPath": "arrow.right.square",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-window.sh"
-			},
-			{
-				"key": "v",
-				"label": "Toggle Vertical Tabs",
-				"type": "command",
-				"iconPath": "sidebar.left",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-toggle-vertical-tabs.sh"
-			},
-			{
-				"key": "g",
-				"label": "Personal Window",
-				"type": "command",
-				"iconPath": "envelope",
-				"value": "$DOTFILES/leaderkey/scripts/chrome-new-window-gmail.sh"
-			}
-		]
-	},
+		{
+			"key": "k",
+			"label": "Kitty",
+			"type": "group",
+			"iconPath": "terminal",
+			"actions": [
+				{
+					"key": "s",
+					"label": "Kitty Sessions",
+					"type": "url",
+					"iconPath": "terminal",
+					"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
+				},
+				{
+					"key": "n",
+					"label": "Notes",
+					"type": "command",
+					"iconPath": "note.text",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh notes'"
+				},
+				{
+					"key": "d",
+					"label": "Dotfiles",
+					"type": "command",
+					"iconPath": "gearshape",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh dotfiles'"
+				},
+				{
+					"key": "a",
+					"label": "Agent Help",
+					"type": "command",
+					"iconPath": "questionmark.bubble",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh agent-help'"
+				},
+				{
+					"key": "c",
+					"label": "Customers",
+					"type": "command",
+					"iconPath": "person.2",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh customers'"
+				},
+				{
+					"key": "w",
+					"label": "Writing",
+					"type": "command",
+					"iconPath": "pencil",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh writing'"
+				},
+				{
+					"key": "v",
+					"label": "Vercel Internal Agents",
+					"type": "command",
+					"iconPath": "v.circle",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh vercel-internal-agents'"
+				},
+				{
+					"key": "j",
+					"label": "Jonas Website",
+					"type": "command",
+					"iconPath": "globe",
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh jonas-herrmannsdoerfer.de'"
+				}
+			]
+		},
+		{
+			"key": "w",
+			"label": "Aerospace",
+			"type": "group",
+			"iconPath": "rectangle.3.group",
+			"actions": [
+				{
+					"key": "r",
+					"label": "Reset Layout",
+					"type": "command",
+					"iconPath": "arrow.counterclockwise",
+					"value": "$DOTFILES/leaderkey/scripts/aerospace-reset.sh"
+				},
+				{
+					"key": "f",
+					"label": "Toggle Floating",
+					"type": "command",
+					"iconPath": "rectangle.on.rectangle",
+					"value": "$DOTFILES/leaderkey/scripts/aerospace-toggle-floating.sh"
+				},
+				{
+					"key": "e",
+					"label": "Balance Sizes",
+					"type": "command",
+					"iconPath": "rectangle.split.3x1",
+					"value": "$DOTFILES/leaderkey/scripts/aerospace-balance.sh"
+				},
+				{
+					"key": "b",
+					"label": "Close Others",
+					"type": "command",
+					"iconPath": "xmark.circle",
+					"value": "$DOTFILES/leaderkey/scripts/aerospace-close-others.sh"
+				},
+				{
+					"key": "s",
+					"label": "Resize Mode",
+					"type": "command",
+					"iconPath": "arrow.up.left.and.arrow.down.right",
+					"value": "$DOTFILES/leaderkey/scripts/aerospace-resize-mode.sh"
+				}
+			]
+		},
+		{
+			"key": "a",
+			"label": "Apps",
+			"type": "group",
+			"iconPath": "app.badge",
+			"actions": [
+				{
+					"key": "n",
+					"label": "Notion Search",
+					"type": "url",
+					"iconPath": "doc.text.magnifyingglass",
+					"value": "raycast://extensions/notion/notion/search-page"
+				},
+				{
+					"key": "g",
+					"label": "Granola",
+					"type": "application",
+					"iconPath": "note.text",
+					"value": "/Applications/Granola.app"
+				},
+				{
+					"key": "l",
+					"label": "Linear Issues",
+					"type": "url",
+					"iconPath": "list.bullet.rectangle",
+					"value": "raycast://extensions/linear/linear/search-issues"
+				}
+			]
+		},
+		{
+			"key": "c",
+			"label": "Chrome",
+			"type": "group",
+			"iconPath": "globe",
+			"actions": [
+				{
+					"key": "n",
+					"label": "New Window",
+					"type": "command",
+					"iconPath": "macwindow.badge.plus",
+					"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-new-window.sh"
+				},
+				{
+					"key": "w",
+					"label": "Move to Window",
+					"type": "command",
+					"iconPath": "arrow.right.square",
+					"value": "$DOTFILES/leaderkey/scripts/chrome-tab-to-window.sh"
+				},
+				{
+					"key": "v",
+					"label": "Toggle Vertical Tabs",
+					"type": "command",
+					"iconPath": "sidebar.left",
+					"value": "$DOTFILES/leaderkey/scripts/chrome-toggle-vertical-tabs.sh"
+				},
+				{
+					"key": "g",
+					"label": "Personal Window",
+					"type": "command",
+					"iconPath": "envelope",
+					"value": "$DOTFILES/leaderkey/scripts/chrome-new-window-gmail.sh"
+				}
+			]
+		},
 		{
 			"key": "s",
 			"label": "Screenshots",
@@ -344,7 +408,6 @@
 				}
 			]
 		},
-
 		{
 			"key": "p",
 			"label": "Profiles",
