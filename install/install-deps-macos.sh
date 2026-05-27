@@ -27,3 +27,6 @@ brew install pngpaste
 brew install uv
 
 brew install fnm
+
+brew tap aurorascharff/clicklight https://github.com/aurorascharff/ClickLight
+brew install --cask aurorascharff/clicklight/clicklight
