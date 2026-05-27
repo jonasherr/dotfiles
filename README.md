@@ -40,6 +40,25 @@ To install a single tool:
 ./install/bootstrap.sh kanata
 ```
 
+## System services
+
+Some tools need explicit system-level setup and are not installed by `bootstrap.sh`.
+
+Kanata can run as a macOS LaunchDaemon so it starts at boot without a terminal session:
+
+```sh
+./kanata/install-launchd.sh
+```
+
+Useful commands:
+
+```sh
+./kanata/status-kanata.sh
+./kanata/uninstall-launchd.sh
+```
+
+The LaunchDaemon plist in the repo is only a template. The install script renders it into `/Library/LaunchDaemons` with root ownership.
+
 ## Local config
 
 Machine-specific shell config goes in `~/.env.sh` — it's loaded near the top of `.zshrc` and not committed to the repo.
