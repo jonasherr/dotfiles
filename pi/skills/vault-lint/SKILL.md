@@ -88,7 +88,6 @@ Compare topic articles in `knowledge/topics/`. Flag pairs with significant conce
 Check for items that should be compiled but haven't been:
 - Files in `inbox/` (any file here is unprocessed)
 - Files in `content/clippings/` (not in `read/`) without `compiled: true`
-- High-confidence entries in `areas/agent-learnings/inbox.md` without corresponding references in `knowledge/references/`
 
 Report count and list them. Suggest running `compile vault`.
 

@@ -1,6 +1,6 @@
 ---
 name: vault-compile
-description: Compile raw inputs (web clippings, inbox items, agent learnings) into structured knowledge articles in the Obsidian vault's knowledge/ directory. Use when asked to "compile", "compile vault", "compile knowledge", "update wiki", "process inbox", "compile clippings", or when processing new raw inputs into the knowledge base. Also use when filing investigation results, research outputs, or agent work products back into the knowledge base.
+description: Compile raw inputs (web clippings and inbox items) into structured knowledge articles in the Obsidian vault's knowledge/ directory. Use when asked to "compile", "compile vault", "compile knowledge", "update wiki", "process inbox", "compile clippings", or when processing new article notes into the knowledge base.
 ---
 
 # Vault Compile
@@ -19,7 +19,6 @@ Scan these for unprocessed items (in priority order):
 
 1. **`inbox/`** — all files here are unprocessed by definition
 2. **`content/clippings/`** — web clippings NOT in the `read/` subfolder. Check frontmatter for `compiled: true`. If absent or false, the clipping is unprocessed.
-3. **`areas/agent-learnings/inbox.md`** — structured agent findings. Process entries with `Confidence: high` that don't already have a corresponding reference in `knowledge/references/`.
 
 ## Output Directories
 
@@ -40,9 +39,8 @@ knowledge/
 
 1. List files in `inbox/`
 2. List files in `content/clippings/` (exclude `read/` subfolder), filter to those without `compiled: true` in frontmatter
-3. Read `areas/agent-learnings/inbox.md`, identify high-confidence entries not yet referenced in `knowledge/references/`
-4. Read `knowledge/references/_index.md` to know what's already been processed
-5. Report what was found: "Found N unprocessed items: X clippings, Y inbox notes, Z agent learnings"
+3. Read `knowledge/references/_index.md` to know what's already been processed
+4. Report what was found: "Found N unprocessed items: X clippings, Y inbox notes"
 
 If nothing is unprocessed, report that and stop.
 
@@ -79,7 +77,6 @@ Body structure:
 After creating the reference, mark the source as processed:
 - Clippings: add `compiled: true` and `compiled_date: YYYY-MM-DD` to frontmatter
 - Inbox files: move the file to `content/clippings/read/`
-- Agent learnings: no modification needed (the reference file tracks what was processed)
 
 ### Phase 3: Update or create topic articles
 

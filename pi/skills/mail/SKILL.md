@@ -109,7 +109,7 @@ Attachments are **not** copied or downloaded. The CLI surfaces the absolute file
 
 ## Privacy posture
 
-Never paste email bodies into shared logs, Slack messages, PRs, public reports, or `agent-memory` learnings without **explicit user confirmation**. Treat email contents as sensitive personal data. Summaries and high-level descriptions (sender, subject, gist) are usually fine; full quotes need a green light.
+Never paste email bodies into shared logs, Slack messages, PRs, public reports, or knowledge-base notes without **explicit user confirmation**. Treat email contents as sensitive personal data. Summaries and high-level descriptions (sender, subject, gist) are usually fine; full quotes need a green light.
 
 When the user says "summarize", default to a tight bullet list (sender, subject, one-line gist) rather than dumping bodies.
 
