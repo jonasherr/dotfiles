@@ -168,9 +168,9 @@
 ;; ============================================================================
 ;; Arrows on HJKL (vim-style), word-jump, selection, Home/End, delete shortcuts
 ;;
-;;   top:                      Home pgdn pgup End
-;;  home:                      ←    ↓    ↑    →
-;;   bot:                      ⌥Bspc Bspc del  ⌘Bspc
+;;   top:                      Home pgdn pgup End PgUp
+;;  home:                 ⌘↑   ←    ↓    ↑    →
+;;   bot:                 ⌘↓   PgDn ⌥Bspc Bspc del  ⌘Bspc
 ;;
 ;; With host mods (hold s=Alt, d=Cmd, f=Shift on base) you get:
 ;;   Shift+arrows = select text
@@ -180,8 +180,8 @@
 
 (deflayer nav
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    _    _    _    _    _    home pgdn pgup end  _    _    _    _
-  _    _    _    _    _    _    left down up   rght _    _    _
-  _    _    _    _    _    _    A-bspc bspc del M-bspc _ _
+  _    _    _    _    _    _    home pgdn pgup end  pgup _    _    _
+  _    _    _    _    _    M-up left down up   rght _    _    _
+  _    _    _    _    _    M-down pgdn A-bspc bspc del M-bspc _
   _    _    _              _              _    _    _
 )
