@@ -14,7 +14,7 @@
   "enableSkillCommands": true,
   "theme": "everforest-dark-soft",
   "hideThinkingBlock": false,
-  "extensions": [
-    "/Users/jonasherrmansdsoerfer/Projects/dotfiles/pi/extensions/pi-mcp-adapter"
+  "packages": [
+    "npm:pi-mcp-adapter@2.8.0"
   ]
 }
