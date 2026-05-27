@@ -27,6 +27,7 @@ alias ls="eza --icons=always"
 alias lt="eza --icons=always -T -L 2 --ignore-glob=node_modules"
 alias lsa="eza --icons=always -a"
 alias lta="eza --icons=always -T -L 2 --ignore-glob=node_modules -a"
+alias ca="clip-article"
 
 # Package managers are resolved via PATH/corepack shims.
 # Do not alias npm/pnpm/yarn through corepack here: stale corepack installs in
