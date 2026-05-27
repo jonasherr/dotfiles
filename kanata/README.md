@@ -1,6 +1,6 @@
 # Kanata Configuration
 
-Kanata keyboard remapper for macOS. Designed around a **40-key mindset** — only the 3×10 letter grid + 3 thumb keys are used for layers and home row mods. The full MacBook keyboard is intercepted so number row / outer keys still work as fallback.
+Kanata keyboard remapper for macOS. Designed around a **40-key mindset** — only the 3×10 letter grid + 3 thumb keys are used for layers and home row mods. The normal MacBook keyboard and hardware function/media row are explicitly mapped.
 
 ## Layout
 
@@ -92,6 +92,16 @@ macos-dev-names-include (
 ```
 
 External keyboards are not remapped.
+
+### Hardware Function/Media Row
+
+The MacBook hardware function/media row is mapped to macOS media actions on the base layer:
+
+```
+f1=brdn f2=brup f3=mctl f4=sls f5=dtn f6=dnd f7=prev f8=pp f9=next f10=mute f11=vold f12=volu
+```
+
+Previous/play/next use Kanata `arbitrary-code` outputs for macOS media keycodes because the named media aliases do not work reliably on this MacBook.
 
 ## Prerequisites (macOS)
 

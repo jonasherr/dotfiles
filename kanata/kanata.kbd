@@ -19,14 +19,17 @@
 ;;   z  x  c  v  b    n  m  ,  .  /
 ;;         lmet spc rmet
 ;;
-;; Plus: caps(hyper), lsft, rsft, bspc, ret, tab
+;; Plus: function/media row, caps(hyper), lsft, rsft, bspc, ret, tab
 
 ;; ============================================================================
 ;; Configuration
 ;; ============================================================================
 
 (defcfg
-  process-unmapped-keys yes
+  ;; Keep unmapped keys out of Kanata so macOS handles the hardware
+  ;; function/media row directly. All normal MacBook keyboard keys are
+  ;; already listed in defsrc below.
+  process-unmapped-keys no
   concurrent-tap-hold yes
 
   ;; Only apply to MacBook internal keyboard, not external keyboards
@@ -47,10 +50,14 @@
 ;; ============================================================================
 ;; Source - Define which keys kanata will intercept
 ;; ============================================================================
-;; We intercept the full MacBook keyboard so unmapped keys still work.
+;; We list the normal MacBook keyboard keys explicitly.
+;; The MacBook hardware row mostly arrives as F-keys through Kanata, but
+;; the previous/play/next keys arrive as media keys on some MacBook models.
+;; The base layer sends the matching macOS media actions.
 ;; Layer design only uses the 40-key zone.
 
 (defsrc
+  f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
   tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
   caps a    s    d    f    g    h    j    k    l    ;    '    ret
@@ -111,6 +118,7 @@
 ;; The 40-key zone is where the action is.
 
 (deflayer base
+  brdn brup mctl sls  dtn  dnd  (arbitrary-code 165) (arbitrary-code 164) (arbitrary-code 163) mute vold volu
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
   tab  q    w    @e   r    t    y    u    i    o    p    [    ]    \
   @cap @a   @s   @d   @f   @g   h    @j   @k   @l   @;   '    ret
@@ -124,6 +132,7 @@
 ;; Based on original Karabiner special layer mappings
 
 (deflayer symbol
+  _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    q    S-2  S-3  grv  S-'  S-7  S-,  S-.  S--  -    _    _    _
   _    S-6  S-5  S-8  S-4  '    \    S-[  S-]  S-\  S-grv _   _
@@ -137,6 +146,7 @@
 ;; 1-0 across home row: left hand 1-5, right hand 6-0.
 
 (deflayer numbers
+  _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    @n1  @n2  @n3  @n4  5    6    @n7  @n8  @n9  @n0  _    _
@@ -156,6 +166,7 @@
 ;;   spc:  lrld
 
 (deflayer system
+  _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    prev brdn brup next _    _    _    _
   _    _    _    _    _    _    M-S-[ vold volu M-S-] _  _    _
@@ -179,6 +190,7 @@
 ;;   Shift+Alt+arrows = select by word
 
 (deflayer nav
+  _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    home pgdn pgup end  pgup _    _    _
   _    _    _    _    _    M-up left down up   rght _    _    _
