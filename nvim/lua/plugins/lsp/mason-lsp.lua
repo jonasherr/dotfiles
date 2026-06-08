@@ -3,6 +3,7 @@ return {
   opts = {
     automatic_enable = true,
     servers = {
+      biome = {},
       -- https://www.reddit.com/r/neovim/comments/1j7ookn/comment/mgysste
       -- The hover window configuration for the diagnostics is done in lamw26wmal
       -- ~/github/dotfiles-latest/neovim/neobean/lua/config/autocmds.lua
@@ -33,6 +34,7 @@ return {
       ensure_installed = {
         'tailwindcss-language-server',
         'harper-ls',
+        'biome',
       },
     } },
     'neovim/nvim-lspconfig',
