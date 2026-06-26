@@ -1,6 +1,6 @@
 ---
 name: playwright-cli
-description: Automate browser interactions, test web pages and work with Playwright tests.
+description: Automate browser interactions, test web pages, and work with Playwright tests. Use when visiting, opening, accessing, inspecting, browsing, debugging, or interacting with websites and web apps, especially when the user provides a URL or asks to verify what a page shows.
 allowed-tools: Bash(playwright-cli:*) Bash(npx:*) Bash(npm:*)
 ---
 

@@ -6,6 +6,8 @@ When writing prose for Jonas, keep it concise and conversational. Make it someth
 
 `gh` is installed and authenticated. For GitHub-specific queries, prefer `gh api`, `gh search`, `gh pr`, `gh release`, etc. over raw `curl` when useful.
 
+When visiting or inspecting web pages, use the `playwright-cli` skill and browser automation by default. Use `curl` instead when a simple HTTP fetch is enough, for example checking headers, downloading static text, or reading an API response.
+
 # Context hygiene
 
 Avoid pulling generated, vendored, or very large files into context unless the user explicitly asks. For searches, exclude `node_modules`, `.next`, `dist`, `build`, `coverage`, and `*.map` by default. Prefer targeted `rg`, `find`, and `read` calls with offsets/limits over broad dumps. If full raw output is needed, save it to a file and inspect compact summaries.
