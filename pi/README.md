@@ -7,6 +7,7 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `settings.json` → symlinked to `~/.pi/agent/settings.json`
 - `APPEND_SYSTEM.md` → symlinked to `~/.pi/agent/APPEND_SYSTEM.md`
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
+- `prompts/` → symlinked to `~/.pi/agent/prompts/`
 - `themes/` → symlinked to `~/.pi/agent/themes/`
 - `skills/` → committed Jonas-authored skills, exposed through `~/.agents/skills/`
 - `skills.public.json` → source manifest for public skills installed directly into `~/.agents/skills` with the skills CLI.
@@ -30,7 +31,13 @@ Use it for:
 - Independent checks that would add too much context to the main session.
 - Focused background work when a separate context is helpful.
 
-There are no specialized agent files or prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, and `bash`. Set `readOnly: false` or pass explicit `tools` only when edits are intended.
+There are no specialized subagent personas or subagent prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, and `bash`. Set `readOnly: false` or pass explicit `tools` only when edits are intended.
+
+## Prompt templates
+
+- `/plan [task]` inspects the codebase, uses parallel reconnaissance where useful, then follows the `grill-me` skill to resolve consequential ambiguity before producing an implementation-ready plan.
+- `/prove [claim]` verifies an implementation with concrete evidence. Browser-facing work explicitly uses Playwright rather than treating a successful build as sufficient.
+- `/review-verified [scope]` reviews changes, delegates independent verification of credible findings, and reports only actionable findings that survive verification.
 
 ## Skills
 

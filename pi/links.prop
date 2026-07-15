@@ -2,8 +2,11 @@ $DOTFILES/pi/settings.json=$HOME/.pi/agent/settings.json
 $DOTFILES/pi/keybindings.json=$HOME/.pi/agent/keybindings.json
 $DOTFILES/pi/APPEND_SYSTEM.md=$HOME/.pi/agent/APPEND_SYSTEM.md
 $DOTFILES/pi/extensions=$HOME/.pi/agent/extensions
+$DOTFILES/pi/prompts=$HOME/.pi/agent/prompts
 $DOTFILES/pi/themes=$HOME/.pi/agent/themes
 $DOTFILES/pi/skills=$HOME/.pi/agent/skills
 $DOTFILES/pi/skills/personal/strava-route-planner=$HOME/.agents/skills/strava-route-planner
 $DOTFILES/pi/skills/personal/strava-training-analyst=$HOME/.agents/skills/strava-training-analyst
 $DOTFILES/pi/skills/personal/strava-cli/strava-local=$HOME/.local/bin/strava-local
+
+$DOTFILES/pi/mcp.json=$HOME/.pi/agent/mcp.json
