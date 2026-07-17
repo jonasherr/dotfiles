@@ -2,6 +2,7 @@ import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
+import { detectDestructiveShellRisk } from "./lib/damage-control-safety"
 import { notifyTerminalPermission } from "./terminal-notify"
 
 const TOOL_WARN_BYTES = 20 * 1024
@@ -596,6 +597,13 @@ function warnIfContextIsHigh(ctx: ExtensionContext) {
   ctx.ui.notify(`[damage-control] ${message}`, level === "warn" ? "warning" : "error")
 }
 
+function blockCatastrophicRisk(risk: Risk) {
+  return {
+    block: true,
+    reason: `[damage-control] ${risk.category} blocked: ${risk.matched}. Rewrite the command with a narrow literal target. Variable-expanded recursive deletion must use a fail-closed \${VAR:?message} expansion.`,
+  }
+}
+
 async function requestApproval(ctx: ExtensionContext, risk: Risk) {
   notifyTerminalPermission(risk.subject)
 
@@ -647,6 +655,10 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "bash" && typeof event.input.command === "string") {
+      const destructiveRisk = await detectDestructiveShellRisk(event.input.command, ctx.cwd)
+      if (destructiveRisk?.hardBlock) return blockCatastrophicRisk(destructiveRisk)
+      if (destructiveRisk) return requestApproval(ctx, destructiveRisk)
+
       const risk = detectBashRisk(event.input.command)
       if (risk) return requestApproval(ctx, risk)
     }
