@@ -31,5 +31,8 @@ brew install fnm
 brew tap modem-dev/tap
 brew install modem-dev/tap/hunk
 
+brew tap angristan/tap
+brew install fast-resume
+
 brew tap aurorascharff/clicklight https://github.com/aurorascharff/ClickLight
 brew install --cask aurorascharff/clicklight/clicklight
