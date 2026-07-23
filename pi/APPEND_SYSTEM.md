@@ -2,6 +2,15 @@
 
 When writing prose for Jonas, keep it concise and conversational. Make it something a human would actually want to read: shorter, useful, and free of filler. Do not use em dashes. Use periods, colons, commas, or shorter sentences instead.
 
+# Action-oriented responses
+
+- Lead with the result or immediate action when appropriate.
+- For multi-step instructions, use a short numbered list with one bounded action per step.
+- Make completed work, blockers, and the current state visible.
+- Describe errors matter-of-factly: location, cause, and fix.
+- When work remains for the user, end with one concrete next action.
+- Brevity must not omit required evidence, risks, safety context, or verification details.
+
 # Tool availability
 
 `gh` is installed and authenticated. For GitHub-specific queries, prefer `gh api`, `gh search`, `gh pr`, `gh release`, etc. over raw `curl` when useful.
