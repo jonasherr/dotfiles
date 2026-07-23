@@ -146,6 +146,7 @@ source $DOTFILES/zsh/custom/themes/powerlevel10k/powerlevel10k.zsh-theme
 
 [[ -f $HOME/.env.sh ]] && source $HOME/.env.sh
 [[ -f $DOTFILES/zsh/aliases.zsh ]] && source $DOTFILES/zsh/aliases.zsh
+[[ -f $DOTFILES/zsh/vask.zsh ]] && source $DOTFILES/zsh/vask.zsh
 
 export VISUAL=nvim
 export EDITOR=nvim

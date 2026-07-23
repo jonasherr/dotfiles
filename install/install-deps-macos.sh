@@ -36,3 +36,6 @@ brew install fast-resume
 
 brew tap aurorascharff/clicklight https://github.com/aurorascharff/ClickLight
 brew install --cask aurorascharff/clicklight/clicklight
+
+# fx coding agent
+curl -fsSL https://cdn.fx.labs.vercel.dev/install.sh | bash
