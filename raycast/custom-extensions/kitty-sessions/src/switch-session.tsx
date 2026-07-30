@@ -6,14 +6,15 @@ import {
   Form,
   Icon,
   List,
+  closeMainWindow,
   confirmAlert,
   showToast,
   Toast,
-  closeMainWindow,
   useNavigation,
 } from "@raycast/api";
 import { useCachedPromise } from "@raycast/utils";
-import { execSync } from "child_process";
+import { execFileSync } from "child_process";
+import { createHash } from "crypto";
 import {
   existsSync,
   readdirSync,
@@ -24,14 +25,35 @@ import {
 } from "fs";
 import { createConnection } from "net";
 import { homedir } from "os";
-import { join, basename } from "path";
-import { useState, useMemo, useEffect, useRef } from "react";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  normalize,
+  relative,
+  resolve,
+} from "path";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const SESSIONS_DIR = join(homedir(), ".config", "kitty", "sessions");
 const PROJECTS_DIR = join(homedir(), "Projects");
 const KITTEN = "/Applications/kitty.app/Contents/MacOS/kitten";
 const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock";
 const HOME = homedir();
+const RESERVED_SESSION_FILES = new Set([
+  "startup.kitty-session",
+  "template.kitty-session",
+]);
+const PINNED_SESSION_NAMES = new Set([
+  "agent-help",
+  "customers",
+  "dotfiles",
+  "jonas-herrmannsdoerfer.de",
+  "notes",
+  "vercel-internal-agents",
+  "writing",
+]);
 
 interface Session {
   name: string;
@@ -64,7 +86,7 @@ interface ClearNotificationsResponse {
 }
 
 function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
-  return new Promise((resolve) => {
+  return new Promise((resolveRequest) => {
     let socket: ReturnType<typeof createConnection> | null = null;
     let settled = false;
     let buffer = "";
@@ -75,9 +97,9 @@ function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
       try {
         socket?.destroy();
       } catch {
-        // socket may already be destroyed — ignore
+        // The socket may already be destroyed.
       }
-      resolve(value);
+      resolveRequest(value);
     };
 
     const parseBuffer = () => {
@@ -105,23 +127,15 @@ function requestNotificationDaemon<T>(payload: object): Promise<T | null> {
       });
       socket.on("data", (chunk: { toString(): string }) => {
         buffer += chunk.toString();
-        if (buffer.includes("\n")) {
-          parseBuffer();
-        }
+        if (buffer.includes("\n")) parseBuffer();
       });
       socket.on("end", () => {
-        if (!settled) {
-          parseBuffer();
-        }
+        if (!settled) parseBuffer();
       });
-      socket.on("error", () => {
-        finish(null);
-      });
-      socket.on("timeout", () => {
-        finish(null);
-      });
+      socket.on("error", () => finish(null));
+      socket.on("timeout", () => finish(null));
     } catch {
-      resolve(null);
+      finish(null);
     }
   });
 }
@@ -145,29 +159,23 @@ async function getNotifications(): Promise<Record<string, number>> {
   );
 }
 
-async function getWindowToFocus(sessionName: string): Promise<number | undefined> {
+async function getWindowToFocus(
+  sessionName: string,
+): Promise<number | undefined> {
   const response = await requestNotificationDaemon<NotificationsStateResponse>({
     type: "get_state",
   });
   if (!response) return undefined;
 
-  // Priority 1: window_id from the latest unread notification
-  const notifs = response.notifications?.[sessionName] ?? [];
-  const unread = notifs.filter((n) => n.read !== true);
-  const latestWithWindow = [...unread]
+  const notifications = response.notifications?.[sessionName] ?? [];
+  const latestWithWindow = [...notifications]
+    .filter((notification) => notification.read !== true)
     .reverse()
-    .find((n) => typeof n.window_id === "number");
-  if (latestWithWindow?.window_id != null) {
-    return latestWithWindow.window_id;
-  }
+    .find((notification) => typeof notification.window_id === "number");
+  if (latestWithWindow?.window_id != null) return latestWithWindow.window_id;
 
-  // Priority 2: last active window in this session
   const activeWindow = response.active_windows?.[sessionName];
-  if (typeof activeWindow === "number") {
-    return activeWindow;
-  }
-
-  return undefined;
+  return typeof activeWindow === "number" ? activeWindow : undefined;
 }
 
 async function clearNotifications(sessionName: string): Promise<void> {
@@ -177,86 +185,138 @@ async function clearNotifications(sessionName: string): Promise<void> {
   });
 }
 
+let cachedKittySocket: { path: string | null; expiresAt: number } | null = null;
+
 function getKittySocket(): string | null {
+  const now = Date.now();
+  if (cachedKittySocket && cachedKittySocket.expiresAt > now) {
+    return cachedKittySocket.path;
+  }
+
   try {
-    const files = readdirSync("/tmp").filter((f: string) =>
-      f.startsWith("mykitty-"),
-    );
-    return files.length > 0 ? join("/tmp", files[0]) : null;
+    const sockets = readdirSync("/tmp")
+      .filter((file) => file.startsWith("mykitty-"))
+      .sort()
+      .map((file) => join("/tmp", file));
+    let firstLiveSocket: string | null = null;
+
+    for (const socket of sockets) {
+      try {
+        const output = execFileSync(
+          KITTEN,
+          ["@", "--to", `unix:${socket}`, "ls"],
+          { encoding: "utf-8", timeout: 1000 },
+        );
+        const osWindows = JSON.parse(output) as Array<{ is_focused?: boolean }>;
+        firstLiveSocket ??= socket;
+        if (osWindows.some((osWindow) => osWindow.is_focused)) {
+          cachedKittySocket = { path: socket, expiresAt: now + 1000 };
+          return socket;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    cachedKittySocket = { path: firstLiveSocket, expiresAt: now + 1000 };
+    return firstLiveSocket;
   } catch {
+    cachedKittySocket = { path: null, expiresAt: now + 1000 };
     return null;
   }
 }
 
-function resolvePath(p: string): string {
-  return p.replace(/^~/, HOME);
-}
-
-function getSessionCwd(session: Session): string | null {
-  const cdLine = session.content.split("\n").find((l) => l.startsWith("cd "));
-  if (!cdLine) return null;
-  return resolvePath(cdLine.replace("cd ", "").trim());
-}
-
-function getActiveCwds(): Set<string> {
+function runKittyRemote(args: string[], timeout = 3000): string {
   const socket = getKittySocket();
-  if (!socket) return new Set();
+  if (!socket) throw new Error("Kitty is not running");
+  return execFileSync(KITTEN, ["@", "--to", `unix:${socket}`, ...args], {
+    encoding: "utf-8",
+    timeout,
+  });
+}
+
+function escapeKittyRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function sessionMatch(sessionName: string): string {
+  return `session:^${escapeKittyRegex(sessionName)}$`;
+}
+
+function isSessionLoaded(sessionName: string): boolean {
   try {
-    const output = execSync(`"${KITTEN}" @ --to "unix:${socket}" ls`, {
-      encoding: "utf-8",
-      timeout: 3000,
-    });
-    const data = JSON.parse(output) as Array<{
-      tabs: Array<{ windows: Array<{ cwd: string }> }>;
-    }>;
-    const cwds = new Set<string>();
-    for (const osWin of data) {
-      for (const tab of osWin.tabs) {
-        for (const win of tab.windows) {
-          cwds.add(win.cwd);
-        }
-      }
-    }
-    return cwds;
+    const output = runKittyRemote(["ls", "--match", sessionMatch(sessionName)]);
+    const osWindows = JSON.parse(output) as Array<{ tabs?: unknown[] }>;
+    return osWindows.some((osWindow) => (osWindow.tabs?.length ?? 0) > 0);
   } catch {
-    return new Set();
+    return false;
   }
 }
 
-function isSessionActive(session: Session, activeCwds: Set<string>): boolean {
-  const sessionCwd = getSessionCwd(session);
-  if (!sessionCwd) return false;
-  for (const cwd of activeCwds) {
-    if (cwd === sessionCwd || cwd.startsWith(sessionCwd + "/")) {
-      return true;
-    }
-  }
-  return false;
+function getActiveSessionNames(sessions: Session[]): Set<string> {
+  if (!getKittySocket()) return new Set();
+  return new Set(
+    sessions
+      .filter((session) => isSessionLoaded(session.name))
+      .map((session) => session.name),
+  );
+}
+
+function closeLoadedSession(sessionName: string): void {
+  runKittyRemote([
+    "close-tab",
+    "--match",
+    sessionMatch(sessionName),
+    "--ignore-no-match",
+  ]);
 }
 
 function getSessionFiles(): Session[] {
   try {
     return readdirSync(SESSIONS_DIR)
       .filter(
-        (f: string) =>
-          f.endsWith(".kitty-session") && f !== "template.kitty-session",
+        (file) =>
+          file.endsWith(".kitty-session") && !RESERVED_SESSION_FILES.has(file),
       )
-      .map((f: string) => {
-        const fullPath = join(SESSIONS_DIR, f);
+      .map((file) => {
+        const fullPath = join(SESSIONS_DIR, file);
         return {
-          name: basename(f, ".kitty-session"),
+          name: basename(file, ".kitty-session"),
           path: fullPath,
           content: readFileSync(fullPath, "utf-8").trim(),
         };
       })
-      .sort((a: Session, b: Session) => a.name.localeCompare(b.name));
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
     return [];
   }
 }
 
-function hasSession(dirPath: string, sessionNames: Set<string>): boolean {
-  return sessionNames.has(basename(dirPath));
+function resolveSessionPath(value: string, sessionPath: string): string {
+  const expanded = value === "~" ? HOME : value.replace(/^~\//, `${HOME}/`);
+  return normalize(
+    isAbsolute(expanded) ? expanded : resolve(dirname(sessionPath), expanded),
+  );
+}
+
+function getSessionProjectPath(session: Session): string | null {
+  const cdLine = session.content
+    .split("\n")
+    .map((line) => line.trim())
+    .find((line) => line.startsWith("cd "));
+  if (!cdLine) return null;
+
+  const rawPath = cdLine.slice(3).trim();
+  if (!rawPath || rawPath.includes("{directory}")) return null;
+  return resolveSessionPath(rawPath, session.path);
+}
+
+function getSessionProjectPaths(sessions: Session[]): Set<string> {
+  return new Set(
+    sessions
+      .map(getSessionProjectPath)
+      .filter((path): path is string => path !== null),
+  );
 }
 
 function isGitRoot(dirPath: string): boolean {
@@ -265,31 +325,32 @@ function isGitRoot(dirPath: string): boolean {
 
 function collectGitRoots(
   dirPath: string,
-  sessionNames: Set<string>,
+  sessionPaths: Set<string>,
   results: ProjectDir[],
   rootDir: string,
 ): void {
   if (!existsSync(dirPath)) return;
   try {
-    const entries = readdirSync(dirPath, { withFileTypes: true });
-    for (const entry of entries) {
+    for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
       if (
         !entry.isDirectory() ||
         entry.name.startsWith(".") ||
         entry.name === "node_modules"
-      )
+      ) {
         continue;
+      }
+
       const fullPath = join(dirPath, entry.name);
       if (isGitRoot(fullPath)) {
-        if (!hasSession(fullPath, sessionNames)) {
+        if (!sessionPaths.has(normalize(fullPath))) {
           results.push({
             name: entry.name,
             path: fullPath,
-            relativePath: fullPath.replace(rootDir + "/", "~/Projects/"),
+            relativePath: `~/Projects/${relative(rootDir, fullPath)}`,
           });
         }
       } else {
-        collectGitRoots(fullPath, sessionNames, results, rootDir);
+        collectGitRoots(fullPath, sessionPaths, results, rootDir);
       }
     }
   } catch {
@@ -297,47 +358,77 @@ function collectGitRoots(
   }
 }
 
-function getProjectDirs(sessionNames: Set<string>): ProjectDir[] {
+function getProjectDirs(sessionPaths: Set<string>): ProjectDir[] {
   const results: ProjectDir[] = [];
-  collectGitRoots(PROJECTS_DIR, sessionNames, results, PROJECTS_DIR);
+  collectGitRoots(PROJECTS_DIR, sessionPaths, results, PROJECTS_DIR);
   return results.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
 }
 
-function createSessionFromTemplate(dirPath: string): string {
+function sanitizeSessionName(name: string): string {
+  return name
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-zA-Z0-9._-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+function getSessionPathForProject(
+  dirPath: string,
+  sessions: Session[],
+): string {
+  const projectPath = normalize(dirPath);
+  const existingSession = sessions.find(
+    (session) => getSessionProjectPath(session) === projectPath,
+  );
+  if (existingSession) return existingSession.path;
+
+  const baseName = sanitizeSessionName(basename(projectPath)) || "project";
+  const preferredPath = join(SESSIONS_DIR, `${baseName}.kitty-session`);
+  if (!existsSync(preferredPath)) return preferredPath;
+
+  const hash = createHash("sha256").update(projectPath).digest("hex");
+  for (let length = 8; length <= hash.length; length += 4) {
+    const candidate = join(
+      SESSIONS_DIR,
+      `${baseName}-${hash.slice(0, length)}.kitty-session`,
+    );
+    if (!existsSync(candidate)) return candidate;
+  }
+
+  throw new Error("Could not allocate a unique session filename");
+}
+
+function createSessionFromTemplate(
+  dirPath: string,
+  sessions: Session[],
+): string {
+  const sessionPath = getSessionPathForProject(dirPath, sessions);
+  if (existsSync(sessionPath)) return sessionPath;
+
   const templatePath = join(SESSIONS_DIR, "template.kitty-session");
-  const sessionName = basename(dirPath);
-  const sessionPath = join(SESSIONS_DIR, `${sessionName}.kitty-session`);
   const template = existsSync(templatePath)
-    ? readFileSync(templatePath, "utf-8").replace("{directory}", dirPath)
+    ? readFileSync(templatePath, "utf-8").replaceAll("{directory}", dirPath)
     : `layout horizontal\ncd ${dirPath}\nlaunch pi\nlaunch\n`;
-  writeFileSync(sessionPath, template);
+  writeFileSync(sessionPath, template, { flag: "wx" });
   return sessionPath;
 }
 
-function switchToSession(sessionPath: string, onSuccess?: () => void, windowId?: number) {
-  const socket = getKittySocket();
-  if (!socket) {
-    showToast({
-      style: Toast.Style.Failure,
-      title: "Kitty not running",
-      message: "No socket found",
-    });
-    return;
-  }
+function switchToSession(
+  sessionPath: string,
+  onSuccess?: () => void,
+  windowId?: number,
+): boolean {
   try {
-    execSync(
-      `"${KITTEN}" @ --to "unix:${socket}" action goto_session "${sessionPath}"`,
-    );
+    runKittyRemote(["action", "goto_session", sessionPath]);
     if (windowId !== undefined) {
       try {
-        execSync(
-          `"${KITTEN}" @ --to "unix:${socket}" focus-window --match id:${windowId}`,
-        );
+        runKittyRemote(["focus-window", "--match", `id:${windowId}`]);
       } catch {
-        // window may no longer exist — ignore
+        // The remembered window may no longer exist.
       }
     }
-    execSync(`osascript -e 'tell application "kitty" to activate'`);
+    execFileSync("osascript", ["-e", 'tell application "kitty" to activate']);
     closeMainWindow();
     showToast({
       style: Toast.Style.Success,
@@ -345,35 +436,75 @@ function switchToSession(sessionPath: string, onSuccess?: () => void, windowId?:
       message: basename(sessionPath, ".kitty-session"),
     });
     onSuccess?.();
+    return true;
   } catch (error) {
     showToast({
       style: Toast.Style.Failure,
       title: "Failed to switch",
       message: String(error),
     });
+    return false;
   }
 }
 
-function normalizeSessionName(name: string): string {
-  return name.trim().replace(/\s+/g, "-");
-}
-
-function renameSession(session: Session, newName: string): boolean {
-  const nextName = normalizeSessionName(newName);
+async function renameSession(
+  session: Session,
+  newName: string,
+): Promise<boolean> {
+  const nextName = sanitizeSessionName(newName);
   if (!nextName) {
     showToast({ style: Toast.Style.Failure, title: "Name required" });
     return false;
   }
-  if (nextName === session.name) {
-    return true;
+  if (RESERVED_SESSION_FILES.has(`${nextName}.kitty-session`)) {
+    showToast({ style: Toast.Style.Failure, title: "Reserved session name" });
+    return false;
   }
+  if (nextName === session.name) return true;
+
   const nextPath = join(SESSIONS_DIR, `${nextName}.kitty-session`);
   if (existsSync(nextPath)) {
     showToast({ style: Toast.Style.Failure, title: "Session already exists" });
     return false;
   }
+
+  const wasLoaded = isSessionLoaded(session.name);
+  if (
+    wasLoaded &&
+    !(await confirmAlert({
+      title: `Rename running session "${session.name}"?`,
+      message:
+        "This closes its current tabs and reloads them from the session file. Unsaved terminal state will be lost.",
+      primaryAction: {
+        title: "Rename and Reload",
+        style: Alert.ActionStyle.Destructive,
+      },
+    }))
+  ) {
+    return false;
+  }
+
   try {
     renameSync(session.path, nextPath);
+    if (wasLoaded) {
+      try {
+        closeLoadedSession(session.name);
+        runKittyRemote(["action", "goto_session", nextPath]);
+      } catch (error) {
+        showToast({
+          style: Toast.Style.Failure,
+          title: "Renamed, but could not reload session",
+          message: String(error),
+        });
+        return false;
+      }
+    }
+    await clearNotifications(session.name);
+    showToast({
+      style: Toast.Style.Success,
+      title: "Renamed session",
+      message: `${session.name} → ${nextName}`,
+    });
     return true;
   } catch (error) {
     showToast({
@@ -385,29 +516,55 @@ function renameSession(session: Session, newName: string): boolean {
   }
 }
 
+async function deleteSession(
+  session: Session,
+  wasActive: boolean,
+): Promise<boolean> {
+  try {
+    if (wasActive || isSessionLoaded(session.name)) {
+      closeLoadedSession(session.name);
+    }
+    unlinkSync(session.path);
+    await clearNotifications(session.name);
+    showToast({
+      style: Toast.Style.Success,
+      title: "Deleted session",
+      message: session.name,
+    });
+    return true;
+  } catch (error) {
+    showToast({
+      style: Toast.Style.Failure,
+      title: "Failed to delete",
+      message: String(error),
+    });
+    return false;
+  }
+}
+
 interface SessionsData {
   sessions: Session[];
-  activeCwds: string[];
+  activeSessionNames: string[];
   notifications: Record<string, number>;
 }
 
 async function fetchSessionsData(): Promise<SessionsData> {
   const sessions = getSessionFiles();
-  const activeCwds = [...getActiveCwds()];
+  const activeSessionNames = [...getActiveSessionNames(sessions)];
   const notifications = await getNotifications();
-  return { sessions, activeCwds, notifications };
+  return { sessions, activeSessionNames, notifications };
 }
 
 function SessionsList({
   sessions,
   revalidate,
-  activeCwds,
+  activeSessionNames,
   notifications,
   showActiveIndicator,
 }: {
   sessions: Session[];
   revalidate: () => void;
-  activeCwds: Set<string>;
+  activeSessionNames: Set<string>;
   notifications: Record<string, number>;
   showActiveIndicator: boolean;
 }) {
@@ -417,32 +574,26 @@ function SessionsList({
       {sessions.length === 0 ? (
         <List.EmptyView
           title="No Sessions"
-          description="Use the 'Projects' tab to create one"
+          description="Use the Projects view to create one"
           icon={Icon.Terminal}
         />
       ) : (
         sessions.map((session) => {
-          const active = isSessionActive(session, activeCwds);
+          const active = activeSessionNames.has(session.name);
+          const pinned = PINNED_SESSION_NAMES.has(session.name);
           const notificationCount = notifications[session.name] ?? 0;
-          const accessories = [] as List.Item.Accessory[];
+          const accessories: List.Item.Accessory[] = [];
 
           if (notificationCount > 0) {
             accessories.push({
-              icon: {
-                source: Icon.Bell,
-                tintColor: Color.Red,
-              },
+              icon: { source: Icon.Bell, tintColor: Color.Red },
               text: String(notificationCount),
               tooltip: `${notificationCount} notification${notificationCount === 1 ? "" : "s"}`,
             });
           }
-
           if (showActiveIndicator && active) {
             accessories.push({
-              icon: {
-                source: Icon.CircleFilled,
-                tintColor: Color.Green,
-              },
+              icon: { source: Icon.CircleFilled, tintColor: Color.Green },
               tooltip: "Running",
             });
           }
@@ -454,8 +605,9 @@ function SessionsList({
               subtitle={
                 session.content
                   .split("\n")
-                  .find((l) => l.startsWith("cd "))
-                  ?.replace("cd ", "") || ""
+                  .find((line) => line.trim().startsWith("cd "))
+                  ?.trim()
+                  .slice(3) ?? ""
               }
               icon={Icon.Terminal}
               accessories={accessories}
@@ -466,10 +618,14 @@ function SessionsList({
                     icon={Icon.ArrowRight}
                     onAction={async () => {
                       const windowId = await getWindowToFocus(session.name);
-                      if (notificationCount > 0) {
+                      const switched = switchToSession(
+                        session.path,
+                        undefined,
+                        windowId,
+                      );
+                      if (switched && notificationCount > 0) {
                         await clearNotifications(session.name);
                       }
-                      switchToSession(session.path, undefined, windowId);
                     }}
                   />
                   <Action.ShowInFinder
@@ -491,53 +647,47 @@ function SessionsList({
                       }}
                     />
                   ) : null}
-                  <Action
-                    title="Rename Session"
-                    icon={Icon.Pencil}
-                    shortcut={{ modifiers: ["ctrl"], key: "r" }}
-                    onAction={() =>
-                      push(
-                        <RenameSessionForm
-                          session={session}
-                          revalidate={revalidate}
-                        />,
-                      )
-                    }
-                  />
-                  <Action
-                    title="Delete Session"
-                    icon={Icon.Trash}
-                    style={Action.Style.Destructive}
-                    shortcut={{ modifiers: ["ctrl"], key: "x" }}
-                    onAction={async () => {
-                      if (
-                        await confirmAlert({
+                  {!pinned ? (
+                    <Action
+                      title="Rename Session"
+                      icon={Icon.Pencil}
+                      shortcut={{ modifiers: ["ctrl"], key: "r" }}
+                      onAction={() =>
+                        push(
+                          <RenameSessionForm
+                            session={session}
+                            revalidate={revalidate}
+                          />,
+                        )
+                      }
+                    />
+                  ) : null}
+                  {!pinned ? (
+                    <Action
+                      title="Delete Session"
+                      icon={Icon.Trash}
+                      style={Action.Style.Destructive}
+                      shortcut={{ modifiers: ["ctrl"], key: "x" }}
+                      onAction={async () => {
+                        const confirmed = await confirmAlert({
                           title: `Delete "${session.name}"?`,
-                          message: `This will remove ${basename(session.path)}`,
+                          message: active
+                            ? "This will close the running session and remove its file."
+                            : `This will remove ${basename(session.path)}.`,
                           primaryAction: {
                             title: "Delete",
                             style: Alert.ActionStyle.Destructive,
                           },
-                        })
-                      ) {
-                        try {
-                          unlinkSync(session.path);
+                        });
+                        if (
+                          confirmed &&
+                          (await deleteSession(session, active))
+                        ) {
                           revalidate();
-                          showToast({
-                            style: Toast.Style.Success,
-                            title: "Deleted",
-                            message: session.name,
-                          });
-                        } catch (error) {
-                          showToast({
-                            style: Toast.Style.Failure,
-                            title: "Failed to delete",
-                            message: String(error),
-                          });
                         }
-                      }
-                    }}
-                  />
+                      }}
+                    />
+                  ) : null}
                 </ActionPanel>
               }
             />
@@ -563,8 +713,8 @@ function RenameSessionForm({
         <ActionPanel>
           <Action.SubmitForm
             title="Rename"
-            onSubmit={(values: { name: string }) => {
-              if (renameSession(session, values.name)) {
+            onSubmit={async (values: { name: string }) => {
+              if (await renameSession(session, values.name)) {
                 revalidate();
                 pop();
               }
@@ -579,28 +729,32 @@ function RenameSessionForm({
 }
 
 function ProjectsList({
-  sessionNames,
+  sessions,
   revalidate,
 }: {
-  sessionNames: Set<string>;
+  sessions: Session[];
   revalidate: () => void;
 }) {
-  const projects = useMemo(() => getProjectDirs(sessionNames), [sessionNames]);
+  const sessionPaths = useMemo(
+    () => getSessionProjectPaths(sessions),
+    [sessions],
+  );
+  const projects = useMemo(() => getProjectDirs(sessionPaths), [sessionPaths]);
 
   return (
     <>
       {projects.length === 0 ? (
         <List.EmptyView
           title="No Projects Found"
-          description="All git repos already have sessions"
+          description="All git repositories already have sessions"
           icon={Icon.Folder}
         />
       ) : (
-        projects.map((project: ProjectDir) => (
+        projects.map((project) => (
           <List.Item
             key={project.path}
             title={project.name}
-            subtitle={project.relativePath.replace(`/${project.name}`, "")}
+            subtitle={dirname(project.relativePath)}
             icon={Icon.Folder}
             actions={
               <ActionPanel>
@@ -608,8 +762,19 @@ function ProjectsList({
                   title="Create Session and Switch"
                   icon={Icon.Plus}
                   onAction={() => {
-                    const sessionPath = createSessionFromTemplate(project.path);
-                    switchToSession(sessionPath, revalidate);
+                    try {
+                      const sessionPath = createSessionFromTemplate(
+                        project.path,
+                        sessions,
+                      );
+                      switchToSession(sessionPath, revalidate);
+                    } catch (error) {
+                      showToast({
+                        style: Toast.Style.Failure,
+                        title: "Failed to create session",
+                        message: String(error),
+                      });
+                    }
                   }}
                 />
                 <Action.ShowInFinder
@@ -625,11 +790,11 @@ function ProjectsList({
   );
 }
 
-const POLL_INTERVAL = 500;
+const POLL_INTERVAL = 1000;
 
 export default function Command() {
   const { data, isLoading, revalidate } = useCachedPromise(fetchSessionsData);
-  const [tab, setTab] = useState<string>("active");
+  const [tab, setTab] = useState("active");
   const revalidateRef = useRef(revalidate);
   revalidateRef.current = revalidate;
 
@@ -639,15 +804,11 @@ export default function Command() {
   }, []);
 
   const sessions = data?.sessions ?? [];
-  const activeCwds = useMemo(
-    () => new Set(data?.activeCwds ?? []),
-    [data?.activeCwds],
+  const activeSessionNames = useMemo(
+    () => new Set(data?.activeSessionNames ?? []),
+    [data?.activeSessionNames],
   );
   const notifications = data?.notifications ?? {};
-  const sessionNames = useMemo(
-    () => new Set(sessions.map((s: Session) => s.name)),
-    [sessions],
-  );
 
   const sortedSessions = useMemo(
     () =>
@@ -657,18 +818,17 @@ export default function Command() {
         if (notificationDiff !== 0) return notificationDiff;
 
         const activeDiff =
-          Number(isSessionActive(b, activeCwds)) -
-          Number(isSessionActive(a, activeCwds));
-        if (activeDiff !== 0) return activeDiff;
-
-        return a.name.localeCompare(b.name);
+          Number(activeSessionNames.has(b.name)) -
+          Number(activeSessionNames.has(a.name));
+        return activeDiff || a.name.localeCompare(b.name);
       }),
-    [sessions, notifications, activeCwds],
+    [sessions, notifications, activeSessionNames],
   );
 
   const activeSessions = useMemo(
-    () => sortedSessions.filter((s: Session) => isSessionActive(s, activeCwds)),
-    [sortedSessions, activeCwds],
+    () =>
+      sortedSessions.filter((session) => activeSessionNames.has(session.name)),
+    [sortedSessions, activeSessionNames],
   );
 
   const placeholders: Record<string, string> = {
@@ -705,7 +865,7 @@ export default function Command() {
         <SessionsList
           sessions={activeSessions}
           revalidate={revalidate}
-          activeCwds={activeCwds}
+          activeSessionNames={activeSessionNames}
           notifications={notifications}
           showActiveIndicator={false}
         />
@@ -713,12 +873,12 @@ export default function Command() {
         <SessionsList
           sessions={sortedSessions}
           revalidate={revalidate}
-          activeCwds={activeCwds}
+          activeSessionNames={activeSessionNames}
           notifications={notifications}
-          showActiveIndicator={true}
+          showActiveIndicator
         />
       ) : (
-        <ProjectsList sessionNames={sessionNames} revalidate={revalidate} />
+        <ProjectsList sessions={sessions} revalidate={revalidate} />
       )}
     </List>
   );
