@@ -2,6 +2,7 @@ import { mkdtemp, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
+import { requestParentApproval } from "./lib/damage-control-approval-broker"
 import { detectDestructiveShellRisk } from "./lib/damage-control-safety"
 import { notifyTerminalPermission } from "./terminal-notify"
 
@@ -616,6 +617,20 @@ async function requestApproval(ctx: ExtensionContext, risk: Risk) {
     "",
     "Allow this tool call?",
   ].join("\n")
+
+  const parentResponse = await requestParentApproval(risk)
+  if (parentResponse) {
+    if (parentResponse.error) {
+      return {
+        block: true,
+        reason: `[damage-control] ${risk.category} blocked because parent approval failed: ${parentResponse.error}`,
+      }
+    }
+    if (!parentResponse.approved) {
+      return { block: true, reason: `[damage-control] ${risk.category} blocked by user` }
+    }
+    return undefined
+  }
 
   if (!ctx.hasUI) {
     return {

@@ -15,6 +15,7 @@ The tool starts disposable `pi -p --no-session` processes. There are no speciali
 - Read-only by default with `read`, `grep`, `find`, `ls`, and `bash`.
 - Set `readOnly: false` to allow `edit` and `write`.
 - Optional per-task `cwd`, `model`, `thinking`, and `tools`.
+- Damage-control checks still apply inside subagents. Matching calls request approval through the parent pi UI and fail closed if approval is unavailable.
 
 ## Example
 

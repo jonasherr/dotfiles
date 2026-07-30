@@ -15,6 +15,7 @@ import { StringEnum } from "@mariozechner/pi-ai";
 import { type ExtensionAPI, getMarkdownTheme } from "@mariozechner/pi-coding-agent";
 import { Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui";
 import { Type } from "typebox";
+import { createApprovalBroker } from "../lib/damage-control-approval-broker";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -161,6 +162,7 @@ async function runPiSubagent(
   signal: AbortSignal | undefined,
   onUpdate: OnUpdateCallback | undefined,
   makeDetails: (results: RunResult[]) => SubagentDetails,
+  env: NodeJS.ProcessEnv,
 ): Promise<RunResult> {
   const cwd = options.cwd ?? defaultCwd;
   const result: RunResult = {
@@ -193,6 +195,7 @@ async function runPiSubagent(
     const invocation = getPiInvocation(args);
     const proc = spawn(invocation.command, invocation.args, {
       cwd,
+      env,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -357,6 +360,7 @@ export default function (pi: ExtensionAPI) {
           });
         };
 
+        const approvalBroker = await createApprovalBroker(ctx);
         const results = await mapWithConcurrencyLimit(tasks, MAX_CONCURRENCY, async (task, index) => {
           const result = await runPiSubagent(
             ctx.cwd,
@@ -369,11 +373,12 @@ export default function (pi: ExtensionAPI) {
               }
             },
             makeDetails("parallel"),
+            approvalBroker.env,
           );
           allResults[index] = result;
           emitParallelUpdate();
           return result;
-        });
+        }).finally(() => approvalBroker.close());
 
         const successCount = results.filter((r) => r.exitCode === 0).length;
         const summaries = results.map((r, i) => {
@@ -389,6 +394,7 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
+      const approvalBroker = await createApprovalBroker(ctx);
       const result = await runPiSubagent(
         ctx.cwd,
         {
@@ -402,7 +408,8 @@ export default function (pi: ExtensionAPI) {
         signal,
         onUpdate,
         makeDetails("single"),
-      );
+        approvalBroker.env,
+      ).finally(() => approvalBroker.close());
 
       const isError = result.exitCode !== 0 || result.stopReason === "error" || result.stopReason === "aborted";
       if (isError) {
