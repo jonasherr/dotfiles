@@ -9,6 +9,24 @@
     "Developer Tools"
   ],
   "license": "MIT",
+  "preferences": [
+    {
+      "name": "customersDirectory",
+      "type": "textfield",
+      "required": false,
+      "title": "Customers Directory",
+      "description": "Directory containing one folder per customer",
+      "placeholder": "~/Projects/private/customers"
+    },
+    {
+      "name": "customerAdminUrlTemplate",
+      "type": "textfield",
+      "required": false,
+      "title": "Customer Admin URL Template",
+      "description": "Optional URL template. Use {team_id} as the identifier placeholder.",
+      "placeholder": "https://admin.example.com/team/{team_id}"
+    }
+  ],
   "commands": [
     {
       "name": "switch-session",

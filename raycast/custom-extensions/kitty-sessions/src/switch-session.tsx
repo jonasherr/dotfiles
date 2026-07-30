@@ -8,6 +8,7 @@ import {
   List,
   closeMainWindow,
   confirmAlert,
+  getPreferenceValues,
   showToast,
   Toast,
   useNavigation,
@@ -36,8 +37,18 @@ import {
 } from "path";
 import { useEffect, useMemo, useRef, useState } from "react";
 
+interface Preferences {
+  customersDirectory?: string;
+  customerAdminUrlTemplate?: string;
+}
+
+const preferences = getPreferenceValues<Preferences>();
 const SESSIONS_DIR = join(homedir(), ".config", "kitty", "sessions");
 const PROJECTS_DIR = join(homedir(), "Projects");
+const CUSTOMERS_DIR = preferences.customersDirectory
+  ? resolve(preferences.customersDirectory.replace(/^~(?=\/|$)/, homedir()))
+  : "";
+const CUSTOMERS_SESSION_PATH = join(SESSIONS_DIR, "customers.kitty-session");
 const KITTEN = "/Applications/kitty.app/Contents/MacOS/kitten";
 const KITTY_SIDEBAR_SOCK = "/tmp/kitty-sidebar.sock";
 const HOME = homedir();
@@ -65,6 +76,12 @@ interface ProjectDir {
   name: string;
   path: string;
   relativePath: string;
+}
+
+interface Customer {
+  name: string;
+  path: string;
+  teamId?: string;
 }
 
 interface SidebarNotification {
@@ -319,6 +336,65 @@ function getSessionProjectPaths(sessions: Session[]): Set<string> {
   );
 }
 
+function parseCustomerMetadata(customerPath: string): {
+  name?: string;
+  teamId?: string;
+  classification?: string;
+} {
+  const metadataPath = join(customerPath, "customer.md");
+  if (!existsSync(metadataPath)) return {};
+
+  try {
+    const content = readFileSync(metadataPath, "utf-8");
+    const frontmatter = content.match(
+      /^---\s*\n([\s\S]*?)\n---(?:\s*\n|$)/,
+    )?.[1];
+    if (!frontmatter) return {};
+
+    const values = new Map<string, string>();
+    for (const line of frontmatter.split("\n")) {
+      const match = line.match(/^([a-zA-Z_][\w-]*):\s*(.*?)\s*$/);
+      if (!match) continue;
+      const value = match[2].replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, "$1$2");
+      values.set(match[1], value);
+    }
+
+    const teamId = values.get("team_id");
+    return {
+      name: values.get("name") || undefined,
+      teamId: teamId?.match(/^team_[a-zA-Z0-9]+$/)?.[0],
+      classification: values.get("classification") || undefined,
+    };
+  } catch {
+    return {};
+  }
+}
+
+function getCustomers(): Customer[] {
+  if (!CUSTOMERS_DIR) return [];
+  try {
+    return readdirSync(CUSTOMERS_DIR, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
+      .map((entry) => {
+        const customerPath = join(CUSTOMERS_DIR, entry.name);
+        return {
+          entry,
+          customerPath,
+          metadata: parseCustomerMetadata(customerPath),
+        };
+      })
+      .filter(({ metadata }) => metadata.classification !== "collection")
+      .map(({ entry, customerPath, metadata }) => ({
+        name: metadata.name ?? entry.name,
+        path: customerPath,
+        teamId: metadata.teamId,
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch {
+    return [];
+  }
+}
+
 function isGitRoot(dirPath: string): boolean {
   return existsSync(join(dirPath, ".git"));
 }
@@ -412,6 +488,31 @@ function createSessionFromTemplate(
     : `layout horizontal\ncd ${dirPath}\nlaunch pi\nlaunch\n`;
   writeFileSync(sessionPath, template, { flag: "wx" });
   return sessionPath;
+}
+
+function openCustomer(customer: Customer): void {
+  try {
+    runKittyRemote(["action", "goto_session", CUSTOMERS_SESSION_PATH]);
+    runKittyRemote([
+      "launch",
+      "--type=tab",
+      "--match",
+      sessionMatch("customers"),
+      "--add-to-session=customers",
+      "--cwd",
+      customer.path,
+      "--tab-title",
+      customer.name,
+    ]);
+    execFileSync("osascript", ["-e", 'tell application "kitty" to activate']);
+    closeMainWindow();
+  } catch (error) {
+    showToast({
+      style: Toast.Style.Failure,
+      title: "Failed to open customer",
+      message: String(error),
+    });
+  }
 }
 
 function switchToSession(
@@ -544,15 +645,17 @@ async function deleteSession(
 
 interface SessionsData {
   sessions: Session[];
+  customers: Customer[];
   activeSessionNames: string[];
   notifications: Record<string, number>;
 }
 
 async function fetchSessionsData(): Promise<SessionsData> {
   const sessions = getSessionFiles();
+  const customers = getCustomers();
   const activeSessionNames = [...getActiveSessionNames(sessions)];
   const notifications = await getNotifications();
-  return { sessions, activeSessionNames, notifications };
+  return { sessions, customers, activeSessionNames, notifications };
 }
 
 function SessionsList({
@@ -728,6 +831,51 @@ function RenameSessionForm({
   );
 }
 
+function CustomersList({ customers }: { customers: Customer[] }) {
+  return (
+    <>
+      {customers.length === 0 ? (
+        <List.EmptyView
+          title="No Customers Found"
+          description={`Add customer folders to ${CUSTOMERS_DIR}`}
+          icon={Icon.Person}
+        />
+      ) : (
+        customers.map((customer) => (
+          <List.Item
+            key={customer.path}
+            title={customer.name}
+            icon={Icon.Person}
+            actions={
+              <ActionPanel>
+                <Action
+                  title="Open in Customer Session"
+                  icon={Icon.Terminal}
+                  onAction={() => openCustomer(customer)}
+                />
+                {customer.teamId && preferences.customerAdminUrlTemplate ? (
+                  <Action.OpenInBrowser
+                    title="Open Customer Admin"
+                    icon={Icon.Globe}
+                    url={preferences.customerAdminUrlTemplate.replace(
+                      "{team_id}",
+                      customer.teamId,
+                    )}
+                  />
+                ) : null}
+                <Action.ShowInFinder
+                  title="Show Customer Folder"
+                  path={customer.path}
+                />
+              </ActionPanel>
+            }
+          />
+        ))
+      )}
+    </>
+  );
+}
+
 function ProjectsList({
   sessions,
   revalidate,
@@ -804,6 +952,7 @@ export default function Command() {
   }, []);
 
   const sessions = data?.sessions ?? [];
+  const customers = data?.customers ?? [];
   const activeSessionNames = useMemo(
     () => new Set(data?.activeSessionNames ?? []),
     [data?.activeSessionNames],
@@ -835,6 +984,7 @@ export default function Command() {
     active: "Search active sessions...",
     all: "Search sessions...",
     projects: "Search projects...",
+    customers: "Search customers...",
   };
 
   return (
@@ -858,6 +1008,11 @@ export default function Command() {
             value="projects"
             icon={Icon.Folder}
           />
+          <List.Dropdown.Item
+            title="Customers"
+            value="customers"
+            icon={Icon.Person}
+          />
         </List.Dropdown>
       }
     >
@@ -877,8 +1032,10 @@ export default function Command() {
           notifications={notifications}
           showActiveIndicator
         />
-      ) : (
+      ) : tab === "projects" ? (
         <ProjectsList sessions={sessions} revalidate={revalidate} />
+      ) : (
+        <CustomersList customers={customers} />
       )}
     </List>
   );
