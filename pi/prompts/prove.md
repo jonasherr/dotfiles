@@ -8,7 +8,7 @@ $ARGUMENTS
 
 Do not rely on the implementation's apparent correctness or on a successful build alone. Inspect the relevant diff and determine the strongest practical verification path. Compare against the base branch or reproduce the original failure when useful.
 
-Run the narrowest relevant checks, such as targeted tests, type checks, syntax checks, builds, logs, or a direct reproduction. For frontend or browser-facing behavior, load the `playwright-cli` skill, open the rendered application in a real browser, exercise the changed interaction and important UI states, and inspect console or network output when relevant. If the application cannot be run or accessed, say so explicitly rather than implying browser verification occurred.
+Run the narrowest relevant checks, such as targeted tests, type checks, syntax checks, builds, logs, or a direct reproduction. For frontend or browser-facing behavior, open the rendered application in a real browser, exercise the changed interaction and important UI states, and inspect console or network output when relevant. Prefer the `d3k` skill for a runnable local application so browser and server evidence share one timeline. Use `playwright-cli` for deployed or external applications and when Playwright-specific capabilities are needed. If the application cannot be run or accessed, say so explicitly rather than implying browser verification occurred.
 
 For a substantial change or a claim with independent parts, use read-only parallel subagents to verify those parts independently. Ask them for evidence and evaluate their conclusions yourself.
 

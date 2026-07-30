@@ -11,7 +11,7 @@ Determine the appropriate review scope from the request and repository state. In
 Use a two-stage process:
 
 1. **Candidate review:** Use one or more read-only subagents to inspect independent parts of the change and propose candidate findings with file paths, line references, impact, and supporting evidence.
-2. **Independent verification:** For every credible candidate, assign a separate read-only verifier that did not originate the finding when practical. Give it the exact claim and ask it to confirm or disprove the issue by tracing the relevant code and, where safe and useful, running a targeted reproduction or test. For browser-facing claims, load the `playwright-cli` skill and verify the behavior in a real browser when the application is runnable.
+2. **Independent verification:** For every credible candidate, assign a separate read-only verifier that did not originate the finding when practical. Give it the exact claim and ask it to confirm or disprove the issue by tracing the relevant code and, where safe and useful, running a targeted reproduction or test. For browser-facing claims, verify the behavior in a real browser when the application is runnable. Prefer the `d3k` skill for a runnable local application. Use `playwright-cli` for deployed or external applications and when Playwright-specific capabilities are needed.
 
 Treat candidate findings as untrusted until verified. Discard findings that are speculative, subjective, already handled elsewhere, dependent on unsupported assumptions, or not introduced by the reviewed changes. Evaluate verifier conclusions yourself rather than forwarding them mechanically. Do not modify project files unless I explicitly ask you to fix the findings.
 

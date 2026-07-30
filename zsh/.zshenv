@@ -10,6 +10,7 @@ export BIN_PATH="/opt/homebrew/bin"
 
 # PATH configuration
 export PATH="/opt/homebrew/bin:$PATH"
+export PATH="/opt/homebrew/opt/node@24/bin:$PATH"
 export PATH="$PATH:/usr/local/sbin:$HOME/.local/bin:$DOTFILES/scripts/"
 export PATH="/opt/homebrew/opt/ruby/bin:$PATH"
 export PATH="$HOME/.cargo/bin:$PATH"
@@ -17,6 +18,9 @@ export PATH="$HOME/.cargo/bin:$PATH"
 # pnpm
 export PNPM_HOME="$HOME/Library/pnpm"
 export PATH="$PNPM_HOME:$PATH"
+
+# Bun globals
+export PATH="$HOME/.bun/bin:$PATH"
 
 # fnm
 FNM_PATH="$HOME/Library/Application Support/fnm"

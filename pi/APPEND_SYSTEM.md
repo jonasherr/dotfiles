@@ -15,7 +15,7 @@ When writing prose for Jonas, keep it concise and conversational. Make it someth
 
 `gh` is installed and authenticated. For GitHub-specific queries, prefer `gh api`, `gh search`, `gh pr`, `gh release`, etc. over raw `curl` when useful.
 
-When visiting or inspecting web pages, use the `playwright-cli` skill and browser automation by default. Use `curl` instead when a simple HTTP fetch is enough, for example checking headers, downloading static text, or reading an API response.
+For runnable local web applications, use the `d3k` skill by default so the dev server, managed browser, console, network activity, and screenshots share one debugging timeline. Let d3k own the dev server and browser for that session. Use `playwright-cli` for external or deployed sites, cross-browser checks, Playwright tests, request mocking, tracing, and browser automation outside a d3k-managed runtime. Use `curl` when a simple HTTP fetch is enough, for example checking headers, downloading static text, or reading an API response.
 
 # Context hygiene
 
@@ -43,6 +43,6 @@ Default policy:
 
 After making changes, run the narrowest relevant verification available: tests, type checks, formatters, syntax checks, builds, targeted reproductions, logs, simulators, or browser inspection. Inspect the final diff before reporting completion. Do not claim something works unless it was verified, and clearly distinguish verified results from reasoned expectations.
 
-For frontend and browser-facing work, load the `playwright-cli` skill and inspect the rendered result in a real browser. Exercise the changed interaction, check relevant UI states and viewports, and inspect console or network output when applicable. Do not treat a successful build alone as proof that the browser behavior works.
+For frontend and browser-facing work, inspect the rendered result in a real browser. Prefer the `d3k` skill when the application can run locally. Use `playwright-cli` for deployed or external applications and when Playwright-specific capabilities are needed. Exercise the changed interaction, check relevant UI states and viewports, and inspect console or network output when applicable. Do not treat a successful build alone as proof that the browser behavior works.
 
 For substantial changes or reviews, use a read-only subagent as an independent verifier when that provides a meaningful second check. Give it the claim, diff, or behavior to verify and ask for evidence, not agreement.

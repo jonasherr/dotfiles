@@ -9,7 +9,7 @@ AGENTS_SKILLS_DIR="$HOME/.agents/skills"
 mkdir -p "$AGENTS_SKILLS_DIR"
 
 for skill in "$SKILLS_DIR"/*/; do
-  [ -d "$skill" ] || continue
+  [ -f "${skill}SKILL.md" ] || continue
 
   skill_name=$(basename "$skill")
   agents_target="$AGENTS_SKILLS_DIR/$skill_name"
@@ -30,7 +30,8 @@ for skill in "$SKILLS_DIR"/*/; do
     continue
   fi
 
-  ln -s "../../Projects/dotfiles/pi/skills/$skill_name" "$agents_target"
+  relative_target=$(python3 -c 'import os, sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$SKILLS_DIR/$skill_name" "$AGENTS_SKILLS_DIR")
+  ln -s "$relative_target" "$agents_target"
   echo "  Linked shared skill: $skill_name"
 done
 

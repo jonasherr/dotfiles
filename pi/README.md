@@ -9,7 +9,7 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - `prompts/` → symlinked to `~/.pi/agent/prompts/`
 - `themes/` → symlinked to `~/.pi/agent/themes/`
-- `skills/` → committed Jonas-authored skills, exposed through `~/.agents/skills/`
+- `skills/` → committed skills, including Jonas-authored and reviewed vendored skills, exposed through `~/.agents/skills/`
 - `skills.public.json` → source manifest for public skills installed directly into `~/.agents/skills` with the skills CLI.
 - `install-skills.sh` → refreshes shared skill symlinks and cleans up old skill links.
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
@@ -36,12 +36,12 @@ There are no specialized subagent personas or subagent prompt templates. The too
 ## Prompt templates
 
 - `/plan [task]` inspects the codebase, uses parallel reconnaissance where useful, then follows the `grill-me` skill to resolve consequential ambiguity before producing an implementation-ready plan.
-- `/prove [claim]` verifies an implementation with concrete evidence. Browser-facing work explicitly uses Playwright rather than treating a successful build as sufficient.
+- `/prove [claim]` verifies an implementation with concrete evidence. Browser-facing work uses d3k for runnable local applications and Playwright for deployed, external, or Playwright-specific checks rather than treating a successful build as sufficient.
 - `/review-verified [scope]` reviews changes, delegates independent verification of credible findings, and reports only actionable findings that survive verification.
 
 ## Skills
 
-`~/.agents/skills` is the shared runtime registry. Jonas-authored skills live in `pi/skills/`, and `~/.agents/skills/<name>` points to those directories. Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout.
+`~/.agents/skills` is the shared runtime registry. Committed skills live in `pi/skills/`, and `~/.agents/skills/<name>` points to those directories. This includes Jonas-authored skills and reviewed vendored skills such as d3k. Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout.
 
 Pi scans only `~/.agents/skills` via `settings.json`. Claude Code compatibility links can still point at `~/.agents/skills/<name>`.
 
@@ -49,10 +49,12 @@ Public skills installed from skills.sh are recorded in `pi/skills.public.json` a
 
 ### Adding a skill
 
-Add Jonas-authored skills under `pi/skills/<skill-name>/SKILL.md`, then run:
+Add committed skills under `pi/skills/<skill-name>/SKILL.md`, then run:
 
 ```sh
 ./pi/install-skills.sh
 ```
 
 Add public skills from skills.sh with the install commands in `pi/skills.public.json`. Install or copy private skills into `~/.agents/skills/<skill-name>`.
+
+The vendored `d3k` skill comes from `vercel-labs/dev3000` release `v0.0.178`. Its runtime requires Node.js 24 and is installed separately with `bun install -g dev3000@0.0.178 --registry https://registry.npmjs.org`; the macOS dependency installer provisions both.
