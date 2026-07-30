@@ -370,7 +370,10 @@ function parseCustomerMetadata(customerPath: string): {
   }
 }
 
+let customersReadError: string | null = null;
+
 function getCustomers(): Customer[] {
+  customersReadError = null;
   if (!CUSTOMERS_DIR) return [];
   try {
     return readdirSync(CUSTOMERS_DIR, { withFileTypes: true })
@@ -390,7 +393,8 @@ function getCustomers(): Customer[] {
         teamId: metadata.teamId,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
-  } catch {
+  } catch (error) {
+    customersReadError = error instanceof Error ? error.message : String(error);
     return [];
   }
 }
@@ -837,7 +841,13 @@ function CustomersList({ customers }: { customers: Customer[] }) {
       {customers.length === 0 ? (
         <List.EmptyView
           title="No Customers Found"
-          description={`Add customer folders to ${CUSTOMERS_DIR}`}
+          description={
+            customersReadError
+              ? `Could not read ${CUSTOMERS_DIR}: ${customersReadError}`
+              : CUSTOMERS_DIR
+                ? `Add customer folders to ${CUSTOMERS_DIR}`
+                : "Set the Customers Directory preference"
+          }
           icon={Icon.Person}
         />
       ) : (
