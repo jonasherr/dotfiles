@@ -16,7 +16,7 @@ const RECURSIVE_DELETE = [
   /\brsync\b[^;|&\n]*--delete(?:-before|-during|-delay|-after|-excluded)?\b/i,
 ]
 
-const MOUNT_CLEANUP = /\b(?:mount\s+--bind|mount\s+-o\s+bind|unshare\b|TemporaryDirectory\s*\()/i
+const MOUNT_CLEANUP = /\b(?:mount\s+--bind|mount\s+-o\s+bind|unshare\b)/i
 const SHELL_VARIABLE = /(^|[^\\])(?:\$(?:[A-Za-z_][A-Za-z0-9_]*|\{[^}]+\}|\()|`)/
 const FAIL_CLOSED_VARIABLE = /\$\{[A-Za-z_][A-Za-z0-9_]*:\?[^}]*\}/g
 
@@ -92,7 +92,7 @@ export async function detectDestructiveShellRisk(
   const normalizedCommand = command.replace(/\\\r?\n/g, "")
   const recursiveMatch = RECURSIVE_DELETE.map((pattern) => normalizedCommand.match(pattern)).find(Boolean)
   if (!recursiveMatch) {
-    if (MOUNT_CLEANUP.test(normalizedCommand) && /\b(?:rm\s+|rmtree|TemporaryDirectory)/i.test(normalizedCommand)) {
+    if (MOUNT_CLEANUP.test(normalizedCommand) && /\b(?:rm\s+|rmtree)/i.test(normalizedCommand)) {
       return {
         category: "Mount or temporary-directory cleanup",
         matched: "mount/namespace setup combined with automatic or recursive cleanup",

@@ -83,10 +83,23 @@ test("flags alternate recursive deletion mechanisms", async () => {
   }
 })
 
-test("flags mount and TemporaryDirectory cleanup patterns", async () => {
-  const command = "unshare -m python -c 'with tempfile.TemporaryDirectory() as d: shutil.rmtree(d)'"
-  const risk = await detectDestructiveShellRisk(command, "/tmp/project")
-  assert.ok(risk)
+test("does not flag standalone TemporaryDirectory construction or cleanup", async () => {
+  for (const command of [
+    "python -c 'import tempfile; tempfile.TemporaryDirectory()'",
+    "python -c 'import tempfile; tempfile.TemporaryDirectory().cleanup()'",
+    "unshare -m python -c 'import tempfile; tempfile.TemporaryDirectory()'",
+  ]) {
+    assert.equal(await detectDestructiveShellRisk(command, "/tmp/project"), undefined, command)
+  }
+})
+
+test("retains recursive Python and namespace cleanup detection", async () => {
+  for (const command of [
+    "python -c 'import shutil; shutil.rmtree(\"/tmp/job\")'",
+    "unshare -m python -c 'with tempfile.TemporaryDirectory() as d: shutil.rmtree(d)'",
+  ]) {
+    assert.ok(await detectDestructiveShellRisk(command, "/tmp/project"), command)
+  }
 })
 
 test("does not flag ordinary non-destructive commands", async () => {

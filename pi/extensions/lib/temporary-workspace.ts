@@ -1,0 +1,376 @@
+import { execFile } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { lstat, mkdir, mkdtemp, realpath, rename } from "node:fs/promises"
+import { homedir, tmpdir } from "node:os"
+import { basename, isAbsolute, join, relative, sep } from "node:path"
+import { promisify } from "node:util"
+
+const WORKSPACE_PREFIX = "workspace-"
+const QUARANTINE_PREFIX = ".quarantine-"
+const MANAGED_ROOT_NAME = "pi-managed-workspaces"
+const RM_PATH = "/bin/rm"
+
+export const temporaryWorkspaceActions = ["create", "list", "delete"] as const
+
+export type TemporaryWorkspaceParameters = {
+  action: (typeof temporaryWorkspaceActions)[number] | (string & {})
+  id?: string
+}
+
+type Schema = Record<string, unknown>
+
+export type TemporaryWorkspaceSchemaBuilder = {
+  String(options?: Record<string, unknown>): Schema
+  Optional(schema: Schema): Schema
+  Object(
+    properties: Record<string, Schema>,
+    options?: Record<string, unknown>,
+  ): Schema
+}
+
+export function createTemporaryWorkspaceParameters(
+  Type: TemporaryWorkspaceSchemaBuilder,
+): Schema {
+  return Type.Object(
+    {
+      action: Type.String({ enum: [...temporaryWorkspaceActions] }),
+      id: Type.Optional(
+        Type.String({
+          minLength: 1,
+          description: "Opaque ID returned by create",
+        }),
+      ),
+    },
+    { additionalProperties: false },
+  )
+}
+
+export function validateTemporaryWorkspaceParameters(
+  params: TemporaryWorkspaceParameters,
+): void {
+  if (!temporaryWorkspaceActions.includes(params.action as never)) {
+    throw new Error(`unsupported action: ${String(params.action)}`)
+  }
+
+  const hasId = Object.prototype.hasOwnProperty.call(params, "id")
+  if (params.action === "delete" && (!hasId || !params.id)) {
+    throw new Error("delete requires a non-empty workspace ID")
+  }
+  if (params.action !== "delete" && hasId) {
+    throw new Error(`${params.action} does not accept a workspace ID`)
+  }
+}
+
+export type WorkspaceIdentity = {
+  dev: number | bigint
+  ino: number | bigint
+  mode: number
+  uid: number
+  isDirectory(): boolean
+  isSymbolicLink(): boolean
+}
+
+type WorkspaceEntry = {
+  id: string
+  path: string
+  dev: number | bigint
+  ino: number | bigint
+}
+
+export type TemporaryWorkspaceDependencies = {
+  tmpdir: () => string
+  homedir: () => string
+  randomId: () => string
+  mkdir: typeof mkdir
+  mkdtemp: typeof mkdtemp
+  lstat: (path: string) => Promise<WorkspaceIdentity>
+  realpath: typeof realpath
+  rename: typeof rename
+  remove: (
+    executable: string,
+    args: string[],
+    signal?: AbortSignal,
+  ) => Promise<void>
+}
+
+const execFileAsync = promisify(execFile)
+
+const defaultDependencies: TemporaryWorkspaceDependencies = {
+  tmpdir,
+  homedir,
+  randomId: randomUUID,
+  mkdir,
+  mkdtemp,
+  lstat,
+  realpath,
+  rename,
+  remove: async (executable, args, signal) => {
+    await execFileAsync(executable, args, { shell: false, signal })
+  },
+}
+
+function sameIdentity(
+  left: Pick<WorkspaceIdentity, "dev" | "ino">,
+  right: Pick<WorkspaceIdentity, "dev" | "ino">,
+): boolean {
+  return left.dev === right.dev && left.ino === right.ino
+}
+
+function isStrictDescendant(root: string, target: string): boolean {
+  const relation = relative(root, target)
+  return (
+    relation !== "" &&
+    !isAbsolute(relation) &&
+    relation !== ".." &&
+    !relation.startsWith(`..${sep}`)
+  )
+}
+
+function isEqualOrDescendant(root: string, target: string): boolean {
+  return root === target || isStrictDescendant(root, target)
+}
+
+export class ManagedTemporaryWorkspaces {
+  private readonly dependencies: TemporaryWorkspaceDependencies
+  private readonly workspaces = new Map<string, WorkspaceEntry>()
+  private readonly deleteLocks = new Map<string, Promise<void>>()
+  private managedRoot?: {
+    path: string
+    dev: number | bigint
+    ino: number | bigint
+  }
+
+  constructor(dependencies: Partial<TemporaryWorkspaceDependencies> = {}) {
+    this.dependencies = { ...defaultDependencies, ...dependencies }
+  }
+
+  private async getManagedRoot() {
+    const configuredPath = join(this.dependencies.tmpdir(), MANAGED_ROOT_NAME)
+    await this.dependencies.mkdir(configuredPath, {
+      recursive: true,
+      mode: 0o700,
+    })
+    const [path, identity] = await Promise.all([
+      this.dependencies.realpath(configuredPath),
+      this.dependencies.lstat(configuredPath),
+    ])
+    if (
+      !identity.isDirectory() ||
+      identity.isSymbolicLink() ||
+      (identity.mode & 0o777) !== 0o700 ||
+      (process.getuid !== undefined && identity.uid !== process.getuid())
+    ) {
+      throw new Error(
+        "managed temporary workspace root must be an owned mode-0700 real directory",
+      )
+    }
+
+    if (
+      this.managedRoot &&
+      (this.managedRoot.path !== path ||
+        !sameIdentity(this.managedRoot, identity))
+    ) {
+      throw new Error("managed temporary workspace root identity changed")
+    }
+    this.managedRoot ??= { path, dev: identity.dev, ino: identity.ino }
+    return this.managedRoot
+  }
+
+  async create(): Promise<{ id: string; path: string }> {
+    const root = await this.getManagedRoot()
+    const path = await this.dependencies.mkdtemp(
+      join(root.path, WORKSPACE_PREFIX),
+    )
+    const identity = await this.dependencies.lstat(path)
+    if (
+      !identity.isDirectory() ||
+      identity.isSymbolicLink() ||
+      identity.dev !== root.dev ||
+      !isStrictDescendant(root.path, path) ||
+      !basename(path).startsWith(WORKSPACE_PREFIX)
+    ) {
+      throw new Error("created temporary workspace failed validation")
+    }
+
+    let id = this.dependencies.randomId()
+    while (this.workspaces.has(id)) id = this.dependencies.randomId()
+    this.workspaces.set(id, { id, path, dev: identity.dev, ino: identity.ino })
+    return { id, path }
+  }
+
+  private async validate(
+    entry: WorkspaceEntry,
+    cwd: string,
+    requiredPrefix?: string,
+  ): Promise<void> {
+    const root = await this.getManagedRoot()
+    const [canonicalEntry, canonicalHome, canonicalCwd] = await Promise.all([
+      this.dependencies.realpath(entry.path),
+      this.dependencies.realpath(this.dependencies.homedir()),
+      this.dependencies.realpath(cwd),
+    ])
+    const name = basename(entry.path)
+    const allowedPrefix =
+      requiredPrefix ??
+      [WORKSPACE_PREFIX, QUARANTINE_PREFIX].find((prefix) =>
+        name.startsWith(prefix),
+      )
+    const forbidden = ["/", canonicalHome, canonicalCwd, root.path]
+
+    if (
+      !allowedPrefix ||
+      !isStrictDescendant(root.path, entry.path) ||
+      canonicalEntry !== entry.path ||
+      !name.startsWith(allowedPrefix) ||
+      name.length <= allowedPrefix.length ||
+      forbidden.some((path) => canonicalEntry === path) ||
+      isEqualOrDescendant(canonicalEntry, canonicalHome) ||
+      isEqualOrDescendant(canonicalEntry, canonicalCwd)
+    ) {
+      throw new Error("temporary workspace identity or path validation failed")
+    }
+
+    // Keep this identity read as the final await before the caller starts the
+    // fixed /bin/rm process. This narrows, but cannot eliminate, the pathname
+    // race described in the threat model.
+    const identity = await this.dependencies.lstat(entry.path)
+    if (
+      !identity.isDirectory() ||
+      identity.isSymbolicLink() ||
+      identity.dev !== root.dev ||
+      !sameIdentity(entry, identity)
+    ) {
+      throw new Error("temporary workspace identity or path validation failed")
+    }
+  }
+
+  async delete(
+    id: string,
+    cwd: string,
+    signal?: AbortSignal,
+  ): Promise<{ id: string; path: string }> {
+    const previous = this.deleteLocks.get(id) ?? Promise.resolve()
+    const operation = previous
+      .catch(() => undefined)
+      .then(() => this.deleteLocked(id, cwd, signal))
+    const lock = operation.then(
+      () => undefined,
+      () => undefined,
+    )
+    this.deleteLocks.set(id, lock)
+
+    try {
+      return await operation
+    } finally {
+      if (this.deleteLocks.get(id) === lock) this.deleteLocks.delete(id)
+    }
+  }
+
+  private async deleteLocked(
+    id: string,
+    cwd: string,
+    signal?: AbortSignal,
+  ): Promise<{ id: string; path: string }> {
+    const entry = this.workspaces.get(id)
+    if (!entry) throw new Error(`unknown temporary workspace ID: ${id}`)
+
+    const originalPath = entry.path
+    const name = basename(entry.path)
+    if (name.startsWith(WORKSPACE_PREFIX)) {
+      await this.validate(entry, cwd, WORKSPACE_PREFIX)
+      const root = await this.getManagedRoot()
+      const quarantinePath = join(
+        root.path,
+        `${QUARANTINE_PREFIX}${this.dependencies.randomId()}`,
+      )
+      await this.dependencies.rename(entry.path, quarantinePath)
+      entry.path = quarantinePath
+      await this.validate(entry, cwd, QUARANTINE_PREFIX)
+    } else {
+      await this.validate(entry, cwd, QUARANTINE_PREFIX)
+    }
+
+    await this.dependencies.remove(RM_PATH, ["-rfx", "--", entry.path], signal)
+    this.workspaces.delete(id)
+    return { id, path: originalPath }
+  }
+
+  async list(cwd: string): Promise<Array<{ id: string; path: string }>> {
+    const live: Array<{ id: string; path: string }> = []
+    for (const entry of this.workspaces.values()) {
+      try {
+        await this.validate(entry, cwd)
+        live.push({ id: entry.id, path: entry.path })
+      } catch {
+        // A replaced or missing entry is retained for diagnostics but is not a
+        // live workspace owned by this process and must not be advertised.
+      }
+    }
+    return live
+  }
+}
+
+export function createTemporaryWorkspaceHandler(
+  manager = new ManagedTemporaryWorkspaces(),
+) {
+  return async function executeTemporaryWorkspace(
+    params: TemporaryWorkspaceParameters,
+    signal: AbortSignal,
+    cwd: string,
+  ) {
+    try {
+      validateTemporaryWorkspaceParameters(params)
+
+      if (params.action === "create") {
+        const workspace = await manager.create()
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Created managed temporary workspace ${workspace.id} at ${workspace.path}. Move retained outputs elsewhere before deleting it.`,
+            },
+          ],
+          details: { action: "create", workspace },
+        }
+      }
+
+      if (params.action === "delete") {
+        const workspace = await manager.delete(params.id!, cwd, signal)
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `Deleted managed temporary workspace ${workspace.id}.`,
+            },
+          ],
+          details: { action: "delete", workspace },
+        }
+      }
+
+      const workspaces = await manager.list(cwd)
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: workspaces.length
+              ? workspaces.map(({ id, path }) => `${id}\t${path}`).join("\n")
+              : "No live managed temporary workspaces are owned by this process.",
+          },
+        ],
+        details: { action: "list", workspaces },
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`temporary_workspace failed: ${message}`, {
+        cause: error,
+      })
+    }
+  }
+}
+
+export const temporaryWorkspaceConstants = {
+  managedRootName: MANAGED_ROOT_NAME,
+  workspacePrefix: WORKSPACE_PREFIX,
+  quarantinePrefix: QUARANTINE_PREFIX,
+  rmPath: RM_PATH,
+}
