@@ -18,20 +18,25 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 
 - `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns. It hard-blocks recursive deletion aimed at root, home, the active workspace, aliases resolving to those locations, or targets widened by non-fail-closed shell variables.
 - `extensions/terminal-notify.ts` starts the Kitty/meow sidebar daemon when needed and sends Kitty/sidebar plus macOS desktop notifications when pi is idle, asking a question, or waiting for damage-control approval.
-- `extensions/subagent/` adds a generic `subagent` tool that spawns isolated `pi -p --no-session` background agents. It supports single and parallel runs. Tasks are read-only by default, and matching damage-control checks request approval through the parent UI.
+- `extensions/subagent/` adds a generic `subagent` tool that spawns isolated `pi -p --no-session` background agents. It supports single and parallel runs, always requests `xhigh` thinking, and keeps model selection in the parent orchestrator. Tasks are read-only by default, and matching damage-control checks request approval through the parent UI.
 - If no interactive UI is available, matching damage-control tool calls are blocked by default.
 
 ## Subagents
 
-The `subagent` tool is intentionally small: it starts one or more disposable `pi -p --no-session` processes and returns their compact output to the main session.
+The `subagent` tool is intentionally small: it starts one or more disposable `pi -p --no-session` processes and returns compact, evidence-based handoffs. For substantial work, the parent session acts as an orchestrator. It delegates most independent reading and research, focused implementation, and verification, parallelizes independent tracks early, then evaluates the handoffs and owns final synthesis. It should not repeat delegated reconnaissance. Small tasks and tightly sequential work stay in the parent.
 
-Use it for:
+There are no specialized subagent personas or prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, and `bash`. Set `readOnly: false` or pass explicit `tools` only for focused edits with clear ownership.
 
-- Parallel read-only reconnaissance across independent areas.
-- Independent checks that would add too much context to the main session.
-- Focused background work when a separate context is helpful.
+Model selection remains orchestrator policy:
 
-There are no specialized subagent personas or subagent prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, and `bash`. Set `readOnly: false` or pass explicit `tools` only when edits are intended.
+- `openai/gpt-5.6-sol`: highest-stakes, ambiguous, long-horizon work.
+- `openai/gpt-5.6-terra`: bounded engineering, implementation, and debugging.
+- `openai/gpt-5.6-luna`: mechanical or high-volume evidence gathering and transformation.
+- `zai/glm-5.2`: independent challenge, critique, and review.
+- `moonshotai/kimi-k3`: huge or multimodal corpora.
+- `anthropic/claude-opus-5`: prose and final drafting.
+
+Use model diversity only when it adds an independent perspective. Every subagent invocation requests `--thinking xhigh`; providers may map or clamp unsupported levels. The thinking level is not configurable through the tool input.
 
 ## Prompt templates
 

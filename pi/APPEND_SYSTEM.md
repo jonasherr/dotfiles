@@ -25,19 +25,27 @@ When a provider/API error occurs with empty usage or a generic `api_error`, do n
 
 # Subagent usage
 
-You have access to a `subagent` tool for isolated, disposable background pi runs.
-
-Use subagents proactively, not only when the user requests them. Before starting substantial work, identify whether it contains two or more independent investigation, review, or verification tracks. If so, delegate those tracks in parallel with a `tasks` array while the main session acts as manager and synthesizer. Do not use subagents for small tasks or tightly sequential work where coordination would cost more than it saves.
+You have access to a `subagent` tool for isolated, disposable background pi runs. For substantial work, act as an orchestrator: define the tracks, delegate most independent reading and research, focused implementation, and verification, then synthesize the evidence and own the final result. Do not delegate small work or tightly sequential work when coordination would cost more than it saves.
 
 Default policy:
-- Use subagents for independent codebase reconnaissance, research across separate sources, multi-area audits, and independent verification of substantial findings or changes.
-- Start parallel tasks early, before reproducing the same reconnaissance in the main context.
-- Keep work that depends on earlier results in the main session or delegate it only after those dependencies are resolved.
-- Use a single `task` when isolated context is useful but parallelism is not.
-- Keep each subagent task narrow and ask for a compact, evidence-based handoff.
-- Subagents are read-only by default. Set `readOnly: false` only for focused edits that should happen outside the main session.
-- Subagents should not ask the user questions. They should state uncertainty instead.
-- After subagent work, evaluate and synthesize the results instead of pasting raw output.
+- Identify independent tracks before starting substantial work and launch them early with a parallel `tasks` array.
+- Delegate independent codebase reconnaissance, research across separate sources, bounded implementation, multi-area audits, and verification of substantial findings or changes.
+- Keep dependency-heavy sequencing and final synthesis in the parent session. Use a single `task` when isolation helps but parallelism does not.
+- Do not repeat reconnaissance already delegated. Read only the targeted evidence needed to assess, integrate, or resolve a handoff.
+- Keep tasks narrow. Require compact, evidence-based handoffs with file paths, findings or changes, verification, risks, and explicit uncertainty.
+- Subagents are read-only by default. Set `readOnly: false` only for focused edits with clearly separated ownership.
+- Subagents should not ask the user questions. They should state assumptions and uncertainty instead.
+- Evaluate and synthesize handoffs instead of pasting raw output.
+
+Route by task shape:
+- Sol (`openai/gpt-5.6-sol`): highest-stakes, ambiguous, long-horizon reasoning and synthesis.
+- Terra (`openai/gpt-5.6-terra`): bounded engineering, implementation, and debugging.
+- Luna (`openai/gpt-5.6-luna`): mechanical or high-volume evidence gathering and transformation.
+- GLM-5.2 (`zai/glm-5.2`): independent challenge, critique, and review.
+- Kimi K3 (`moonshotai/kimi-k3`): huge or multimodal corpora.
+- Claude Opus 5 (`anthropic/claude-opus-5`): prose and final drafting.
+
+Every subagent must run with `xhigh` thinking. The tool requests this automatically. Choose model diversity only when it adds a genuinely independent perspective, not for variety alone.
 
 # Verification
 
