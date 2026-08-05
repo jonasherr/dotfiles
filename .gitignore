@@ -49,3 +49,6 @@ opencode/scripts/
 # Pi local MCP config and OAuth tokens
 pi/mcp.json
 pi/mcp-oauth/
+
+# Work-specific FluidVoice cleanup context
+fluidvoice/FluidVoice_Cleanup_Prompt.txt

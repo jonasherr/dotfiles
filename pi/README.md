@@ -4,7 +4,7 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 
 ## Layout
 
-- `settings.json` → symlinked to `~/.pi/agent/settings.json`
+- `settings.work.json` and `settings.personal.json` → tracked machine profiles selected with `select-profile.sh`
 - `APPEND_SYSTEM.md` → symlinked to `~/.pi/agent/APPEND_SYSTEM.md`
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - `prompts/` → symlinked to `~/.pi/agent/prompts/`
@@ -13,6 +13,17 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `skills.public.json` → source manifest for public skills installed directly into `~/.agents/skills` with the skills CLI.
 - `install-skills.sh` → refreshes shared skill symlinks and cleans up old skill links.
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
+
+## Settings profiles
+
+Pi model settings differ between the work and personal laptops. Select the profile once after bootstrapping or whenever switching machines:
+
+```sh
+./pi/select-profile.sh work
+./pi/select-profile.sh personal
+```
+
+The selector symlinks the chosen tracked profile to `~/.pi/agent/settings.json`. Other Pi resources, authentication, and sessions keep their normal shared locations. Pi may update mutable fields such as `lastChangelogVersion` in the selected profile.
 
 ## Extensions
 
