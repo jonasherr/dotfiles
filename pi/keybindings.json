@@ -1,6 +1,6 @@
 {
-  "app.model.cycleForward": [],
-  "app.model.cycleBackward": [],
+  "app.model.cycleForward": ["ctrl+p"],
+  "app.model.cycleBackward": ["shift+ctrl+p"],
   "app.session.fork": ["ctrl+shift+f"],
 
   "tui.select.up": ["up", "ctrl+p"],
