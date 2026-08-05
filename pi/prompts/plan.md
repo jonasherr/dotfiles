@@ -10,7 +10,7 @@ Stay read-only. Do not edit project files or begin implementation.
 
 First inspect the codebase and resolve anything that can be answered from existing code, documentation, configuration, history, or available tools. Use parallel subagents proactively when there are two or more independent investigation tracks.
 
-Then load and follow the `grill-me` skill. Interview me one question at a time about every consequential ambiguity, tradeoff, assumption, and acceptance criterion that cannot be resolved from the codebase. For each question, include your recommended answer. Continue until we reach shared understanding.
+Then load and follow the `grilling` skill. Work through consequential ambiguities, tradeoffs, assumptions, and acceptance criteria in dependency-aware rounds. Ask every currently answerable independent question in each round, include your recommended answer for each, and defer questions whose prerequisites are unsettled. Continue until we reach shared understanding.
 
 Finally, present an implementation-ready plan containing:
 

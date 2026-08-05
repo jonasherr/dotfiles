@@ -40,9 +40,16 @@ Use model diversity only when it adds an independent perspective. Every subagent
 
 ## Prompt templates
 
-- `/plan [task]` inspects the codebase, uses parallel reconnaissance where useful, then follows the `grill-me` skill to resolve consequential ambiguity before producing an implementation-ready plan.
-- `/prove [claim]` verifies an implementation with concrete evidence. Browser-facing work uses d3k for runnable local applications and Playwright for deployed, external, or Playwright-specific checks rather than treating a successful build as sufficient.
-- `/review-verified [scope]` reviews changes, delegates independent verification of credible findings, and reports only actionable findings that survive verification.
+- `/plan [task]` inspects the codebase, uses parallel reconnaissance where useful, then follows the round-based `grilling` skill to resolve consequential ambiguity before producing an implementation-ready plan.
+
+## Engineering workflow skills
+
+- `wayfinder` maps large, uncertain efforts as tracker-backed decision tickets with explicit fog, dependencies, and an actionable frontier.
+- `improve-codebase-architecture` scans active code for opportunities to deepen modules, presents a visual report, then grills through the selected candidate.
+- `implement` implements a spec or ticket using TDD at agreed seams, runs focused and full verification, invokes `code-review`, and commits the completed work.
+- `code-review` reviews a fixed diff independently against repository standards and the originating spec.
+- `handoff` compacts work for another session. The local adaptation returns immediate handoffs in chat and uses managed workspaces or active tracker tickets for files instead of unmanaged OS temp paths.
+- `setup-matt-pocock-skills` configures the per-repository issue tracker and domain-documentation conventions required by Wayfinder and related engineering skills.
 
 ## Skills
 
