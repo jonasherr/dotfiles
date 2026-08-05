@@ -1,13 +1,16 @@
 import re
-import os
 
 from kittens.tui.handler import result_handler
 from kitty.key_encoding import KeyEvent, parse_shortcut
 
 
 def is_window_vim(window, vim_id):
- fp = window.child.foreground_processes
- return any(re.search(vim_id, p['cmdline'][0], re.I) for p in fp)
+    processes = window.child.foreground_processes
+    return any(
+        re.search(vim_id, command[0], re.I)
+        for process in processes
+        if (command := process.get("cmdline"))
+    )
 
 
 def encode_key_mapping(window, key_mapping):
