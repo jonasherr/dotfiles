@@ -45,6 +45,10 @@ automatically-unhide-macos-hidden-apps = true
 
 persistent-workspaces = ["Q", "W", "E", "A", "D", "F"]
 
+[[on-window-detected]]
+    if.app-id = 'com.okta.mobile'
+    run = 'layout floating'
+
 # Possible values: (qwerty|dvorak|colemak)
 # See https://nikitabobko.github.io/AeroSpace/guide#key-mapping
 [key-mapping]
