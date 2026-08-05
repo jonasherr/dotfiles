@@ -3,7 +3,11 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
 import { requestParentApproval } from "./lib/damage-control-approval-broker"
-import { detectDestructiveShellRisk } from "./lib/damage-control-safety"
+import {
+  detectDestructiveShellRisk,
+  detectTemporaryPathWrite,
+  detectTemporaryShellWrite,
+} from "./lib/damage-control-safety"
 import { notifyTerminalPermission } from "./terminal-notify"
 
 const TOOL_WARN_BYTES = 20 * 1024
@@ -598,10 +602,12 @@ function warnIfContextIsHigh(ctx: ExtensionContext) {
   ctx.ui.notify(`[damage-control] ${message}`, level === "warn" ? "warning" : "error")
 }
 
-function blockCatastrophicRisk(risk: Risk) {
+function blockCatastrophicRisk(risk: Risk & { remediation?: string }) {
   return {
     block: true,
-    reason: `[damage-control] ${risk.category} blocked: ${risk.matched}. Rewrite the command with a narrow literal target. Variable-expanded recursive deletion must use a fail-closed \${VAR:?message} expansion.`,
+    reason: risk.remediation
+      ? `[damage-control] ${risk.category} blocked: ${risk.matched}. ${risk.remediation}`
+      : `[damage-control] ${risk.category} blocked: ${risk.matched}. Rewrite the command with a narrow literal target. Variable-expanded recursive deletion must use a fail-closed \${VAR:?message} expansion.`,
   }
 }
 
@@ -670,6 +676,9 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "bash" && typeof event.input.command === "string") {
+      const temporaryWriteRisk = detectTemporaryShellWrite(event.input.command)
+      if (temporaryWriteRisk) return blockCatastrophicRisk(temporaryWriteRisk)
+
       const destructiveRisk = await detectDestructiveShellRisk(event.input.command, ctx.cwd)
       if (destructiveRisk?.hardBlock) return blockCatastrophicRisk(destructiveRisk)
       if (destructiveRisk) return requestApproval(ctx, destructiveRisk)
@@ -687,6 +696,9 @@ export default function (pi: ExtensionAPI) {
       (event.toolName === "edit" || event.toolName === "write") &&
       typeof event.input.path === "string"
     ) {
+      const temporaryWriteRisk = detectTemporaryPathWrite(event.input.path)
+      if (temporaryWriteRisk) return blockCatastrophicRisk(temporaryWriteRisk)
+
       const risk = detectWriteRisk(event.input.path)
       if (risk) return requestApproval(ctx, risk)
     }

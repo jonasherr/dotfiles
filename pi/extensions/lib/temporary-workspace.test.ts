@@ -14,8 +14,10 @@ import { join } from "node:path"
 import test, { type TestContext } from "node:test"
 
 import {
+  createTemporaryWorkspaceCreateParameters,
+  createTemporaryWorkspaceDeleteParameters,
   createTemporaryWorkspaceHandler,
-  createTemporaryWorkspaceParameters,
+  createTemporaryWorkspaceListParameters,
   ManagedTemporaryWorkspaces,
   temporaryWorkspaceConstants,
   type TemporaryWorkspaceDependencies,
@@ -306,7 +308,7 @@ async function executeTool(params: Record<string, unknown>) {
   )
 }
 
-test("registered tool execute throws for invalid action and ID combinations", async () => {
+test("registered tool execute throws for invalid internal actions and IDs", async () => {
   await assert.rejects(
     executeTool({ action: "delete", id: "unknown" }),
     /temporary_workspace failed: unknown temporary workspace ID/,
@@ -320,55 +322,54 @@ test("registered tool execute throws for invalid action and ID combinations", as
     /temporary_workspace failed: delete requires a non-empty workspace ID/,
   )
   await assert.rejects(
-    executeTool({ action: "create", id: "unexpected" }),
-    /temporary_workspace failed: create does not accept a workspace ID/,
-  )
-  await assert.rejects(
-    executeTool({ action: "list", id: "unexpected" }),
-    /temporary_workspace failed: list does not accept a workspace ID/,
-  )
-  await assert.rejects(
     executeTool({ action: "other" }),
     /temporary_workspace failed: unsupported action: other/,
   )
 })
 
-test("tool exposes one path-free, closed Google-compatible object schema", async () => {
-  const schema = createTemporaryWorkspaceParameters({
+test("split tools expose closed, action-specific schemas", async () => {
+  const Type = {
     String: (options = {}) => ({ type: "string", ...options }),
-    Optional: (value) => ({ ...value, optional: true }),
     Object: (properties, options = {}) => ({
       type: "object",
-      properties: Object.fromEntries(
-        Object.entries(properties).map(([key, value]) => {
-          const { optional: _optional, ...schema } = value
-          return [key, schema]
-        }),
-      ),
-      required: Object.entries(properties)
-        .filter(([, value]) => !value.optional)
-        .map(([key]) => key),
+      properties,
+      required: Object.keys(properties),
       ...options,
     }),
-  }) as any
-  assert.equal(schema.type, "object")
-  assert.equal(schema.additionalProperties, false)
-  assert.deepEqual(schema.required, ["action"])
-  assert.deepEqual(schema.properties.action.enum, ["create", "list", "delete"])
-  assert.equal(schema.properties.action.type, "string")
-  assert.equal(schema.properties.id.type, "string")
-  assert.equal(schema.properties.id.minLength, 1)
-  assert.deepEqual(Object.keys(schema.properties).sort(), ["action", "id"])
-  assert.equal("anyOf" in schema, false)
-  assert.equal("oneOf" in schema, false)
+  }
+  const createSchema = createTemporaryWorkspaceCreateParameters(Type) as any
+  const listSchema = createTemporaryWorkspaceListParameters(Type) as any
+  const deleteSchema = createTemporaryWorkspaceDeleteParameters(Type) as any
+
+  for (const schema of [createSchema, listSchema, deleteSchema]) {
+    assert.equal(schema.type, "object")
+    assert.equal(schema.additionalProperties, false)
+    assert.equal("anyOf" in schema, false)
+    assert.equal("oneOf" in schema, false)
+  }
+  assert.deepEqual(createSchema.properties, {})
+  assert.deepEqual(createSchema.required, [])
+  assert.deepEqual(listSchema.properties, {})
+  assert.deepEqual(listSchema.required, [])
+  assert.deepEqual(deleteSchema.required, ["id"])
+  assert.deepEqual(Object.keys(deleteSchema.properties), ["id"])
+  assert.equal(deleteSchema.properties.id.type, "string")
+  assert.equal(deleteSchema.properties.id.minLength, 1)
+  assert.match(deleteSchema.properties.id.description, /temporary_workspace_create/)
 
   const source = await readFile(
     new URL("../temporary-workspace.ts", import.meta.url),
     "utf8",
   )
-  assert.match(source, /pi\.registerTool\(\{/)
-  assert.match(source, /parameters: createTemporaryWorkspaceParameters\(Type\)/)
-  assert.match(source, /return executeTemporaryWorkspace\(/)
+  for (const name of [
+    "temporary_workspace_create",
+    "temporary_workspace_list",
+    "temporary_workspace_delete",
+  ]) {
+    assert.match(source, new RegExp(`name: "${name}"`))
+  }
+  assert.doesNotMatch(source, /name: "temporary_workspace"/)
   assert.doesNotMatch(source, /\bpath:\s*Type\./)
   assert.doesNotMatch(source, /Type\.Union/)
+  assert.match(source, /Prefer pipes or stdout/)
 })

@@ -16,7 +16,8 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 
 ## Extensions
 
-- `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns. It hard-blocks recursive deletion aimed at root, home, the active workspace, aliases resolving to those locations, or targets widened by non-fail-closed shell variables.
+- `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns. It hard-blocks recursive deletion aimed at root, home, the active workspace, aliases resolving to those locations, or targets widened by non-fail-closed shell variables. It also blocks shell-created temporary files and directories, directing agents to pipes/stdout or the managed workspace tool.
+- `extensions/temporary-workspace.ts` provides separate create, list, and delete tools for process-owned disposable workspaces. Create takes no arguments and autogenerates the ID and path. Delete accepts only the returned ID. Retained outputs must be moved out before deletion.
 - `extensions/terminal-notify.ts` starts the Kitty/meow sidebar daemon when needed and sends Kitty/sidebar plus macOS desktop notifications when pi is idle, asking a question, or waiting for damage-control approval.
 - `extensions/subagent/` adds a generic `subagent` tool that spawns isolated `pi -p --no-session` background agents. It supports single and parallel runs, always requests `xhigh` thinking, and keeps model selection in the parent orchestrator. Tasks are read-only by default, and matching damage-control checks request approval through the parent UI.
 - If no interactive UI is available, matching damage-control tool calls are blocked by default.
