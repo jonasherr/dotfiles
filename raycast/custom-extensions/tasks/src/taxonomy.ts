@@ -3,27 +3,17 @@ import { Color, Icon, Image } from "@raycast/api";
 export type TagCategory = "area" | "matrix" | "freelance" | "effort" | "status";
 export type AreaTag = "#area_personal" | "#area_freelance" | "#area_work";
 export type MatrixTag =
-  | "#matrix_do"
-  | "#matrix_schedule"
-  | "#matrix_delegate"
-  | "#matrix_eliminate";
+  "#matrix_do" | "#matrix_schedule" | "#matrix_delegate" | "#matrix_eliminate";
 export type FreelanceTag =
   | "#freelance_writing"
   | "#freelance_workshop"
   | "#freelance_talk"
   | "#freelance_admin";
 export type EffortTag =
-  | "#effort_quick"
-  | "#effort_focus"
-  | "#effort_deep"
-  | "#effort_errand";
+  "#effort_quick" | "#effort_focus" | "#effort_deep" | "#effort_errand";
 export type StatusTag = "#status_waiting" | "#status_someday";
 export type TaskTag =
-  | AreaTag
-  | MatrixTag
-  | FreelanceTag
-  | EffortTag
-  | StatusTag;
+  AreaTag | MatrixTag | FreelanceTag | EffortTag | StatusTag;
 
 export type TagDefinition<T extends TaskTag = TaskTag> = {
   tag: T;

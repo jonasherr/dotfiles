@@ -15,11 +15,7 @@ import {
 import { FREELANCE_TAGS, MATRIX_TAGS } from "./taxonomy";
 
 export type ViewKind =
-  | "today"
-  | "personal"
-  | "freelance"
-  | "inbox"
-  | "linear-candidates";
+  "today" | "personal" | "freelance" | "inbox" | "linear-candidates";
 
 export function RemindersView({ kind }: { kind: ViewKind }) {
   const { data, isLoading, mutate } = useCachedPromise(getData);
