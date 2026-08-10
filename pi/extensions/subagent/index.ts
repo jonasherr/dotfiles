@@ -21,8 +21,20 @@ import { createApprovalBroker } from "../lib/damage-control-approval-broker";
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
 const COLLAPSED_OUTPUT_LINES = 12;
-const READ_ONLY_TOOLS = ["read", "grep", "find", "ls", "bash"];
-const WRITE_TOOLS = ["read", "grep", "find", "ls", "bash", "edit", "write"];
+const TEMPORARY_WORKSPACE_TOOLS = [
+  "temporary_workspace_create",
+  "temporary_workspace_list",
+  "temporary_workspace_delete",
+];
+const READ_ONLY_TOOLS = [
+  "read",
+  "grep",
+  "find",
+  "ls",
+  "bash",
+  ...TEMPORARY_WORKSPACE_TOOLS,
+];
+const WRITE_TOOLS = [...READ_ONLY_TOOLS, "edit", "write"];
 
 const SUBAGENT_SYSTEM_PROMPT = [
   "You are a disposable background agent spawned by a parent pi session.",

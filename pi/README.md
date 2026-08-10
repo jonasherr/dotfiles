@@ -37,7 +37,7 @@ The selector symlinks the chosen tracked profile to `~/.pi/agent/settings.json`.
 
 The `subagent` tool is intentionally small: it starts one or more disposable `pi -p --no-session` processes and returns compact, evidence-based handoffs. For substantial work, the parent session acts as an orchestrator. It delegates most independent reading and research, focused implementation, and verification, parallelizes independent tracks early, then evaluates the handoffs and owns final synthesis. It should not repeat delegated reconnaissance. Small tasks and tightly sequential work stay in the parent.
 
-There are no specialized subagent personas or prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, and `bash`. Set `readOnly: false` or pass explicit `tools` only for focused edits with clear ownership.
+There are no specialized subagent personas or prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, `bash`, and the three managed `temporary_workspace_*` tools. Set `readOnly: false` or pass explicit `tools` only for focused edits with clear ownership.
 
 Model selection remains orchestrator policy:
 

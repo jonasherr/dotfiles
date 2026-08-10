@@ -33,7 +33,7 @@ Default policy:
 - Keep dependency-heavy sequencing and final synthesis in the parent session. Use a single `task` when isolation helps but parallelism does not.
 - Do not repeat reconnaissance already delegated. Read only the targeted evidence needed to assess, integrate, or resolve a handoff.
 - Keep tasks narrow. Require compact, evidence-based handoffs with file paths, findings or changes, verification, risks, and explicit uncertainty.
-- Subagents are read-only by default. Set `readOnly: false` only for focused edits with clearly separated ownership.
+- Subagents are read-only by default, with managed `temporary_workspace_create`, `temporary_workspace_list`, and `temporary_workspace_delete` tools available. Set `readOnly: false` only for focused edits with clearly separated ownership.
 - Subagents should not ask the user questions. They should state assumptions and uncertainty instead.
 - Evaluate and synthesize handoffs instead of pasting raw output.
 

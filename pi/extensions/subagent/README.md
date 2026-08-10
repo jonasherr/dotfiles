@@ -27,8 +27,8 @@ Use model diversity only when it adds an independent perspective. Every spawned 
 ## Defaults
 
 - Max 8 parallel tasks, 4 concurrent processes.
-- Read-only by default with `read`, `grep`, `find`, `ls`, and `bash`.
-- Set `readOnly: false` to allow `edit` and `write` for focused, clearly owned changes.
+- Read-only by default with `read`, `grep`, `find`, `ls`, `bash`, and the managed `temporary_workspace_create`, `temporary_workspace_list`, and `temporary_workspace_delete` tools.
+- Set `readOnly: false` to additionally allow `edit` and `write` for focused, clearly owned changes.
 - Optional per-task `cwd`, `model`, and `tools`.
 - Damage-control checks still apply inside subagents. Matching calls request approval through the parent pi UI and fail closed if approval is unavailable.
 - Handoffs should be compact and evidence-based, including relevant paths, verification, risks, and uncertainty.
