@@ -4,6 +4,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent"
+import { requestDamageControlApproval } from "./damage-control-approval-ui"
 
 const SOCKET_ENV = "PI_DAMAGE_CONTROL_APPROVAL_SOCKET"
 const TOKEN_ENV = "PI_DAMAGE_CONTROL_APPROVAL_TOKEN"
@@ -100,18 +101,8 @@ export async function createApprovalBroker(ctx: ExtensionContext): Promise<Appro
             return
           }
 
-          const message = [
-            `${request.category} matched damage-control rules in a subagent.`,
-            "",
-            request.subject,
-            "",
-            `Matched: ${request.matched}`,
-            "",
-            "Allow this subagent tool call?",
-          ].join("\n")
-
           try {
-            const approved = await ctx.ui.confirm("⚠️ Damage Control", message)
+            const approved = await requestDamageControlApproval(ctx, request, true)
             respond({ approved })
           } catch (error) {
             const detail = error instanceof Error ? error.message : String(error)

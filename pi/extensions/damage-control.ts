@@ -3,6 +3,7 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { ExtensionAPI, ExtensionContext } from "@mariozechner/pi-coding-agent"
 import { requestParentApproval } from "./lib/damage-control-approval-broker"
+import { requestDamageControlApproval } from "./lib/damage-control-approval-ui"
 import {
   detectDestructiveShellRisk,
   detectTemporaryPathWrite,
@@ -614,16 +615,6 @@ function blockCatastrophicRisk(risk: Risk & { remediation?: string }) {
 async function requestApproval(ctx: ExtensionContext, risk: Risk) {
   notifyTerminalPermission(risk.subject)
 
-  const message = [
-    `${risk.category} matched damage-control rules.`,
-    "",
-    risk.subject,
-    "",
-    `Matched: ${risk.matched}`,
-    "",
-    "Allow this tool call?",
-  ].join("\n")
-
   const parentResponse = await requestParentApproval(risk)
   if (parentResponse) {
     if (parentResponse.error) {
@@ -646,7 +637,7 @@ async function requestApproval(ctx: ExtensionContext, risk: Risk) {
   }
 
   try {
-    const approved = await ctx.ui.confirm("⚠️ Damage Control", message)
+    const approved = await requestDamageControlApproval(ctx, risk)
     if (!approved) {
       return { block: true, reason: `[damage-control] ${risk.category} blocked by user` }
     }
