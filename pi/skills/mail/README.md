@@ -35,11 +35,9 @@ macOS ships `/usr/bin/mail` (BSD `sendmail`-wrapping interactive mail reader). I
 
 ## Installation
 
-The dotfiles bootstrap (`./install/bootstrap.sh`) + `pi/install-skills.sh` symlink:
+The dotfiles bootstrap (`./install/bootstrap.sh pi`) symlinks `pi/skills` to `~/.pi/agent/skills`, so this skill is available at `~/.pi/agent/skills/mail`.
 
-- `~/.agents/skills/mail` → this directory
-
-The agent invokes the CLI by its full skill path (`~/.agents/skills/mail/bin/inbox`). There is no PATH-level alias to avoid colliding with macOS's `/usr/bin/mail`.
+The agent invokes the CLI by its full skill path (`~/.pi/agent/skills/mail/bin/inbox`). There is no PATH-level alias to avoid colliding with macOS's `/usr/bin/mail`.
 
 Runtime requirements:
 

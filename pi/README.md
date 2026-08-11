@@ -9,9 +9,8 @@ Config for [pi](https://github.com/badlogic/pi-coding-agent).
 - `extensions/` → symlinked to `~/.pi/agent/extensions/`
 - `prompts/` → symlinked to `~/.pi/agent/prompts/`
 - `themes/` → symlinked to `~/.pi/agent/themes/`
-- `skills/` → committed skills, including Jonas-authored and reviewed vendored skills, exposed through `~/.agents/skills/`
+- `skills/` → committed skills, including Jonas-authored and reviewed vendored skills, symlinked to `~/.pi/agent/skills/`
 - `skills.public.json` → source manifest for public skills installed directly into `~/.agents/skills` with the skills CLI.
-- `install-skills.sh` → refreshes shared skill symlinks and cleans up old skill links.
 - Runtime state (sessions, caches) stays in `~/.pi/agent/` and is **not** tracked here.
 
 ## Settings profiles
@@ -65,19 +64,15 @@ Use model diversity only when it adds an independent perspective. Every subagent
 
 ## Skills
 
-`~/.agents/skills` is the shared runtime registry. Committed skills live in `pi/skills/`, and `~/.agents/skills/<name>` points to those directories. This includes Jonas-authored skills and reviewed vendored skills such as d3k. Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout.
+Committed skills live in `pi/skills/`, which the dotfiles bootstrap symlinks to `~/.pi/agent/skills`. Pi discovers these skills recursively. This includes Jonas-authored skills and reviewed vendored skills such as d3k.
 
-Pi scans only `~/.agents/skills` via `settings.json`. Claude Code compatibility links can still point at `~/.agents/skills/<name>`.
+Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout. Pi scans that registry via `settings.json`.
 
 Public skills installed from skills.sh are recorded in `pi/skills.public.json` and installed directly into `~/.agents/skills` with the skills CLI. Private/internal skills stay out of dotfiles and are managed by the global skills CLI lockfile at `~/.agents/.skill-lock.json` or by symlinks to private checkouts.
 
 ### Adding a skill
 
-Add committed skills under `pi/skills/<skill-name>/SKILL.md`, then run:
-
-```sh
-./pi/install-skills.sh
-```
+Add committed skills under `pi/skills/<skill-name>/SKILL.md`. They are available immediately through the existing `~/.pi/agent/skills` directory symlink. Run `./install/bootstrap.sh pi` if that symlink has not been installed yet.
 
 Add public skills from skills.sh with the install commands in `pi/skills.public.json`. Install or copy private skills into `~/.agents/skills/<skill-name>`.
 

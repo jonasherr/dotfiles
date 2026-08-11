@@ -28,7 +28,7 @@ Run `inbox doctor` to confirm storage access and see which accounts are visible.
 ## CLI
 
 ```
-~/.agents/skills/mail/bin/inbox <subcommand> ...
+~/.pi/agent/skills/mail/bin/inbox <subcommand> ...
 ```
 
 There is intentionally **no** PATH symlink. The agent invokes it by the full skill path. Quick reference:
