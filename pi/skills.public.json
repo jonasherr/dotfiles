@@ -8,7 +8,7 @@
       "skill": "code-review",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/code-review",
-      "install": "npx skills@latest add mattpocock/skills --skill code-review -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill code-review -g --agent universal -y"
     },
     "codebase-design": {
       "path": "~/.agents/skills/codebase-design",
@@ -16,7 +16,7 @@
       "skill": "codebase-design",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/codebase-design",
-      "install": "npx skills@latest add mattpocock/skills --skill codebase-design -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill codebase-design -g --agent universal -y"
     },
     "domain-modeling": {
       "path": "~/.agents/skills/domain-modeling",
@@ -24,7 +24,7 @@
       "skill": "domain-modeling",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/domain-modeling",
-      "install": "npx skills@latest add mattpocock/skills --skill domain-modeling -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill domain-modeling -g --agent universal -y"
     },
     "grilling": {
       "path": "~/.agents/skills/grilling",
@@ -32,7 +32,7 @@
       "skill": "grilling",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/grilling",
-      "install": "npx skills@latest add mattpocock/skills --skill grilling -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill grilling -g --agent universal -y"
     },
     "implement": {
       "path": "~/.agents/skills/implement",
@@ -40,7 +40,7 @@
       "skill": "implement",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/implement",
-      "install": "npx skills@latest add mattpocock/skills --skill implement -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill implement -g --agent universal -y"
     },
     "improve-codebase-architecture": {
       "path": "~/.agents/skills/improve-codebase-architecture",
@@ -48,7 +48,7 @@
       "skill": "improve-codebase-architecture",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/improve-codebase-architecture",
-      "install": "npx skills@latest add mattpocock/skills --skill improve-codebase-architecture -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill improve-codebase-architecture -g --agent universal -y"
     },
     "prototype": {
       "path": "~/.agents/skills/prototype",
@@ -56,7 +56,7 @@
       "skill": "prototype",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/prototype",
-      "install": "npx skills@latest add mattpocock/skills --skill prototype -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill prototype -g --agent universal -y"
     },
     "research": {
       "path": "~/.agents/skills/research",
@@ -64,7 +64,7 @@
       "skill": "research",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/research",
-      "install": "npx skills@latest add mattpocock/skills --skill research -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill research -g --agent universal -y"
     },
     "setup-matt-pocock-skills": {
       "path": "~/.agents/skills/setup-matt-pocock-skills",
@@ -72,7 +72,7 @@
       "skill": "setup-matt-pocock-skills",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/setup-matt-pocock-skills",
-      "install": "npx skills@latest add mattpocock/skills --skill setup-matt-pocock-skills -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill setup-matt-pocock-skills -g --agent universal -y"
     },
     "tdd": {
       "path": "~/.agents/skills/tdd",
@@ -80,7 +80,7 @@
       "skill": "tdd",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/tdd",
-      "install": "npx skills@latest add mattpocock/skills --skill tdd -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill tdd -g --agent universal -y"
     },
     "wayfinder": {
       "path": "~/.agents/skills/wayfinder",
@@ -88,7 +88,7 @@
       "skill": "wayfinder",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/wayfinder",
-      "install": "npx skills@latest add mattpocock/skills --skill wayfinder -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill wayfinder -g --agent universal -y"
     },
     "grill-me": {
       "path": "~/.agents/skills/grill-me",
@@ -96,7 +96,7 @@
       "skill": "grill-me",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/mattpocock/skills/grill-me",
-      "install": "npx skills@latest add mattpocock/skills --skill grill-me -g --agent cline -y"
+      "install": "npx skills@latest add mattpocock/skills --skill grill-me -g --agent universal -y"
     },
     "skill-creator": {
       "path": "~/.agents/skills/skill-creator",
@@ -104,7 +104,7 @@
       "skill": "skill-creator",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/anthropics/skills/skill-creator",
-      "install": "npx skills add anthropics/skills --skill skill-creator -g --agent cline -y"
+      "install": "npx skills add anthropics/skills --skill skill-creator -g --agent universal -y"
     },
     "vercel-react-best-practices": {
       "path": "~/.agents/skills/vercel-react-best-practices",
@@ -112,7 +112,7 @@
       "skill": "vercel-react-best-practices",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/vercel-labs/agent-skills/vercel-react-best-practices",
-      "install": "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices -g --agent cline -y"
+      "install": "npx skills add vercel-labs/agent-skills --skill vercel-react-best-practices -g --agent universal -y"
     },
     "web-design-guidelines": {
       "path": "~/.agents/skills/web-design-guidelines",
@@ -120,15 +120,41 @@
       "skill": "web-design-guidelines",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/vercel-labs/agent-skills/web-design-guidelines",
-      "install": "npx skills add vercel-labs/agent-skills --skill web-design-guidelines -g --agent cline -y"
+      "install": "npx skills add vercel-labs/agent-skills --skill web-design-guidelines -g --agent universal -y"
     },
-    "next-cache-components": {
-      "path": "~/.agents/skills/next-cache-components",
-      "source": "vercel-labs/next-skills",
-      "skill": "next-cache-components",
+    "next-cache-components-adoption": {
+      "path": "~/.agents/skills/next-cache-components-adoption",
+      "source": "vercel/next.js",
+      "skill": "next-cache-components-adoption",
       "sourceType": "github",
-      "skillsUrl": "https://skills.sh/vercel-labs/next-skills/next-cache-components",
-      "install": "npx skills add vercel-labs/next-skills --skill next-cache-components -g --agent cline -y"
+      "skillsUrl": "https://skills.sh/vercel/next.js/next-cache-components-adoption",
+      "install": "npx skills add vercel/next.js --skill next-cache-components-adoption -g --agent universal -y",
+      "note": "The universal target installs into ~/.agents/skills, which Pi loads via settings. Using --agent pi would write through the ~/.pi/agent/skills symlink into this repository."
+    },
+    "next-cache-components-optimizer": {
+      "path": "~/.agents/skills/next-cache-components-optimizer",
+      "source": "vercel/next.js",
+      "skill": "next-cache-components-optimizer",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel/next.js/next-cache-components-optimizer",
+      "install": "npx skills add vercel/next.js --skill next-cache-components-optimizer -g --agent universal -y"
+    },
+    "next-dev-loop": {
+      "path": "~/.agents/skills/next-dev-loop",
+      "source": "vercel/next.js",
+      "skill": "next-dev-loop",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel/next.js/next-dev-loop",
+      "install": "npx skills add vercel/next.js --skill next-dev-loop -g --agent universal -y",
+      "note": "Requires agent-browser >=0.31.1."
+    },
+    "next-partial-prefetching-adoption": {
+      "path": "~/.agents/skills/next-partial-prefetching-adoption",
+      "source": "vercel/next.js",
+      "skill": "next-partial-prefetching-adoption",
+      "sourceType": "github",
+      "skillsUrl": "https://skills.sh/vercel/next.js/next-partial-prefetching-adoption",
+      "install": "npx skills add vercel/next.js --skill next-partial-prefetching-adoption -g --agent universal -y"
     },
     "vercel-sandbox": {
       "path": "~/.agents/skills/vercel-sandbox",
@@ -136,7 +162,7 @@
       "skill": "vercel-sandbox",
       "sourceType": "github",
       "skillsUrl": "https://skills.sh/vercel/vercel-plugin/vercel-sandbox",
-      "install": "npx skills add vercel/vercel-plugin --skill vercel-sandbox -g --agent cline -y",
+      "install": "npx skills add vercel/vercel-plugin --skill vercel-sandbox -g --agent universal -y",
       "note": "Local copy may differ from current public upstream. Review before updating."
     }
   }

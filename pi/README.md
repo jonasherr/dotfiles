@@ -68,7 +68,7 @@ Committed skills live in `pi/skills/`, which the dotfiles bootstrap symlinks to 
 
 Public skills from skills.sh and private/internal skills live directly in `~/.agents/skills/<name>` or point to their external source checkout. Pi scans that registry via `settings.json`.
 
-Public skills installed from skills.sh are recorded in `pi/skills.public.json` and installed directly into `~/.agents/skills` with the skills CLI. Private/internal skills stay out of dotfiles and are managed by the global skills CLI lockfile at `~/.agents/.skill-lock.json` or by symlinks to private checkouts.
+Public skills installed from skills.sh are recorded in `pi/skills.public.json` and installed directly into `~/.agents/skills` with the skills CLI. Manifest entries use the Skills CLI's `universal` target, which writes to that shared registry and avoids pretending the skills belong to another agent. Pi loads the registry through `settings.json`. Do not use `--agent pi` while `~/.pi/agent/skills` is a symlink to this repository's `pi/skills`, because the installer would write runtime-managed links into the tracked directory. Private/internal skills stay out of dotfiles and are managed by the global skills CLI lockfile at `~/.agents/.skill-lock.json` or by symlinks to private checkouts.
 
 ### Adding a skill
 
