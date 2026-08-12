@@ -17,24 +17,11 @@ import {
 import { Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui";
 import { Type } from "typebox";
 import { createApprovalBroker } from "../lib/damage-control-approval-broker";
+import { resolveSubagentTools } from "../lib/subagent-tools";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
 const COLLAPSED_OUTPUT_LINES = 12;
-const TEMPORARY_WORKSPACE_TOOLS = [
-  "temporary_workspace_create",
-  "temporary_workspace_list",
-  "temporary_workspace_delete",
-];
-const READ_ONLY_TOOLS = [
-  "read",
-  "grep",
-  "find",
-  "ls",
-  "bash",
-  ...TEMPORARY_WORKSPACE_TOOLS,
-];
-const WRITE_TOOLS = [...READ_ONLY_TOOLS, "edit", "write"];
 
 const SUBAGENT_SYSTEM_PROMPT = [
   "You are a disposable background agent spawned by a parent pi session.",
@@ -177,8 +164,7 @@ async function mapWithConcurrencyLimit<TIn, TOut>(
 }
 
 function resolveTools(options: SubagentRunOptions): string[] {
-  if (options.tools && options.tools.length > 0) return options.tools;
-  return options.readOnly === false ? WRITE_TOOLS : READ_ONLY_TOOLS;
+  return resolveSubagentTools(options);
 }
 
 async function runPiSubagent(
@@ -322,7 +308,8 @@ const TaskItem = Type.Object({
   ),
   tools: Type.Optional(
     Type.Array(Type.String(), {
-      description: "Allowed tool names. Defaults to read-only tools.",
+      description:
+        "Allowed tool names. Managed temporary workspace tools are always added. Defaults to read-only tools.",
     }),
   ),
   readOnly: Type.Optional(
@@ -351,7 +338,8 @@ const SubagentParams = Type.Object({
   ),
   tools: Type.Optional(
     Type.Array(Type.String(), {
-      description: "Allowed tool names for a single task",
+      description:
+        "Allowed tool names for a single task. Managed temporary workspace tools are always added.",
     }),
   ),
   readOnly: Type.Optional(
@@ -373,7 +361,7 @@ export default function (pi: ExtensionAPI) {
       "Use it for parallel reconnaissance, independent checks, or focused work that would bloat the main context.",
       "For parallel work, provide `tasks` only. For one background agent, provide `task` only.",
       "No specialized agent names are required. Every spawned process requests xhigh thinking.",
-      "Tasks are read-only by default. Set `readOnly: false` or pass explicit `tools` only when edits are intended.",
+      "Tasks are read-only by default. Set `readOnly: false` or pass explicit `tools` only when edits are intended. Managed temporary workspace tools are always available.",
     ].join(" "),
     parameters: SubagentParams,
 

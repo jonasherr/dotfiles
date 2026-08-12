@@ -28,6 +28,7 @@ Use model diversity only when it adds an independent perspective. Every spawned 
 
 - Max 8 parallel tasks, 4 concurrent processes.
 - Read-only by default with `read`, `grep`, `find`, `ls`, `bash`, and the managed `temporary_workspace_create`, `temporary_workspace_list`, and `temporary_workspace_delete` tools.
+- Managed temporary workspace tools remain available when an explicit `tools` allowlist is provided.
 - Set `readOnly: false` to additionally allow `edit` and `write` for focused, clearly owned changes.
 - Optional per-task `cwd`, `model`, and `tools`.
 - Damage-control checks still apply inside subagents. Matching calls request approval through the parent pi UI and fail closed if approval is unavailable.
