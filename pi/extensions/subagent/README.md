@@ -30,9 +30,15 @@ Use model diversity only when it adds an independent perspective. Every spawned 
 - Read-only by default with `read`, `grep`, `find`, `ls`, `bash`, and the managed `temporary_workspace_create`, `temporary_workspace_list`, and `temporary_workspace_delete` tools.
 - Managed temporary workspace tools remain available when an explicit `tools` allowlist is provided.
 - Set `readOnly: false` to additionally allow `edit` and `write` for focused, clearly owned changes.
-- Optional per-task `cwd`, `model`, and `tools`.
+- Optional per-task `cwd`, `model`, `tools`, and `isolation`.
 - Damage-control checks still apply inside subagents. Matching calls request approval through the parent pi UI and fail closed if approval is unavailable.
 - Handoffs should be compact and evidence-based, including relevant paths, verification, risks, and uncertainty.
+
+## Worktree isolation
+
+Write-enabled tasks can set `isolation` to `"worktree"` or `"auto"`. During this opt-in rollout, both values create a unique linked worktree from a clean `HEAD` and refuse to start if the primary checkout is dirty, the cwd is outside a Git repository, or setup fails. They never silently fall back to the primary checkout. Read-only tasks stay in the requested checkout.
+
+The default remains `"none"`. Isolated worktrees are retained under `$HOME/.pi/agent/worktrees/` after success, failure, or cancellation. Results include the worktree path, branch, base commit, final dirty state, and manual inspection and removal commands. Inspect retained work before cleanup. Linked worktrees share Git objects, refs, remotes, config, hooks, stash, and credentials, so they are not security sandboxes.
 
 ## Example
 
@@ -42,7 +48,8 @@ Use model diversity only when it adds an independent perspective. Every spawned 
     {
       "task": "Implement the bounded extension changes and report paths plus checks.",
       "model": "openai/gpt-5.6-terra",
-      "readOnly": false
+      "readOnly": false,
+      "isolation": "worktree"
     },
     {
       "task": "Independently review the requested behavior against the diff.",

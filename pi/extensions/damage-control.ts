@@ -9,6 +9,11 @@ import {
   detectTemporaryPathWrite,
   detectTemporaryShellWrite,
 } from "./lib/damage-control-safety"
+import { inspectProductionDeployment } from "./lib/deployment-safety"
+import {
+  classifyGitCommand,
+  detectGitPathspecCwdMistake,
+} from "./lib/git-command-safety"
 import { notifyTerminalPermission } from "./terminal-notify"
 
 const TOOL_WARN_BYTES = 20 * 1024
@@ -217,6 +222,33 @@ function detectBashRisk(command: string): Risk | undefined {
   }
 
   return undefined
+}
+
+function directGitInvocation(command: string): string | undefined {
+  const match = command.match(
+    /^\s*(?:env\s+)?(?:[A-Za-z_][A-Za-z0-9_]*=[^\s]+\s+)*(?=((?:\/[^\s]+\/)?git(?:\s|$)))/,
+  )
+  if (!match) return undefined
+  return command.slice(match[0].length)
+}
+
+function formatDeploymentState(state: {
+  repositoryRoot: string
+  deploymentDirectory: string
+  revision: string
+  branch?: string
+  staged: number
+  modified: number
+  conflicted: number
+  untracked: number
+}): string {
+  const revision = state.branch ?? `detached at ${state.revision.slice(0, 12)}`
+  return [
+    `repository: ${state.repositoryRoot}`,
+    `source: ${revision}`,
+    `deployment directory: ${state.deploymentDirectory}`,
+    `changes: staged ${state.staged}, modified ${state.modified}, conflicted ${state.conflicted}, untracked ${state.untracked}`,
+  ].join("\n")
 }
 
 function detectReadRisk(path: string): Risk | undefined {
@@ -676,6 +708,58 @@ export default function (pi: ExtensionAPI) {
 
       const risk = detectBashRisk(event.input.command)
       if (risk) return requestApproval(ctx, risk)
+
+      const deployment = await inspectProductionDeployment(event.input.command, {
+        cwd: ctx.cwd,
+        interactive: ctx.hasUI,
+      })
+      if (deployment.isProduction && deployment.hardBlock) {
+        return {
+          block: true,
+          reason: `[damage-control] Production deployment blocked: ${deployment.remediation}`,
+        }
+      }
+      if (deployment.isProduction && deployment.requiresApproval) {
+        return requestApproval(ctx, {
+          category: "Production deployment source state",
+          matched: deployment.state
+            ? formatDeploymentState(deployment.state)
+            : deployment.remediation ?? "Git state could not be determined",
+          subject: event.input.command,
+        })
+      }
+
+      const pathspecWarning = await detectGitPathspecCwdMistake(event.input.command, {
+        cwd: ctx.cwd,
+      })
+      if (pathspecWarning) {
+        return requestApproval(ctx, {
+          category: "Likely Git pathspec/cwd mistake",
+          matched: `${pathspecWarning.path}: ${pathspecWarning.remediation}`,
+          subject: event.input.command,
+        })
+      }
+
+      const gitInvocation = directGitInvocation(event.input.command)
+      if (gitInvocation) {
+        const primaryCheckout = process.env.PI_PRIMARY_CHECKOUT
+        const gitSafety = classifyGitCommand(gitInvocation, {
+          cwd: ctx.cwd,
+          primaryCheckout,
+          isolatedTask: Boolean(primaryCheckout),
+        })
+        if (
+          gitSafety.effect === "external-or-remote-mutation" ||
+          gitSafety.effect === "unknown" ||
+          (gitSafety.targetsPrimaryCheckout && gitSafety.effect !== "read-only")
+        ) {
+          return requestApproval(ctx, {
+            category: "Git command requires approval",
+            matched: `${gitSafety.effect}: ${gitSafety.remediation}`,
+            subject: event.input.command,
+          })
+        }
+      }
     }
 
     if (event.toolName === "read" && typeof event.input.path === "string") {

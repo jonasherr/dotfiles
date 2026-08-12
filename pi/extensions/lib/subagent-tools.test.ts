@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  isWriteEnabledSubagent,
   resolveSubagentTools,
   TEMPORARY_WORKSPACE_TOOLS,
 } from "./subagent-tools.ts";
@@ -32,4 +33,30 @@ test("keeps managed temporary workspace tools in default tool sets", () => {
       assert.ok(tools.includes(tool));
     }
   }
+});
+
+test("classifies resolved read-only tools as not write-enabled", () => {
+  assert.equal(isWriteEnabledSubagent(resolveSubagentTools({})), false);
+});
+
+test("classifies resolved write tools as write-enabled", () => {
+  assert.equal(
+    isWriteEnabledSubagent(resolveSubagentTools({ readOnly: false })),
+    true,
+  );
+});
+
+test("classifies explicit tool lists based on edit or write", () => {
+  assert.equal(
+    isWriteEnabledSubagent(resolveSubagentTools({ tools: ["bash"] })),
+    false,
+  );
+  assert.equal(
+    isWriteEnabledSubagent(resolveSubagentTools({ tools: ["edit"] })),
+    true,
+  );
+  assert.equal(
+    isWriteEnabledSubagent(resolveSubagentTools({ tools: ["write"] })),
+    true,
+  );
 });

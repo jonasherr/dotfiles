@@ -17,7 +17,16 @@ import {
 import { Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui";
 import { Type } from "typebox";
 import { createApprovalBroker } from "../lib/damage-control-approval-broker";
-import { resolveSubagentTools } from "../lib/subagent-tools";
+import {
+  isWriteEnabledSubagent,
+  resolveSubagentTools,
+} from "../lib/subagent-tools";
+import {
+  createWorktreeIsolation,
+  inspectWorktreeDirtyState,
+  type WorktreeDirtyState,
+  WorktreeIsolationError,
+} from "../lib/worktree-isolation";
 
 const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
@@ -62,12 +71,42 @@ interface UsageStats {
   turns: number;
 }
 
+type IsolationMode = "auto" | "worktree" | "none";
+
+type IsolationMetadata =
+  | {
+      requested: IsolationMode;
+      applied: "none";
+      reason: "default" | "explicit-none" | "read-only";
+    }
+  | {
+      requested: "auto" | "worktree";
+      applied: "worktree";
+      repositoryRoot: string;
+      worktreePath: string;
+      branch: string;
+      baseCommit: string;
+      requestedCwd: string;
+      cwd: string;
+      initialDirtyState: WorktreeDirtyState;
+      finalDirtyState?: WorktreeDirtyState;
+      retained: true;
+      recovery: { inspect: string; list: string; remove: string };
+    }
+  | {
+      requested: "auto" | "worktree";
+      applied: "refused";
+      reason: string;
+      message: string;
+    };
+
 interface SubagentRunOptions {
   task: string;
   cwd?: string;
   model?: string;
   tools?: string[];
   readOnly?: boolean;
+  isolation?: IsolationMode;
 }
 
 interface RunResult {
@@ -81,6 +120,7 @@ interface RunResult {
   thinking: "xhigh";
   stopReason?: string;
   errorMessage?: string;
+  isolation: IsolationMetadata;
 }
 
 interface SubagentDetails {
@@ -115,6 +155,19 @@ function getFinalOutput(messages: Message[]): string {
     }
   }
   return "";
+}
+
+function formatIsolation(result: RunResult): string | undefined {
+  if (result.isolation.applied === "none") return undefined;
+  if (result.isolation.applied === "refused") {
+    return `Isolation refused: ${result.isolation.message}`;
+  }
+  const state = result.isolation.finalDirtyState ?? result.isolation.initialDirtyState;
+  return [
+    `Worktree retained: ${result.isolation.worktreePath}`,
+    `Branch: ${result.isolation.branch} (base ${result.isolation.baseCommit.slice(0, 12)})`,
+    `State: ${state.dirty ? `staged:${state.stagedFiles}, unstaged:${state.unstagedFiles}, untracked:${state.untrackedFiles}, conflicted:${state.conflictedFiles}` : "clean"}`,
+  ].join("\n");
 }
 
 function getDisplayItems(messages: Message[]): DisplayItem[] {
@@ -174,8 +227,68 @@ async function runPiSubagent(
   onUpdate: OnUpdateCallback | undefined,
   makeDetails: (results: RunResult[]) => SubagentDetails,
   env: NodeJS.ProcessEnv,
+  owner: { sessionId: string; taskId: string },
 ): Promise<RunResult> {
-  const cwd = options.cwd ?? defaultCwd;
+  const requestedCwd = options.cwd ?? defaultCwd;
+  const requestedIsolation = options.isolation ?? "none";
+  const tools = resolveTools(options);
+  let cwd = requestedCwd;
+  let isolation: IsolationMetadata = {
+    requested: requestedIsolation,
+    applied: "none",
+    reason: options.isolation === "none" ? "explicit-none" : "default",
+  };
+
+  if (requestedIsolation !== "none" && !isWriteEnabledSubagent(tools)) {
+    isolation = {
+      requested: requestedIsolation,
+      applied: "none",
+      reason: "read-only",
+    };
+  } else if (requestedIsolation !== "none") {
+    try {
+      const prepared = await createWorktreeIsolation({
+        cwd: requestedCwd,
+        sessionId: owner.sessionId,
+        taskId: owner.taskId,
+      });
+      cwd = prepared.childCwd;
+      isolation = {
+        requested: requestedIsolation,
+        applied: "worktree",
+        repositoryRoot: prepared.repositoryRoot,
+        worktreePath: prepared.worktreePath,
+        branch: prepared.branch,
+        baseCommit: prepared.baseCommit,
+        requestedCwd,
+        cwd,
+        initialDirtyState: prepared.dirtyState,
+        retained: true,
+        recovery: prepared.recovery,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        task: options.task,
+        cwd: requestedCwd,
+        exitCode: 1,
+        messages: [],
+        stderr: "",
+        usage: emptyUsage(),
+        model: options.model,
+        thinking: "xhigh",
+        errorMessage: message,
+        isolation: {
+          requested: requestedIsolation,
+          applied: "refused",
+          reason:
+            error instanceof WorktreeIsolationError ? error.code : "create-failed",
+          message,
+        },
+      };
+    }
+  }
+
   const result: RunResult = {
     task: options.task,
     cwd,
@@ -185,6 +298,7 @@ async function runPiSubagent(
     usage: emptyUsage(),
     model: options.model,
     thinking: "xhigh",
+    isolation,
   };
 
   const args = [
@@ -198,7 +312,7 @@ async function runPiSubagent(
     "xhigh",
   ];
   if (options.model?.trim()) args.push("--model", options.model);
-  args.push("--tools", resolveTools(options).join(","));
+  args.push("--tools", tools.join(","));
   args.push(`Task:\n\n${options.task}`);
 
   const emitUpdate = () => {
@@ -219,7 +333,10 @@ async function runPiSubagent(
     const invocation = getPiInvocation(args);
     const proc = spawn(invocation.command, invocation.args, {
       cwd,
-      env,
+      env:
+        result.isolation.applied === "worktree"
+          ? { ...env, PI_PRIMARY_CHECKOUT: result.isolation.repositoryRoot }
+          : env,
       shell: false,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -293,6 +410,16 @@ async function runPiSubagent(
     result.exitCode = 1;
     result.errorMessage = "Subagent was aborted";
   }
+  if (result.isolation.applied === "worktree") {
+    try {
+      result.isolation.finalDirtyState = await inspectWorktreeDirtyState(
+        result.isolation.worktreePath,
+      );
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      result.stderr += `\nCould not inspect retained worktree: ${detail}`;
+    }
+  }
   return result;
 }
 
@@ -317,6 +444,16 @@ const TaskItem = Type.Object({
       description:
         "Use read-only tools by default. Set false to allow edit/write tools.",
       default: true,
+    }),
+  ),
+  isolation: Type.Optional(
+    Type.Union([
+      Type.Literal("auto"),
+      Type.Literal("worktree"),
+      Type.Literal("none"),
+    ], {
+      description:
+        "Checkout isolation for write-enabled tasks. Defaults to none. auto and worktree refuse unsafe setup instead of falling back.",
     }),
   ),
 });
@@ -347,6 +484,16 @@ const SubagentParams = Type.Object({
       description:
         "Use read-only tools for a single task by default. Set false to allow edits.",
       default: true,
+    }),
+  ),
+  isolation: Type.Optional(
+    Type.Union([
+      Type.Literal("auto"),
+      Type.Literal("worktree"),
+      Type.Literal("none"),
+    ], {
+      description:
+        "Checkout isolation for a write-enabled task. Defaults to none.",
     }),
   ),
 });
@@ -411,6 +558,11 @@ export default function (pi: ExtensionAPI) {
           usage: emptyUsage(),
           model: task.model,
           thinking: "xhigh",
+          isolation: {
+            requested: task.isolation ?? "none",
+            applied: "none",
+            reason: task.isolation === "none" ? "explicit-none" : "default",
+          },
         }));
 
         const emitParallelUpdate = () => {
@@ -444,6 +596,10 @@ export default function (pi: ExtensionAPI) {
               },
               makeDetails("parallel"),
               approvalBroker.env,
+              {
+                sessionId: ctx.sessionManager.getSessionId(),
+                taskId: `${_toolCallId}-${index}`,
+              },
             );
             allResults[index] = result;
             emitParallelUpdate();
@@ -456,7 +612,8 @@ export default function (pi: ExtensionAPI) {
           const output = getFinalOutput(r.messages).trim();
           const preview =
             output.length > 120 ? `${output.slice(0, 120)}...` : output;
-          return `[${i + 1}] ${r.exitCode === 0 ? "completed" : "failed"}: ${preview || r.errorMessage || r.stderr || "(no output)"}`;
+          const isolation = formatIsolation(r);
+          return `[${i + 1}] ${r.exitCode === 0 ? "completed" : "failed"}: ${preview || r.errorMessage || r.stderr || "(no output)"}${isolation ? `\n${isolation}` : ""}`;
         });
 
         return {
@@ -480,11 +637,16 @@ export default function (pi: ExtensionAPI) {
           model: params.model,
           tools: params.tools,
           readOnly: params.readOnly,
+          isolation: params.isolation,
         },
         signal,
         onUpdate,
         makeDetails("single"),
         approvalBroker.env,
+        {
+          sessionId: ctx.sessionManager.getSessionId(),
+          taskId: _toolCallId,
+        },
       ).finally(() => approvalBroker.close());
 
       const isError =
@@ -625,6 +787,9 @@ export default function (pi: ExtensionAPI) {
           }
           container.addChild(new Spacer(1));
           container.addChild(new Markdown(task.output, 0, 0, mdTheme));
+          const isolation = formatIsolation(r);
+          if (isolation)
+            container.addChild(new Text(theme.fg("warning", isolation), 0, 0));
           if (task.usage)
             container.addChild(new Text(theme.fg("dim", task.usage), 0, 0));
           return container;
@@ -681,6 +846,9 @@ export default function (pi: ExtensionAPI) {
             ),
           );
           container.addChild(new Markdown(task.output, 0, 0, mdTheme));
+          const isolation = formatIsolation(r);
+          if (isolation)
+            container.addChild(new Text(theme.fg("warning", isolation), 0, 0));
           if (task.usage)
             container.addChild(new Text(theme.fg("dim", task.usage), 0, 0));
         }

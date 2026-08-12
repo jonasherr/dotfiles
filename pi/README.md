@@ -26,7 +26,7 @@ The selector symlinks the chosen tracked profile to `~/.pi/agent/settings.json`.
 
 ## Extensions
 
-- `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, or exfiltration patterns. It hard-blocks recursive deletion aimed at root, home, the active workspace, aliases resolving to those locations, or targets widened by non-fail-closed shell variables. It also blocks shell-created temporary files and directories, directing agents to pipes/stdout or the managed workspace tool.
+- `extensions/damage-control.ts` prompts for human approval before pi runs commands or file operations matching dangerous, destructive, secret-access, exfiltration, unknown Git, or remote Git mutation patterns. It hard-blocks recursive deletion aimed at root, home, the active workspace, aliases resolving to those locations, or targets widened by non-fail-closed shell variables. It also blocks shell-created temporary files and directories, warns about likely nested-cwd Git path mistakes, and makes repository state visible before production Vercel deployments. Dirty production sources require approval. Indeterminate sources are blocked without an interactive approver.
 - `extensions/temporary-workspace.ts` provides separate create, list, and delete tools for process-owned disposable workspaces. Create takes no arguments and autogenerates the ID and path. Delete accepts only the returned ID. Retained outputs must be moved out before deletion.
 - `extensions/papercuts.ts` lets agents silently append avoidable friction to `$HOME/.local/share/papercuts/papercuts.md`. Each entry records a UTC timestamp, working directory, optional Pi session ID, and a short credential-redacted description.
 - `extensions/terminal-notify.ts` starts the Kitty/meow sidebar daemon when needed and sends Kitty/sidebar plus macOS desktop notifications when pi is idle, asking a question, or waiting for damage-control approval.
@@ -38,6 +38,8 @@ The selector symlinks the chosen tracked profile to `~/.pi/agent/settings.json`.
 The `subagent` tool is intentionally small: it starts one or more disposable `pi -p --no-session` processes and returns compact, evidence-based handoffs. For substantial work, the parent session acts as an orchestrator. It delegates most independent reading and research, focused implementation, and verification, parallelizes independent tracks early, then evaluates the handoffs and owns final synthesis. It should not repeat delegated reconnaissance. Small tasks and tightly sequential work stay in the parent.
 
 There are no specialized subagent personas or prompt templates. The tool takes either a single `task` or a parallel `tasks` array. By default, subagents get read-only tools: `read`, `grep`, `find`, `ls`, `bash`, and the three managed `temporary_workspace_*` tools. Set `readOnly: false` or pass explicit `tools` only for focused edits with clear ownership.
+
+Write-enabled tasks may set `isolation: "worktree"` or `"auto"` to run in a unique linked worktree created from a clean `HEAD`. Both modes fail closed when isolation cannot be prepared and never fall back to the primary checkout. Worktrees are retained under `$HOME/.pi/agent/worktrees/` on success, failure, and cancellation. The result includes branch, source commit, final dirty state, and recovery commands. Read-only tasks remain in the requested checkout. The rollout default is `isolation: "none"`.
 
 Model selection remains orchestrator policy:
 

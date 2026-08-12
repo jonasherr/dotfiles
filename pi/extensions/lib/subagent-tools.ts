@@ -19,6 +19,12 @@ export const WRITE_SUBAGENT_TOOLS = [
   "write",
 ];
 
+const WRITE_ENABLED_TOOL_NAMES = new Set(["edit", "write"]);
+
+export function isWriteEnabledSubagent(tools: string[]): boolean {
+  return tools.some((tool) => WRITE_ENABLED_TOOL_NAMES.has(tool));
+}
+
 export function resolveSubagentTools(options: {
   tools?: string[];
   readOnly?: boolean;
