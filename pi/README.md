@@ -59,7 +59,6 @@ Use model diversity only when it adds an independent perspective. Every subagent
 - `improve-codebase-architecture` scans active code for opportunities to deepen modules, presents a visual report, then grills through the selected candidate.
 - `implement` implements a spec or ticket using TDD at agreed seams, runs focused and full verification, invokes `code-review`, and commits the completed work.
 - `code-review` reviews a fixed diff independently against repository standards and the originating spec.
-- `handoff` compacts work for another session. The local adaptation returns immediate handoffs in chat and uses managed workspaces or active tracker tickets for files instead of unmanaged OS temp paths.
 - `setup-matt-pocock-skills` configures the per-repository issue tracker and domain-documentation conventions required by Wayfinder and related engineering skills.
 
 ## Skills
