@@ -11,8 +11,8 @@ brew install node@24
 bun install -g dev3000@0.0.178 --registry https://registry.npmjs.org
 brew install --cask whispering
 
-brew install jesseduffield/lazygit/lazygit
-brew install jesseduffield/lazydocker/lazydocker
+brew install lazygit
+brew install lazydocker
 
 brew install neovim
 
@@ -30,11 +30,9 @@ brew install uv
 
 brew install fnm
 
-brew tap modem-dev/tap
 brew install modem-dev/tap/hunk
 
-brew tap angristan/tap
-brew install fast-resume
+brew install angristan/tap/fast-resume
 
 brew tap aurorascharff/clicklight https://github.com/aurorascharff/ClickLight
 brew install --cask aurorascharff/clicklight/clicklight
