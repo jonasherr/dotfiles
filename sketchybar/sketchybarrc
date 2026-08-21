@@ -67,7 +67,7 @@ for sid in "${WORKSPACES[@]}"; do
     label.drawing=off \
     label.font="sketchybar-app-font:Regular:14.0" \
     label.y_offset=-1 \
-    click_script="aerospace workspace $sid" \
+    click_script="aerospace workspace \"$sid\" && sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=\"$sid\"" \
     script="$CONFIG_DIR/plugins/aerospace.sh $sid"
 done
 
