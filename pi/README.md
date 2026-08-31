@@ -46,7 +46,6 @@ Model selection remains orchestrator policy:
 - `openai/gpt-5.6-sol`: highest-stakes, ambiguous, long-horizon work.
 - `openai/gpt-5.6-terra`: bounded engineering, implementation, and debugging.
 - `openai/gpt-5.6-luna`: mechanical or high-volume evidence gathering and transformation.
-- `zai/glm-5.2`: independent challenge, critique, and review.
 - `moonshotai/kimi-k3`: huge or multimodal corpora.
 - `anthropic/claude-opus-5`: prose and final drafting.
 
