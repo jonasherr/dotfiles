@@ -30,9 +30,8 @@ alias lt="eza --icons=always -T -L 2 --ignore-glob=node_modules"
 alias lsa="eza --icons=always -a"
 alias lta="eza --icons=always -T -L 2 --ignore-glob=node_modules -a"
 
-# Package managers are resolved via PATH/corepack shims.
-# Do not alias npm/pnpm/yarn through corepack here: stale corepack installs in
-# /usr/local can shadow the Homebrew/Node shims and select outdated versions.
+# pnpm is installed independently through Homebrew, while npm follows fnm's Node.
+# Do not alias package managers through Corepack: Node 25 no longer bundles it.
 
 # LOCATION ALIASES -----------------------------------------------------------------
 alias desktop="cd ~/Desktop"

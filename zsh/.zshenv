@@ -23,6 +23,8 @@ export PATH="$PNPM_HOME:$PATH"
 export PATH="$HOME/.bun/bin:$PATH"
 
 # fnm
+# Keep Corepack disabled for current and future fnm Node installations.
+export FNM_COREPACK_ENABLED=false
 FNM_PATH="$HOME/Library/Application Support/fnm"
 if [ -d "$FNM_PATH" ]; then
   export PATH="$FNM_PATH:$PATH"

@@ -160,6 +160,9 @@ export PAGER="less -S"
 # fnm (Node version manager)
 eval "$(fnm env --use-on-cd --shell zsh --log-level=quiet)"
 
+# Keep pnpm independent from the Node version managed by fnm.
+export PATH="/opt/homebrew/opt/pnpm/bin:$PATH"
+
 # Yazi shell wrapper
 function y() {
   local tmp="$(mktemp -t "yazi-cwd.XXXXXX")"

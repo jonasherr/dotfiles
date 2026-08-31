@@ -29,6 +29,7 @@ brew install pngpaste
 brew install uv
 
 brew install fnm
+brew install pnpm
 
 brew install modem-dev/tap/hunk
 

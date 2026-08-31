@@ -8,14 +8,13 @@ macOS dotfiles: Neovim, Kanata, Kitty, Zsh, SketchyBar, and related tools.
 - **Never hardcode user home paths** - do not write `/Users/<name>/...` paths. Use `$HOME`, `~`, `$DOTFILES`, or portable relative symlinks.
 - **`$DOTFILES` env var** is set in `~/.env.sh` and used throughout
 
-## Package Managers & Corepack
-
-This system uses **corepack** to manage package managers. Corepack shims are installed in PATH (`/opt/homebrew/bin/pnpm`, `/opt/homebrew/bin/yarn`) — so `pnpm`, `yarn`, `npx`, and `npm` all route through corepack automatically.
+## Package Managers
 
 - **Node version manager**: `fnm` (configured in `.zshenv` and `zsh.rc`)
-- **pnpm/yarn**: Always go through corepack shims — do NOT install pnpm or yarn globally
-- Use `pnpm` and `yarn` directly — the corepack shims handle version resolution per-project via `packageManager` field in `package.json`
-- The zsh aliases (`alias pnpm="corepack pnpm"`) are redundant with the shims and only apply to interactive shells — agents should call `pnpm`/`yarn` directly
+- **pnpm**: Installed independently through Homebrew, so it does not depend on Corepack; it runs using the active Node version
+- **Project versions**: Pin pnpm with the `packageManager` field in `package.json`
+- **npm**: Use the npm shipped with the fnm-managed Node version
+- **Yarn**: Not used in this setup
 
 ## Build & Verify Commands
 
