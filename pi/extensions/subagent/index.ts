@@ -8,7 +8,8 @@
 import { spawn } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import { fileURLToPath } from "node:url";
+import type { AgentToolResult from "@mariozechner/pi-agent-core";
 import type { Message } from "@mariozechner/pi-ai";
 import {
   type ExtensionAPI,
@@ -32,11 +33,22 @@ const MAX_PARALLEL_TASKS = 8;
 const MAX_CONCURRENCY = 4;
 const COLLAPSED_OUTPUT_LINES = 12;
 
+const REQUIRED_CHILD_EXTENSIONS = [
+  fileURLToPath(new URL("../temporary-workspace.ts", import.meta.url)),
+  fileURLToPath(new URL("../damage-control.ts", import.meta.url)),
+];
+
 const SUBAGENT_SYSTEM_PROMPT = [
   "You are a disposable background agent spawned by a parent pi session.",
   "Work independently on the given task, then return a compact handoff.",
   "Do not ask the user questions. State assumptions and uncertainty instead.",
   "Keep output concise. Include file paths and verification when relevant.",
+  "Scratch-file policy:",
+  "- Prefer stdout or pipes when no file is needed.",
+  "- Before creating any disposable file, directory, download, log, screenshot, test artifact, or build artifact, call temporary_workspace_create with no arguments.",
+  "- Use the returned workspace path. Never create scratch files under /tmp, $TMPDIR, ./tmp, ./temp, or another ad hoc temporary path.",
+  "- Move anything that must survive to an intentional project or output path before calling temporary_workspace_delete.",
+  "- Delete the managed workspace when finished. If a tool creates artifacts outside your control, report their paths in the handoff.",
 ].join("\n");
 
 function formatTokens(count: number): string {
@@ -312,6 +324,9 @@ async function runPiSubagent(
     "xhigh",
   ];
   if (options.model?.trim()) args.push("--model", options.model);
+  for (const extensionPath of REQUIRED_CHILD_EXTENSIONS) {
+    if (fs.existsSync(extensionPath)) args.push("--extension", extensionPath);
+  }
   args.push("--tools", tools.join(","));
   args.push(`Task:\n\n${options.task}`);
 

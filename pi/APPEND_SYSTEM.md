@@ -17,6 +17,10 @@ When writing prose for Jonas, keep it concise and conversational. Make it someth
 
 For Next.js 16.3+ framework edits, use `next-dev-loop` for runtime verification. Start `next dev` separately and let `next-dev-loop` own its browser session. Use `d3k` instead when a unified local server, browser, console, network, and screenshot timeline is more useful. Never run d3k and `next-dev-loop` as competing runtime or browser owners in the same session. For other runnable local web applications, use d3k by default. Use `playwright-cli` for external or deployed sites, cross-browser checks, Playwright tests, request mocking, tracing, and browser automation outside a d3k-managed runtime. Use `curl` when a simple HTTP fetch is enough, for example checking headers, downloading static text, or reading an API response.
 
+# Temporary artifacts
+
+Prefer stdout or pipes when no file is needed. Before creating any disposable file, directory, download, log, screenshot, test artifact, or build artifact, call `temporary_workspace_create` with no arguments and use its returned path. Do not create scratch files under `/tmp`, `$TMPDIR`, `./tmp`, `./temp`, or another ad hoc temporary path. Move anything that must survive to an intentional project or output path before calling `temporary_workspace_delete`, then delete the managed workspace. This policy applies to subagents and the main agent. If a tool or external program creates artifacts outside your control, keep them scoped to the tool's documented artifact directory and report them.
+
 # Context hygiene
 
 Avoid pulling generated, vendored, or very large files into context unless the user explicitly asks. For searches, exclude `node_modules`, `.next`, `dist`, `build`, `coverage`, and `*.map` by default. Prefer targeted `rg`, `find`, and `read` calls with offsets/limits over broad dumps. If full raw output is needed, save it to a file and inspect compact summaries.

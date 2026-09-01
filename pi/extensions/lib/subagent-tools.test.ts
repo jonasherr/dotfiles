@@ -6,6 +6,7 @@ import {
   resolveSubagentTools,
   TEMPORARY_WORKSPACE_TOOLS,
 } from "./subagent-tools.ts";
+import { readFile } from "node:fs/promises";
 
 test("adds managed temporary workspace tools to an explicit allowlist", () => {
   assert.deepEqual(resolveSubagentTools({ tools: ["bash", "read"] }), [
@@ -34,6 +35,17 @@ test("keeps managed temporary workspace tools in default tool sets", () => {
     }
   }
 });
+
+test("keeps the child subagent scratch-file policy explicit", async () => {
+  const source = await readFile(new URL("../subagent/index.ts", import.meta.url), "utf8")
+  assert.match(source, /Before creating any disposable file/)
+  assert.match(source, /temporary_workspace_create/)
+  assert.match(source, /Never create scratch files under \/tmp/)
+  assert.match(source, /temporary_workspace_delete/)
+  assert.match(source, /REQUIRED_CHILD_EXTENSIONS/)
+  assert.match(source, /--extension/)
+  assert.match(source, /temporary-workspace\.ts/)
+})
 
 test("classifies resolved read-only tools as not write-enabled", () => {
   assert.equal(isWriteEnabledSubagent(resolveSubagentTools({})), false);
