@@ -36,6 +36,15 @@ test("keeps managed temporary workspace tools in default tool sets", () => {
   }
 });
 
+test("allows callers to set the child subagent thinking level", async () => {
+  const source = await readFile(new URL("../subagent/index.ts", import.meta.url), "utf8")
+  assert.match(source, /thinking\?: ThinkingLevel/)
+  assert.match(source, /thinking: options\.thinking \?\? "low"/)
+  assert.match(source, /thinking: task\.thinking \?\? "low"/)
+  assert.match(source, /"--thinking",\n    result\.thinking/)
+  assert.match(source, /Set thinking per task; it defaults to low/)
+})
+
 test("keeps the child subagent scratch-file policy explicit", async () => {
   const source = await readFile(new URL("../subagent/index.ts", import.meta.url), "utf8")
   assert.match(source, /Before creating any disposable file/)

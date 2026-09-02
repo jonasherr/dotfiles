@@ -21,7 +21,7 @@ Model selection is orchestrator policy, not extension logic. Set `model` per tas
 - `moonshotai/kimi-k3`: huge or multimodal corpora.
 - `anthropic/claude-opus-5`: prose and final drafting.
 
-Use model diversity only when it adds an independent perspective. Every spawned Pi process is invoked with `--thinking xhigh`; `thinking` is not a tool input. A provider may map or clamp unsupported thinking levels.
+Use model diversity only when it adds an independent perspective. Set `thinking` per task: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. It defaults to `"low"`; start low and raise it only when task complexity warrants it. A provider may map or clamp unsupported thinking levels.
 
 ## Defaults
 
@@ -29,7 +29,7 @@ Use model diversity only when it adds an independent perspective. Every spawned 
 - Read-only by default with `read`, `grep`, `find`, `ls`, `bash`, and the managed `temporary_workspace_create`, `temporary_workspace_list`, and `temporary_workspace_delete` tools.
 - Managed temporary workspace tools remain available when an explicit `tools` allowlist is provided.
 - Set `readOnly: false` to additionally allow `edit` and `write` for focused, clearly owned changes.
-- Optional per-task `cwd`, `model`, `tools`, and `isolation`.
+- Optional per-task `cwd`, `model`, `thinking`, `tools`, and `isolation`.
 - Damage-control checks still apply inside subagents. Matching calls request approval through the parent pi UI and fail closed if approval is unavailable.
 - Handoffs should be compact and evidence-based, including relevant paths, verification, risks, and uncertainty.
 
@@ -47,12 +47,9 @@ The default remains `"none"`. Isolated worktrees are retained under `$HOME/.pi/a
     {
       "task": "Implement the bounded extension changes and report paths plus checks.",
       "model": "openai/gpt-5.6-terra",
+      "thinking": "low",
       "readOnly": false,
       "isolation": "worktree"
-    },
-    {
-      "task": "Independently review the requested behavior against the diff.",
-      "model": "zai/glm-5.2"
     }
   ]
 }

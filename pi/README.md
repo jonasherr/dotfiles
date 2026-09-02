@@ -30,7 +30,7 @@ The selector symlinks the chosen tracked profile to `~/.pi/agent/settings.json`.
 - `extensions/temporary-workspace.ts` provides separate create, list, and delete tools for process-owned disposable workspaces. Create takes no arguments and autogenerates the ID and path. Delete accepts only the returned ID. Retained outputs must be moved out before deletion.
 - `extensions/papercuts.ts` lets agents silently append avoidable friction to `$HOME/.local/share/papercuts/papercuts.md`. Each entry records a UTC timestamp, working directory, optional Pi session ID, and a short credential-redacted description.
 - `extensions/terminal-notify.ts` starts the Kitty/meow sidebar daemon when needed and sends Kitty/sidebar plus macOS desktop notifications when pi is idle, asking a question, or waiting for damage-control approval.
-- `extensions/subagent/` adds a generic `subagent` tool that spawns isolated `pi -p --no-session` background agents. It supports single and parallel runs, always requests `xhigh` thinking, and keeps model selection in the parent orchestrator. Tasks are read-only by default, and matching damage-control checks request approval through the parent UI.
+- `extensions/subagent/` adds a generic `subagent` tool that spawns isolated `pi -p --no-session` background agents. It supports single and parallel runs, defaults to `low` thinking, and lets the parent orchestrator select a higher level per task. Tasks are read-only by default, and matching damage-control checks request approval through the parent UI.
 - If no interactive UI is available, matching damage-control tool calls are blocked by default.
 
 ## Subagents
@@ -49,7 +49,7 @@ Model selection remains orchestrator policy:
 - `moonshotai/kimi-k3`: huge or multimodal corpora.
 - `anthropic/claude-opus-5`: prose and final drafting.
 
-Use model diversity only when it adds an independent perspective. Every subagent invocation requests `--thinking xhigh`; providers may map or clamp unsupported levels. The thinking level is not configurable through the tool input.
+Use model diversity only when it adds an independent perspective. Each subagent invocation defaults to `--thinking low`; set `thinking` per task to `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Start low and raise it only when task complexity warrants it. Providers may map or clamp unsupported levels.
 
 ## Prompt templates
 

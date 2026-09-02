@@ -84,6 +84,7 @@ interface UsageStats {
 }
 
 type IsolationMode = "auto" | "worktree" | "none";
+type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 
 type IsolationMetadata =
   | {
@@ -116,6 +117,7 @@ interface SubagentRunOptions {
   task: string;
   cwd?: string;
   model?: string;
+  thinking?: ThinkingLevel;
   tools?: string[];
   readOnly?: boolean;
   isolation?: IsolationMode;
@@ -129,7 +131,7 @@ interface RunResult {
   stderr: string;
   usage: UsageStats;
   model?: string;
-  thinking: "xhigh";
+  thinking: ThinkingLevel;
   stopReason?: string;
   errorMessage?: string;
   isolation: IsolationMetadata;
@@ -288,7 +290,7 @@ async function runPiSubagent(
         stderr: "",
         usage: emptyUsage(),
         model: options.model,
-        thinking: "xhigh",
+        thinking: options.thinking ?? "low",
         errorMessage: message,
         isolation: {
           requested: requestedIsolation,
@@ -309,7 +311,7 @@ async function runPiSubagent(
     stderr: "",
     usage: emptyUsage(),
     model: options.model,
-    thinking: "xhigh",
+    thinking: options.thinking ?? "low",
     isolation,
   };
 
@@ -321,7 +323,7 @@ async function runPiSubagent(
     "--append-system-prompt",
     SUBAGENT_SYSTEM_PROMPT,
     "--thinking",
-    "xhigh",
+    result.thinking,
   ];
   if (options.model?.trim()) args.push("--model", options.model);
   for (const extensionPath of REQUIRED_CHILD_EXTENSIONS) {
@@ -448,6 +450,20 @@ const TaskItem = Type.Object({
       description: "Model for this task. Defaults to current pi settings.",
     }),
   ),
+  thinking: Type.Optional(
+    Type.Union([
+      Type.Literal("off"),
+      Type.Literal("minimal"),
+      Type.Literal("low"),
+      Type.Literal("medium"),
+      Type.Literal("high"),
+      Type.Literal("xhigh"),
+      Type.Literal("max"),
+    ], {
+      description:
+        "Thinking level for this task. Defaults to low; start low and raise it only when task complexity warrants it.",
+    }),
+  ),
   tools: Type.Optional(
     Type.Array(Type.String(), {
       description:
@@ -488,6 +504,20 @@ const SubagentParams = Type.Object({
       description: "Model for a single task. Defaults to current pi settings.",
     }),
   ),
+  thinking: Type.Optional(
+    Type.Union([
+      Type.Literal("off"),
+      Type.Literal("minimal"),
+      Type.Literal("low"),
+      Type.Literal("medium"),
+      Type.Literal("high"),
+      Type.Literal("xhigh"),
+      Type.Literal("max"),
+    ], {
+      description:
+        "Thinking level for a single task. Defaults to low; start low and raise it only when task complexity warrants it.",
+    }),
+  ),
   tools: Type.Optional(
     Type.Array(Type.String(), {
       description:
@@ -522,7 +552,7 @@ export default function (pi: ExtensionAPI) {
       "For substantial work, use it proactively while the parent orchestrates and synthesizes compact handoffs.",
       "Use it for parallel reconnaissance, independent checks, or focused work that would bloat the main context.",
       "For parallel work, provide `tasks` only. For one background agent, provide `task` only.",
-      "No specialized agent names are required. Every spawned process requests xhigh thinking.",
+      "No specialized agent names are required. Set thinking per task; it defaults to low. Start low and raise it only when task complexity warrants it.",
       "Tasks are read-only by default. Set `readOnly: false` or pass explicit `tools` only when edits are intended. Managed temporary workspace tools are always available.",
     ].join(" "),
     parameters: SubagentParams,
@@ -572,7 +602,7 @@ export default function (pi: ExtensionAPI) {
           stderr: "",
           usage: emptyUsage(),
           model: task.model,
-          thinking: "xhigh",
+          thinking: task.thinking ?? "low",
           isolation: {
             requested: task.isolation ?? "none",
             applied: "none",
@@ -650,6 +680,7 @@ export default function (pi: ExtensionAPI) {
           task: params.task!,
           cwd: params.cwd,
           model: params.model,
+          thinking: params.thinking,
           tools: params.tools,
           readOnly: params.readOnly,
           isolation: params.isolation,

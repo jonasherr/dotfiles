@@ -48,7 +48,7 @@ Route by task shape:
 - Kimi K3 (`moonshotai/kimi-k3`): huge or multimodal corpora.
 - Claude Opus 5 (`anthropic/claude-opus-5`): prose and final drafting.
 
-Every subagent must run with `xhigh` thinking. The tool requests this automatically. Choose model diversity only when it adds a genuinely independent perspective, not for variety alone.
+Start subagents at `low` thinking. Raise the per-task `thinking` level only when task complexity warrants it: use `medium` for bounded implementation/debugging, `high` for complex reviews or diagnosis, and reserve `xhigh`/`max` for genuinely difficult reasoning. Choose model diversity only when it adds a genuinely independent perspective, not for variety alone.
 
 # Verification
 
