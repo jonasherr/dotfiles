@@ -40,77 +40,63 @@
 					"type": "url",
 					"iconPath": "magnifyingglass",
 					"value": "raycast://extensions/jonas_herrmannsdorfer/nvim-markdown-notes/search-notes"
-				},
-				{
-					"key": "k",
-					"label": "Kitty Sessions",
-					"type": "url",
-					"iconPath": "terminal",
-					"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
 				}
 			]
 		},
 		{
 			"key": "k",
-			"label": "Kitty",
+			"label": "Herdr",
 			"type": "group",
 			"iconPath": "terminal",
 			"actions": [
-				{
-					"key": "s",
-					"label": "Kitty Sessions",
-					"type": "url",
-					"iconPath": "terminal",
-					"value": "raycast://extensions/jonas/kitty-sessions/switch-session"
-				},
 				{
 					"key": "n",
 					"label": "Notes",
 					"type": "command",
 					"iconPath": "note.text",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh notes'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh notes \"$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes\"'"
 				},
 				{
 					"key": "d",
 					"label": "Dotfiles",
 					"type": "command",
 					"iconPath": "gearshape",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh dotfiles'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh dotfiles \"$HOME/Projects/dotfiles\"'"
 				},
 				{
 					"key": "a",
 					"label": "Agent Help",
 					"type": "command",
 					"iconPath": "questionmark.bubble",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh agent-help'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh agent-help \"$HOME/Projects/vercel/agent-help\"'"
 				},
 				{
 					"key": "c",
 					"label": "Customers",
 					"type": "command",
 					"iconPath": "person.2",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh customers'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh customers \"$HOME/Projects/vercel/agent-help/problems/customers\"'"
 				},
 				{
 					"key": "w",
 					"label": "Writing",
 					"type": "command",
 					"iconPath": "pencil",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh writing'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh writing \"$HOME/Projects/writing\"'"
 				},
 				{
 					"key": "v",
 					"label": "Vercel Internal Agents",
 					"type": "command",
 					"iconPath": "v.circle",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh vercel-internal-agents'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh vercel-internal-agents \"$HOME/Projects/vercel/internal-agent-skills\"'"
 				},
 				{
 					"key": "j",
 					"label": "Jonas Website",
 					"type": "command",
 					"iconPath": "globe",
-					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-kitty-session.sh jonas-herrmannsdoerfer.de'"
+					"value": "/bin/zsh -lc 'source ~/.zshenv; $DOTFILES/leaderkey/scripts/open-herdr-workspace.sh jonas-herrmannsdoerfer.de \"$HOME/Projects/personal/jonas-herrmannsdoerfer.de\"'"
 				}
 			]
 		},
@@ -501,8 +487,15 @@
 					"value": "$DOTFILES/leaderkey/scripts/reload-mouseless.sh"
 				},
 				{
+					"key": "h",
+					"label": "Reload Herdr",
+					"type": "command",
+					"iconPath": "terminal",
+					"value": "herdr server reload-config"
+				},
+				{
 					"key": "k",
-					"label": "Kitty",
+					"label": "Reload Kitty",
 					"type": "command",
 					"iconPath": "terminal",
 					"value": "$DOTFILES/leaderkey/scripts/reload-kitty.sh"

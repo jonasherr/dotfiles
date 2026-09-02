@@ -5,6 +5,12 @@
 # Dotfiles location
 export DOTFILES="$HOME/Projects/dotfiles"
 
+# Advertise Kitty graphics support to applications running inside Herdr.
+# Herdr forwards the Kitty graphics protocol to the outer Kitty client.
+if [[ "${HERDR_ENV:-}" == "1" ]]; then
+  export TERM=xterm-kitty
+fi
+
 # Homebrew
 export BIN_PATH="/opt/homebrew/bin"
 
@@ -41,4 +47,3 @@ export VERCEL_REPOS_PATH="$HOME/Projects/vercel/agent-help"
 
 # Disable oh-my-openagent telemetry (PostHog, added in v3.17.2)
 export OMO_SEND_ANONYMOUS_TELEMETRY=0
-

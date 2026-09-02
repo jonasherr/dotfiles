@@ -1,3 +1,2 @@
 cd ~
-launch
-launch --type=background python3 ~/.config/kitty/meow/sidebar_daemon.py
+launch herdr

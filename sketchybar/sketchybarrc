@@ -97,17 +97,8 @@ sketchybar --add item clock right \
   --add item battery right \
   --set battery update_freq=120 icon.drawing=on icon.font="Hack Nerd Font:Regular:14.0" script="$PLUGIN_DIR/battery.sh" \
   --subscribe battery system_woke power_source_change \
-  --add item calendar_event right \
-  --set calendar_event \
-  update_freq=60 \
-  script="$PLUGIN_DIR/calendar_event.sh" \
-  click_script="open -a Calendar" \
-  icon.font="Hack Nerd Font:Regular:14.0" \
-  label.color="$WHITE" \
-  background.drawing=on \
-  background.color="$GREY_TRANSP" \
-  background.corner_radius=8 \
-  background.height=25 \
+  --add item herdr_agents right \
+  --set herdr_agents update_freq=5 icon.drawing=off label.drawing=off script="$PLUGIN_DIR/herdr_agents.sh" \
 
 ##### Force all scripts to run the first time (never do this in a script) #####
 sketchybar --update

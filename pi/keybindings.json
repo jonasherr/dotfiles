@@ -7,6 +7,7 @@
   "tui.select.down": ["down", "ctrl+n"],
   "tui.select.pageUp": ["pageUp", "ctrl+u"],
   "tui.select.pageDown": ["pageDown", "ctrl+d"],
+  "tui.input.newLine": ["shift+enter"],
 
   "app.exit": [],
   "app.session.togglePath": [],

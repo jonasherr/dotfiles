@@ -30,6 +30,7 @@ brew install uv
 
 brew install fnm
 brew install pnpm
+brew install herdr
 
 brew install modem-dev/tap/hunk
 

@@ -1,0 +1,101 @@
+onboarding = false
+# Herdr configuration adapted from ~/.config/kitty/kitty.conf.
+# Herdr owns the persistent agent processes; Kitty is only the client.
+
+[theme]
+name = "terminal"
+
+auto_switch = false
+[terminal]
+shell_mode = "login"
+new_cwd = "follow"
+
+[keys]
+# Herdr uses Ctrl+B. Kitty's session mode uses Ctrl+Shift+B instead.
+prefix = "ctrl+b"
+
+# Workspace/session management.
+workspace_picker = "prefix+w"
+goto = "prefix+g"
+new_workspace = "prefix+shift+n"
+rename_workspace = "prefix+shift+w"
+close_workspace = "prefix+shift+d"
+# Workspace switching is handled through workspace_picker (prefix+w), or directly with
+# Ctrl+B, Shift+1..9 for the first nine workspaces.
+switch_workspace = "prefix+shift+1..9"
+
+# Kitty's session shortcuts become workspace picker/navigation shortcuts.
+# Use prefix+w, then select: dotfiles, notes, agents, customers, writing, etc.
+# Pane navigation keeps the existing Ctrl+H/J/K/L muscle memory.
+
+# Tabs.
+new_tab = "prefix+c"
+rename_tab = "prefix+shift+t"
+previous_tab = "prefix+p"
+next_tab = "prefix+n"
+switch_tab = "prefix+1..9"
+close_tab = "prefix+shift+x"
+
+# Panes, matching the existing Ctrl+H/J/K/L navigator behavior.
+# Direct Vim-style pane navigation, including Ctrl+J for down.
+# Shift+Enter remains available to Pi for multiline input.
+focus_pane_left = "ctrl+h"
+focus_pane_down = "ctrl+j"
+focus_pane_up = "ctrl+k"
+focus_pane_right = "ctrl+l"
+cycle_pane_next = "prefix+tab"
+cycle_pane_previous = "prefix+shift+tab"
+split_vertical = "cmd+enter"
+split_horizontal = "prefix+minus"
+close_pane = "prefix+x"
+zoom = "prefix+z"
+resize_mode = "prefix+r"
+
+# Herdr equivalents for the useful Kitty controls.
+detach = "prefix+q"
+toggle_sidebar = "prefix+b"
+open_notification_target = "prefix+o"
+edit_scrollback = "prefix+e"
+reload_config = "prefix+shift+r"
+help = "prefix+?"
+
+# Vim-style movement while the workspace/navigation picker is open.
+navigate_workspace_up = "k"
+navigate_workspace_down = "j"
+navigate_pane_left = "h"
+navigate_pane_right = "l"
+
+[ui]
+tab_bar_position = "bottom"
+sidebar_start_collapsed = false
+hide_tab_bar_when_single_tab = false
+pane_borders = true
+pane_outer_borders = true
+pane_gaps = true
+
+agent_panel_sort = "priority"
+status_indicators = "symbols"
+
+[session]
+# Restore supported Pi integrations after a Herdr server restart.
+resume_agents_on_restore = true
+
+[update]
+channel = "stable"
+version_check = true
+manifest_check = true
+
+[experimental]
+# Forward Kitty graphics escapes for image previews in Yazi.
+kitty_graphics = true
+# Preserve recent pane screen history across Herdr server restarts.
+pane_history = true
+
+[ui.toast]
+# Show Herdr notifications through the macOS notification system.
+delivery = "system"
+delay_seconds = 1
+
+[ui.sound]
+# Play the request sound when an agent becomes blocked.
+enabled = true
