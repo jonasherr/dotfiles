@@ -9,8 +9,6 @@
     "vercel-ai-gateway/openai/gpt-5.6-sol": "max"
   },
   "enabledModels": [
-    "vercel-ai-gateway/google/*",
-    "vercel-ai-gateway/anthropic/*",
     "vercel-ai-gateway/openai/*"
   ],
   "skills": [
