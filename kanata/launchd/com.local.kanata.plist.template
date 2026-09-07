@@ -8,6 +8,7 @@
     <key>ProgramArguments</key>
     <array>
       <string>__KANATA_BIN__</string>
+      <string>--no-wait</string>
       <string>--cfg</string>
       <string>__KANATA_CFG__</string>
     </array>

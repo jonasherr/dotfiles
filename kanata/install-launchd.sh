@@ -5,7 +5,7 @@ LABEL="com.local.kanata"
 PLIST="/Library/LaunchDaemons/$LABEL.plist"
 TEMPLATE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 TEMPLATE="$TEMPLATE_DIR/launchd/$LABEL.plist.template"
-KANATA_BIN="$(command -v kanata)"
+KANATA_BIN="$(command -v kanata || true)"
 KANATA_CFG="$HOME/.config/kanata/kanata.kbd"
 
 if [ ! -f "$TEMPLATE" ]; then
@@ -13,8 +13,8 @@ if [ ! -f "$TEMPLATE" ]; then
   exit 1
 fi
 
-if [ ! -x "$KANATA_BIN" ]; then
-  echo "Kanata binary not found. Install it with: brew install kanata" >&2
+if [ -z "$KANATA_BIN" ] || [ ! -x "$KANATA_BIN" ]; then
+  echo "Kanata binary not found. Install it with: brew install --HEAD kanata" >&2
   exit 1
 fi
 

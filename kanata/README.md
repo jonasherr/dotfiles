@@ -105,27 +105,31 @@ Previous/play/next use Kanata `arbitrary-code` outputs for macOS media keycodes 
 
 ## Prerequisites (macOS)
 
-Kanata requires the Karabiner driver. Install [Karabiner-Elements](https://karabiner-elements.pqrs.org/), then quit the app — the driver stays installed.
+Kanata uses the Karabiner VirtualHIDDevice driver. Install [Karabiner-Elements](https://karabiner-elements.pqrs.org/) and make sure its Driver Extension is enabled. Kanata and Karabiner's remapping engine must not grab the same keyboard at the same time.
+
+Karabiner-Elements 16.1+ uses VirtualHIDDevice v8. Kanata 1.11 and 1.12 use the older protocol, so use the current upstream build until a v8-compatible Kanata release is available:
 
 ```bash
-ls -la /Library/Extensions/ | grep Karabiner
+brew unlink kanata 2>/dev/null || true
+brew install --HEAD kanata
 ```
+
+After v1.13 or newer is available, switch back to the stable package with `brew upgrade kanata`.
 
 ## Installation
 
 ```bash
-brew install kanata
-cd ~/Projects/dotfiles && ./install/bootstrap.sh
+"$DOTFILES/install/bootstrap.sh" kanata
 ```
 
-Grant Input Monitoring: **System Settings** → **Privacy & Security** → **Input Monitoring** → add your terminal app.
+Grant the current Kanata binary both **Input Monitoring** and **Accessibility** permissions in **System Settings** → **Privacy & Security**. Add the path printed by `command -v kanata` (or `$(brew --prefix)/opt/kanata/bin/kanata`). Re-add it after a Kanata upgrade because macOS may tie permissions to the old binary path.
 
 ## Running
 
 For a one-off foreground session:
 
 ```bash
-sudo kanata --cfg ~/.config/kanata/kanata.kbd
+sudo kanata --no-wait --cfg ~/.config/kanata/kanata.kbd
 ```
 
 `Ctrl+C` stops the foreground session.
@@ -157,7 +161,7 @@ Hold `g` + press Space to reload the config from within Kanata. No process resta
 
 ## Testing
 
-1. Quit Karabiner-Elements to avoid conflicts.
+1. Disable Karabiner remapping and quit the Karabiner-Elements app if needed. Keep the Karabiner VirtualHIDDevice driver enabled.
 2. Start Kanata through the LaunchDaemon or foreground command.
 3. Test the basics:
    - Hold `f` + press `a` → should type `A`.
@@ -170,8 +174,9 @@ Hold `g` + press Space to reload the config from within Kanata. No process resta
 
 | Problem | Solution |
 |---------|----------|
-| Kanata won't start | Check Karabiner driver installation and Input Monitoring permissions. |
-| Keys not working | Quit Karabiner-Elements to avoid remapping conflicts. |
+| Kanata won't start | Check the Karabiner VirtualHIDDevice driver, root launch, and both macOS privacy permissions. |
+| `connect_failed asio.system:2` repeats | Kanata is using the old driver protocol. Install the current upstream Kanata build, or use a matching older Karabiner driver. |
+| Keys not working | Disable Karabiner remapping. Keep only its VirtualHIDDevice driver running for Kanata. |
 | Config errors | Run the foreground command to see errors directly. |
 | Config changed but behavior did not | Hold `g` + press Space to live reload. |
 | External keyboard affected | Check `macos-dev-names-include` in `kanata.kbd`. |
