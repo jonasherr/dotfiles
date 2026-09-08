@@ -1,6 +1,7 @@
 git:
-  pagers:
-    - externalDiffCommand: difft --color=always --background=dark
+  diffRenderers:
+    - command: difft --color=always --background=dark
+      type: extDiff
 gui:
   theme:
     selectedLineBgColor:
