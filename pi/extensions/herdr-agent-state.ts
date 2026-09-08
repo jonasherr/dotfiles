@@ -2,7 +2,7 @@
 // managed by herdr; reinstalling or updating the integration overwrites this file.
 // add custom hooks/plugins beside this file instead of editing it.
 // HERDR_INTEGRATION_ID=pi
-// HERDR_INTEGRATION_VERSION=8
+// HERDR_INTEGRATION_VERSION=9
 // @ts-nocheck
 
 import net from "node:net";
@@ -60,6 +60,26 @@ type QueuedState = {
   message?: string;
   seq: number;
 };
+
+type Blocker = {
+  id: string;
+  label?: string;
+};
+
+type BlockerState = {
+  nextLegacyId: number;
+  blockers: Blocker[];
+};
+
+const blockerStateKey = Symbol.for("herdr.pi.blocker-state");
+
+function blockerState(): BlockerState {
+  const globalState = globalThis as Record<PropertyKey, unknown>;
+  if (!globalState[blockerStateKey]) {
+    globalState[blockerStateKey] = { nextLegacyId: 0, blockers: [] };
+  }
+  return globalState[blockerStateKey] as BlockerState;
+}
 
 let reportSeq = Date.now() * 1000;
 let currentAgentSessionId: string | undefined;
@@ -178,15 +198,15 @@ export default function (pi) {
   }
 
   let agentActive = false;
-  let blockedCount = 0;
-  let blockedMessage: string | undefined;
+  let nonInteractiveSession = false;
   let lastState: AgentState | undefined;
   let lastMessage: string | undefined;
   let rootSession = false;
 
   function desiredState() {
-    if (blockedCount > 0) {
-      return { state: "blocked" as const, message: blockedMessage };
+    const blockers = blockerState().blockers;
+    if (blockers.length > 0) {
+      return { state: "blocked" as const, message: blockers.at(-1)?.label };
     }
     if (agentActive) {
       return { state: "working" as const, message: undefined };
@@ -205,20 +225,27 @@ export default function (pi) {
   }
 
   pi.events.on("herdr:blocked", (data) => {
-    if (!rootSession) {
+    // Headless subagents inherit HERDR_* environment variables, but their
+    // process-local events do not belong to the pane-owning Pi session.
+    if (!rootSession || nonInteractiveSession) {
       return;
     }
+    const state = blockerState();
     if (!data?.active) {
-      blockedCount = Math.max(0, blockedCount - 1);
-      if (blockedCount === 0) {
-        blockedMessage = undefined;
+      const index = data?.id
+        ? state.blockers.findIndex((blocker) => blocker.id === data.id)
+        : state.blockers.findLastIndex((blocker) => blocker.label === data?.label);
+      if (index >= 0) {
+        state.blockers.splice(index, 1);
       }
       publishState();
       return;
     }
 
-    blockedCount += 1;
-    blockedMessage = data.label;
+    const id = data?.id ?? `legacy:${state.nextLegacyId++}`;
+    if (!state.blockers.some((blocker) => blocker.id === id)) {
+      state.blockers.push({ id, label: data?.label });
+    }
     publishState();
   });
 
@@ -226,9 +253,13 @@ export default function (pi) {
     // TUI only: RPC/JSON/print modes are headless (no PTY herdr can display),
     // and RPC still reports hasUI=true, so mode is the reliable gate.
     if (ctx?.mode !== "tui") {
+      nonInteractiveSession = true;
       return;
     }
     rootSession = true;
+    if (event?.reason !== "reload") {
+      blockerState().blockers.length = 0;
+    }
     updateSessionRef(ctx);
     await reportSession(event?.reason);
     // A reload can replace this extension mid-run without emitting another agent_start.
@@ -237,25 +268,23 @@ export default function (pi) {
   });
 
   pi.on("agent_start", (_event, ctx) => {
-    if (!rootSession) {
+    if (nonInteractiveSession || !rootSession) {
       return;
     }
-    // A new agent turn is the next opportunity to clear a hard block. The
-    // damage-control extension reports any new block during this turn.
-    blockedCount = 0;
-    blockedMessage = undefined;
     updateSessionRef(ctx);
     void reportSession();
+    blockerState().blockers.length = 0;
     agentActive = true;
     publishState();
   });
 
   pi.on("agent_settled", (_event, ctx) => {
-    if (!rootSession || ctx?.isIdle?.() !== true) {
+    if (!rootSession || nonInteractiveSession || ctx?.isIdle?.() !== true) {
       return;
     }
 
     agentActive = false;
+    blockerState().blockers.length = 0;
     publishState();
   });
 }

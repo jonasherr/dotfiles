@@ -18,6 +18,7 @@ import {
 import { Container, Markdown, Spacer, Text } from "@mariozechner/pi-tui";
 import { Type } from "typebox";
 import { createApprovalBroker } from "../lib/damage-control-approval-broker";
+import { requestDamageControlApproval } from "../lib/damage-control-approval-ui";
 import {
   isWriteEnabledSubagent,
   resolveSubagentTools,
@@ -544,6 +545,12 @@ const SubagentParams = Type.Object({
 });
 
 export default function (pi: ExtensionAPI) {
+  const createHerdrAwareApprovalBroker = (ctx: ExtensionContext) =>
+    createApprovalBroker(ctx, {
+      requestApproval: (request) => requestDamageControlApproval(ctx, request, true),
+      onApprovalStateChange: (state) => pi.events.emit("herdr:blocked", state),
+    });
+
   pi.registerTool({
     name: "subagent",
     label: "Subagent",
@@ -624,7 +631,7 @@ export default function (pi: ExtensionAPI) {
           });
         };
 
-        const approvalBroker = await createApprovalBroker(ctx);
+        const approvalBroker = await createHerdrAwareApprovalBroker(ctx);
         const results = await mapWithConcurrencyLimit(
           tasks,
           MAX_CONCURRENCY,
@@ -673,7 +680,7 @@ export default function (pi: ExtensionAPI) {
         };
       }
 
-      const approvalBroker = await createApprovalBroker(ctx);
+      const approvalBroker = await createHerdrAwareApprovalBroker(ctx);
       const result = await runPiSubagent(
         ctx.cwd,
         {

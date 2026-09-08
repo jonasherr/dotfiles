@@ -4,7 +4,6 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { randomUUID } from "node:crypto"
 import type { ExtensionContext } from "@mariozechner/pi-coding-agent"
-import { requestDamageControlApproval } from "./damage-control-approval-ui"
 
 const SOCKET_ENV = "PI_DAMAGE_CONTROL_APPROVAL_SOCKET"
 const TOKEN_ENV = "PI_DAMAGE_CONTROL_APPROVAL_TOKEN"
@@ -35,6 +34,17 @@ export type ApprovalBroker = {
   close: () => Promise<void>
 }
 
+type ApprovalState = {
+  active: boolean
+  id: string
+  label: string
+}
+
+type ApprovalBrokerOptions = {
+  requestApproval: (request: DamageControlRisk) => Promise<boolean>
+  onApprovalStateChange?: (state: ApprovalState) => void
+}
+
 function parseMessage<T>(value: string): T | undefined {
   try {
     return JSON.parse(value) as T
@@ -43,7 +53,21 @@ function parseMessage<T>(value: string): T | undefined {
   }
 }
 
-export async function createApprovalBroker(ctx: ExtensionContext): Promise<ApprovalBroker> {
+function reportApprovalState(
+  callback: ApprovalBrokerOptions["onApprovalStateChange"],
+  state: ApprovalState,
+): void {
+  try {
+    callback?.(state)
+  } catch {
+    // Status reporting must never prevent or strand an approval response.
+  }
+}
+
+export async function createApprovalBroker(
+  ctx: ExtensionContext,
+  options: ApprovalBrokerOptions,
+): Promise<ApprovalBroker> {
   const dir = await mkdtemp(join(tmpdir(), "pi-damage-control-approval-"))
   const socketPath = join(dir, "broker.sock")
   const token = randomUUID()
@@ -56,6 +80,16 @@ export async function createApprovalBroker(ctx: ExtensionContext): Promise<Appro
     let buffer = ""
     let handled = false
     let cancelled = false
+    let approvalState: { id: string; label: string } | undefined
+    let approvalStateFinished = false
+    const finishApprovalState = () => {
+      if (!approvalState || approvalStateFinished) return
+      approvalStateFinished = true
+      reportApprovalState(options.onApprovalStateChange, {
+        active: false,
+        ...approvalState,
+      })
+    }
     const incompleteRequestTimeout = setTimeout(() => {
       if (!handled) socket.destroy(new Error("Incomplete approval request timed out"))
     }, INCOMPLETE_REQUEST_TIMEOUT_MS)
@@ -64,6 +98,7 @@ export async function createApprovalBroker(ctx: ExtensionContext): Promise<Appro
       clearTimeout(incompleteRequestTimeout)
       sockets.delete(socket)
       cancelled = true
+      finishApprovalState()
     }
     socket.on("close", cleanup)
     socket.on("error", cleanup)
@@ -93,20 +128,30 @@ export async function createApprovalBroker(ctx: ExtensionContext): Promise<Appro
         return
       }
 
+      const label = `${request.category}: ${request.subject}`
+      approvalState = { id: randomUUID(), label }
+      reportApprovalState(options.onApprovalStateChange, {
+        active: true,
+        ...approvalState,
+      })
       confirmationQueue = confirmationQueue
         .then(async () => {
-          if (cancelled || closing || socket.destroyed) return
-          if (!ctx.hasUI) {
-            respond({ error: "No parent UI is available for human approval" })
-            return
-          }
-
           try {
-            const approved = await requestDamageControlApproval(ctx, request, true)
-            respond({ approved })
-          } catch (error) {
-            const detail = error instanceof Error ? error.message : String(error)
-            respond({ error: `Approval failed: ${detail}` })
+            if (cancelled || closing || socket.destroyed) return
+            if (!ctx.hasUI) {
+              respond({ error: "No parent UI is available for human approval" })
+              return
+            }
+
+            try {
+              const approved = await options.requestApproval(request)
+              respond({ approved })
+            } catch (error) {
+              const detail = error instanceof Error ? error.message : String(error)
+              respond({ error: `Approval failed: ${detail}` })
+            }
+          } finally {
+            finishApprovalState()
           }
         })
         .catch((error) => {

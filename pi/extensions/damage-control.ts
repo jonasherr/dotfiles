@@ -686,12 +686,17 @@ function warnIfContextIsHigh(ctx: ExtensionContext) {
   );
 }
 
+let herdrBlockSequence = 0;
+
 function reportHerdrBlocked(pi: ExtensionAPI, label: string, message?: string) {
+  const id = `damage-control:${Date.now()}:${herdrBlockSequence++}`;
   pi.events.emit("herdr:blocked", {
     active: true,
+    id,
     label,
     message,
   });
+  return id;
 }
 
 function blockCatastrophicRisk(
@@ -714,7 +719,7 @@ async function requestApproval(
   risk: Risk,
 ) {
   const label = `${risk.category}: ${risk.subject}`;
-  reportHerdrBlocked(pi, label, risk.remediation);
+  const id = reportHerdrBlocked(pi, label, risk.remediation);
 
   try {
     const parentResponse = await requestParentApproval(risk);
@@ -763,6 +768,7 @@ async function requestApproval(
     // agent_start event because they have no matching approval lifecycle.
     pi.events.emit("herdr:blocked", {
       active: false,
+      id,
       label,
       message: risk.remediation,
     });
