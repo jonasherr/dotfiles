@@ -3,6 +3,8 @@
 set -euo pipefail
 
 CONFIG_DIR="$HOME/.config/sketchybar"
+# LaunchAgents do not inherit the interactive shell's Homebrew PATH.
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 source "$CONFIG_DIR/colors.sh"
 
 prefix="herdr_agent_"
