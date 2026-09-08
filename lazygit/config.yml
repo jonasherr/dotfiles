@@ -5,3 +5,6 @@ gui:
   theme:
     selectedLineBgColor:
       - reverse
+keybinding:
+  commits:
+    resetCherryPick: <c-r>
