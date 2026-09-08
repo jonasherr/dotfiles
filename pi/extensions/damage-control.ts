@@ -18,6 +18,7 @@ import {
   classifyGitCommand,
   detectGitPathspecCwdMistake,
   extractGitInvocationsFromShell,
+  hasUninspectableGitShell,
 } from "./lib/git-command-safety";
 
 const TOOL_WARN_BYTES = 20 * 1024;
@@ -832,6 +833,14 @@ export default function (pi: ExtensionAPI) {
           matched: deployment.state
             ? formatDeploymentState(deployment.state)
             : (deployment.remediation ?? "Git state could not be determined"),
+          subject: event.input.command,
+        });
+      }
+
+      if (hasUninspectableGitShell(event.input.command)) {
+        return requestApproval(pi, ctx, {
+          category: "Uninspectable Git shell syntax",
+          matched: "Git appears inside unsupported or malformed shell syntax",
           subject: event.input.command,
         });
       }
