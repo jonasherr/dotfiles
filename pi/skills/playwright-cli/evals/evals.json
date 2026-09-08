@@ -1,0 +1,41 @@
+{
+  "skill_name": "playwright-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use playwright-cli to inspect failed requests on https://example.com. You have not used this installed CLI version before. Explain the commands you would run before taking browser actions.",
+      "expected_output": "A contract-aware workflow that checks availability and installed help, then uses the 0.1.18 requests interface.",
+      "files": [],
+      "assertions": [
+        "Output checks command availability, version, and playwright-cli --help before unfamiliar browser actions.",
+        "Output uses playwright-cli requests and optionally playwright-cli request <index> rather than the removed network command.",
+        "Output does not assume a nested --raw or --json result shape without checking actual output.",
+        "Output includes playwright-cli list as a read-only smoke check or explains why it is not needed."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Check whether my existing Playwright CLI browser session is authenticated. Do not expose credentials, cookies, or storage values.",
+      "expected_output": "A privacy-preserving readiness check based on session/profile state and page behavior, without dumping authentication material.",
+      "files": [],
+      "assertions": [
+        "Output uses playwright-cli list as the initial read-only session check.",
+        "Output warns that list output can include local session or profile metadata and should not be pasted unnecessarily.",
+        "Output does not print cookies, localStorage, sessionStorage, or saved state merely to check readiness.",
+        "Output verifies authentication through a narrow page behavior only if a browser session must be opened or reused."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Attach playwright-cli to a running Chrome browser over CDP and return the page title in a form suitable for jq.",
+      "expected_output": "A contract-aware response that checks attach and output help, uses supported 0.1.18 flags, and distinguishes raw output from JSON wrapping.",
+      "files": [],
+      "assertions": [
+        "Output inspects playwright-cli --help and attach help before connecting.",
+        "Output recognizes attach, --raw, and --json as valid installed 0.1.18 capabilities.",
+        "Output does not conflate a raw JSON string with the CLI's --json response envelope.",
+        "Output does not install or upgrade the CLI unnecessarily."
+      ]
+    }
+  ]
+}

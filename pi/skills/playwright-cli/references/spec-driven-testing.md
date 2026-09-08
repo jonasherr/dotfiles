@@ -6,7 +6,7 @@ End-to-end workflow for authoring and maintaining Playwright tests using `playwr
 - **Generate** — turn a spec into Playwright test files. Update the spec if it's vague or stale.
 - **Heal** — diagnose failing tests, fix the code, reconcile the spec with reality.
 
-All three lean on the same mechanic: run `npx playwright test --debug=cli` in the background, then `playwright-cli attach tw-XXXX` to drive the paused page interactively. See [playwright-tests.md](playwright-tests.md) for the debug/attach mechanics and [test-generation.md](test-generation.md) for how every `playwright-cli` action emits Playwright TypeScript.
+These workflows require a CLI version that advertises test-session attachment. Before relying on that mechanic, run `npx playwright test --help` and `playwright-cli --help`. Use `playwright-cli attach` only when the installed help exposes it. Otherwise use the supported Playwright test runner and debugger without inventing attachment flags. See [playwright-tests.md](playwright-tests.md) for the version-gated debug mechanics and [test-generation.md](test-generation.md) for action-to-test guidance.
 
 ---
 
@@ -73,22 +73,14 @@ If no seed exists, create one that at least navigates to the app.
 
 ### 1.3 Explore the app
 
-Launch the app via the seed in the background and attach:
+If both installed help surfaces advertise CLI test debugging and attachment, launch the seed in the background and follow the exact instructions printed by the test runner. Otherwise, run or debug the seed with supported `npx playwright test` options and inspect the app in a separate `playwright-cli open` session only when losing fixture state is acceptable.
+
+Once a supported browser session is available, probe the app:
 
 ```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/seed.spec.ts --debug=cli
-# wait for "Debugging Instructions" and the session name tw-XXXX
-playwright-cli attach tw-XXXX
-```
-
-Resume so the seed runs, then probe the app:
-
-```bash
-playwright-cli resume                   # resume so that seed test runs fully
 playwright-cli snapshot                 # inventory of interactive elements
 playwright-cli click e5                 # follow a flow
 playwright-cli eval "location.href"     # read URL / state
-playwright-cli show --annotate          # ask the user to point at something
 ```
 
 Map out:
@@ -161,15 +153,9 @@ Goal: take a spec file and produce Playwright test files. Optionally update the 
 
 ### 2.2 Generate one scenario
 
-For each target scenario, in sequence (never in parallel — scenarios share the seed session):
+For each target scenario, work in sequence because scenarios share seed state. First inspect `npx playwright test --help` and `playwright-cli --help`. Use CLI test-session attachment only when both installed interfaces advertise it, and follow the test runner's printed session instructions rather than copying a remembered session command.
 
-```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test <seed-file> --debug=cli   # background
-playwright-cli attach tw-XXXX
-# resume
-```
-
-**Do not** just open the app url with playwright-cli, always go through the test to capture any custom setup done there.
+When fixture state matters, do not replace the seed workflow with a standalone `playwright-cli open` session. If attachment is unavailable, use the installed Playwright test runner's supported debugger.
 
 Walk the scenario's `Steps:` one by one with `playwright-cli`, treating the spec as the plan and the live app as the source of truth. If a step is vague ("click the button" — which button?), references an element that no longer exists, or contradicts the app's actual behaviour, use your judgement: update the spec to match what the app really does, then keep going. Editing the spec mid-generation is expected.
 
@@ -248,21 +234,14 @@ Record the list of failing `<file>:<line>` entries and process them one at a tim
 
 ### 3.2 Debug one failure
 
-Run the single failing test in debug mode in the background, then attach:
+Inspect `npx playwright test --help` and `playwright-cli --help` before choosing a debug workflow. If the installed versions advertise CLI attachment, run the single failing test in that mode and follow the runner's printed instructions exactly. Otherwise, use the supported Playwright debugger for that version.
 
-```bash
-PLAYWRIGHT_HTML_OPEN=never npx playwright test tests/<group>/<scenario>.spec.ts:<line> --debug=cli
-# wait for "Debugging Instructions" and the tw-XXXX session name
-playwright-cli attach tw-XXXX
-```
-
-The test is paused at the start. Step forward or run to until just before the failing action or assertion, then diagnose:
+In a supported attached session, step to just before the failing action or assertion, then diagnose:
 
 ```bash
 playwright-cli snapshot                # did the element change / move / rename?
 playwright-cli console                 # app-side errors?
 playwright-cli requests                # failed request? wrong payload?
-playwright-cli show --annotate         # ask the user to point somewhere
 ```
 
 Common causes: selector drift, new wrapper element, label/ARIA rename, timing (transition, async load), assertion text updated in the app, test data leaking between runs.
