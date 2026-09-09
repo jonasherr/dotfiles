@@ -867,22 +867,21 @@ export default function (pi: ExtensionAPI) {
       const primaryCheckout = process.env.PI_PRIMARY_CHECKOUT;
       for (const gitInvocation of gitInvocations) {
         const isolatedTask = Boolean(primaryCheckout);
-        const gitSafety = classifyGitCommand(gitInvocation, {
+        const invocationSafety = classifyGitCommand(gitInvocation, {
           cwd: ctx.cwd,
           primaryCheckout,
           isolatedTask,
         });
         if (
-          gitSafety.effect === "external-or-remote-mutation" ||
-          gitSafety.effect === "unknown" ||
-          (isolatedTask &&
-            !gitSafety.workingDirectoryResolved &&
-            gitSafety.effect !== "read-only") ||
-          (gitSafety.targetsPrimaryCheckout && gitSafety.effect !== "read-only")
+          invocationSafety.effect === "external-or-remote-mutation" ||
+          invocationSafety.effect === "unknown" ||
+          (isolatedTask && invocationSafety.effect !== "read-only") ||
+          (invocationSafety.targetsPrimaryCheckout &&
+            invocationSafety.effect !== "read-only")
         ) {
           return requestApproval(pi, ctx, {
             category: "Git command requires approval",
-            matched: `${gitSafety.effect}: ${gitSafety.remediation}`,
+            matched: `${invocationSafety.effect}: ${invocationSafety.remediation}`,
             subject: event.input.command,
           });
         }
