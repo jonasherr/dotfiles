@@ -9,7 +9,7 @@ return {
       enabled = true,
     },
     explorer = {
-      enabled = false,
+      enabled = true,
     },
     lazygit = {},
     input = {},
