@@ -23,8 +23,7 @@
 			},
 			{
 				"language": [
-					"markdown",
-					"codecompanion"
+					"markdown"
 				],
 				"path": "./markdown.json"
 			}

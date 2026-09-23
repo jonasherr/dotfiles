@@ -23,21 +23,7 @@ return {
     'pmizio/typescript-tools.nvim',
   },
   config = function(_, opts)
-    vim.lsp.config('harper_ls', {
-      settings = {
-        ['harper-ls'] = {
-          linters = {
-            ToDoHyphen = false,
-            SentenceCapitalization = false,
-          },
-          isolateEnglish = true,
-          markdown = {
-            IgnoreLinkTitle = true,
-          },
-        },
-      },
-      filetypes = { 'markdown' },
-    })
+    vim.lsp.config('harper_ls', require 'lsp.harper_ls')
     require('mason-lspconfig').setup(opts)
     vim.lsp.enable { 'bashls', 'biome', 'cssls', 'harper_ls', 'html', 'lua_ls', 'tailwindcss', 'yamlls' }
   end,

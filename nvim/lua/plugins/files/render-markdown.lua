@@ -6,6 +6,6 @@ return {
   opts = {
     completions = { blink = { enabled = true } },
     only_render_image_at_cursor = true,
-    file_types = { 'markdown', 'codecompanion' },
+    file_types = { 'markdown' },
   },
 }
