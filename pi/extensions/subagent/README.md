@@ -15,11 +15,9 @@ Start independent tracks in parallel early so the parent does not repeat their r
 
 Model selection is orchestrator policy, not extension logic. Set `model` per task according to its shape:
 
-- `openai/gpt-5.6-sol`: highest-stakes, ambiguous, long-horizon work.
-- `openai/gpt-5.6-terra`: bounded engineering, implementation, and debugging.
-- `openai/gpt-5.6-luna`: mechanical or high-volume evidence gathering and transformation.
-- `moonshotai/kimi-k3`: huge or multimodal corpora.
-- `anthropic/claude-opus-5`: prose and final drafting.
+- `openai/gpt-6-sol`: planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning.
+- `openai/gpt-6-luna-fast`: implementation, debugging, and mechanical or high-volume evidence gathering and transformation.
+- `anthropic/claude-opus-5.5`: prose and final drafting.
 
 Use model diversity only when it adds an independent perspective. Set `thinking` per task: `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"`, or `"max"`. It defaults to `"low"`; start low and raise it only when task complexity warrants it. A provider may map or clamp unsupported thinking levels.
 
@@ -46,7 +44,7 @@ The default remains `"none"`. Isolated worktrees are retained under `$HOME/.pi/a
   "tasks": [
     {
       "task": "Implement the bounded extension changes and report paths plus checks.",
-      "model": "openai/gpt-5.6-terra",
+      "model": "openai/gpt-6-luna-fast",
       "thinking": "low",
       "readOnly": false,
       "isolation": "worktree"

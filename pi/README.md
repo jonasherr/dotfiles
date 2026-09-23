@@ -43,11 +43,9 @@ Write-enabled tasks may set `isolation: "worktree"` or `"auto"` to run in a uniq
 
 Model selection remains orchestrator policy:
 
-- `openai/gpt-5.6-sol`: highest-stakes, ambiguous, long-horizon work.
-- `openai/gpt-5.6-terra`: bounded engineering, implementation, and debugging.
-- `openai/gpt-5.6-luna`: mechanical or high-volume evidence gathering and transformation.
-- `moonshotai/kimi-k3`: huge or multimodal corpora.
-- `anthropic/claude-opus-5`: prose and final drafting.
+- `openai/gpt-6-sol`: planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning.
+- `openai/gpt-6-luna-fast`: implementation, debugging, and mechanical or high-volume evidence gathering and transformation.
+- `anthropic/claude-opus-5.5`: prose and final drafting.
 
 Use model diversity only when it adds an independent perspective. Each subagent invocation defaults to `--thinking low`; set `thinking` per task to `off`, `minimal`, `low`, `medium`, `high`, `xhigh`, or `max`. Start low and raise it only when task complexity warrants it. Providers may map or clamp unsupported levels.
 

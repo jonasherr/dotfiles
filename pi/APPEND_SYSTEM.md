@@ -42,11 +42,9 @@ Default policy:
 - Evaluate and synthesize handoffs instead of pasting raw output.
 
 Route by task shape:
-- Sol (`openai/gpt-5.6-sol`): highest-stakes, ambiguous, long-horizon reasoning and synthesis.
-- Terra (`openai/gpt-5.6-terra`): bounded engineering, implementation, and debugging.
-- Luna (`openai/gpt-5.6-luna`): mechanical or high-volume evidence gathering and transformation.
-- Kimi K3 (`moonshotai/kimi-k3`): huge or multimodal corpora.
-- Claude Opus 5 (`anthropic/claude-opus-5`): prose and final drafting.
+- Sol (`openai/gpt-6-sol`): planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning and synthesis.
+- Luna Fast (`openai/gpt-6-luna-fast`): implementation, debugging, and mechanical or high-volume evidence gathering and transformation.
+- Claude Opus 5.5 (`anthropic/claude-opus-5.5`): prose and final drafting.
 
 Start subagents at `low` thinking. Raise the per-task `thinking` level only when task complexity warrants it: use `medium` for bounded implementation/debugging, `high` for complex reviews or diagnosis, and reserve `xhigh`/`max` for genuinely difficult reasoning. Choose model diversity only when it adds a genuinely independent perspective, not for variety alone.
 
