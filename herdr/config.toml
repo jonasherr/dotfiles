@@ -66,25 +66,25 @@ navigate_pane_right = "l"
 
 [[keys.command]]
 key = "ctrl+h"
-command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" left"""
+command = """p=$(/bin/realpath -q "$HOME/.config/herdr/config.toml") || exit 1; case "$p" in */herdr/config.toml) repo=${p%/herdr/config.toml} ;; *) exit 1 ;; esac; exec "$repo/bin/herdr-navigator" left"""
 type = "shell"
 description = "Navigate left in Neovim or Herdr"
 
 [[keys.command]]
 key = "ctrl+j"
-command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" down"""
+command = """p=$(/bin/realpath -q "$HOME/.config/herdr/config.toml") || exit 1; case "$p" in */herdr/config.toml) repo=${p%/herdr/config.toml} ;; *) exit 1 ;; esac; exec "$repo/bin/herdr-navigator" down"""
 type = "shell"
 description = "Navigate down in Neovim or Herdr"
 
 [[keys.command]]
 key = "ctrl+k"
-command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" up"""
+command = """p=$(/bin/realpath -q "$HOME/.config/herdr/config.toml") || exit 1; case "$p" in */herdr/config.toml) repo=${p%/herdr/config.toml} ;; *) exit 1 ;; esac; exec "$repo/bin/herdr-navigator" up"""
 type = "shell"
 description = "Navigate up in Neovim or Herdr"
 
 [[keys.command]]
 key = "ctrl+l"
-command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" right"""
+command = """p=$(/bin/realpath -q "$HOME/.config/herdr/config.toml") || exit 1; case "$p" in */herdr/config.toml) repo=${p%/herdr/config.toml} ;; *) exit 1 ;; esac; exec "$repo/bin/herdr-navigator" right"""
 type = "shell"
 description = "Navigate right in Neovim or Herdr"
 
