@@ -37,10 +37,6 @@ lazygit/state.yml
 # Raycast auto-generated types
 raycast-env.d.ts
 
-# Build artifacts
-raycast/custom-extensions/shortcuts/shortcuts.js
-raycast/custom-extensions/shortcuts/shortcuts.js.map
-
 # OpenCode local-only dirs (not symlinked from dotfiles)
 opencode/scripts/
 # Agent memory
