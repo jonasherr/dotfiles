@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Herdr invokes custom shell commands with the active pane and CLI path in these
+# variables. Fall back to PATH for calls outside a Herdr custom command.
+direction=${1:-}
+pane_id=${HERDR_ACTIVE_PANE_ID:-}
+herdr_bin=${HERDR_BIN_PATH:-herdr}
+
+case "$direction" in
+  left)  key=ctrl+h ;;
+  down)  key=ctrl+j ;;
+  up)    key=ctrl+k ;;
+  right) key=ctrl+l ;;
+  *) exit 2 ;;
+esac
+
+[[ -n "$pane_id" ]] || exit 0
+
+process_info=$("$herdr_bin" pane process-info --pane "$pane_id" 2>/dev/null || true)
+
+if [[ -n "$process_info" ]] && command -v jq >/dev/null 2>&1 && jq -e --argjson names '["nvim", "vim", "vi", "nvim-qt", "goneovim"]' '
+  (.result.process_info // .process_info // .result // {})
+  | .foreground_processes[]?
+  | [
+      .name,
+      .argv0,
+      ((.argv // []) | .[0]),
+      ((.cmdline // "") | split(" ")[0])
+    ]
+  | map(select(type == "string") | split("/") | last | ascii_downcase)
+  | any(.[]; . as $candidate | ($names | index($candidate)) != null)
+' <<<"$process_info" >/dev/null 2>&1; then
+  exec "$herdr_bin" pane send-keys "$pane_id" "$key"
+fi
+
+exec "$herdr_bin" pane focus --pane "$pane_id" --direction "$direction"

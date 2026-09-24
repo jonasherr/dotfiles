@@ -5,12 +5,11 @@
 # Dotfiles location
 export DOTFILES="$HOME/Projects/dotfiles"
 
-# Advertise Kitty graphics support to applications running inside Herdr.
-# Herdr forwards the Kitty graphics protocol to the outer Kitty client.
+# Herdr forwards Kitty graphics independently of TERM. Use a terminfo entry
+# available on macOS because Herdr does not ship Kitty's terminfo.
 if [[ "${HERDR_ENV:-}" == "1" ]]; then
-  export TERM=xterm-kitty
+  export TERM=xterm-256color
 fi
-
 # Homebrew
 export BIN_PATH="/opt/homebrew/bin"
 

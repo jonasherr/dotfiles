@@ -1,5 +1,35 @@
 local map = vim.keymap.set
 
+-- Navigate Neovim windows first. At an edge, ask Herdr to focus its neighbor.
+local herdr_directions = { h = 'left', j = 'down', k = 'up', l = 'right' }
+
+local function navigate(direction, herdr_direction)
+  local target = vim.fn.winnr(direction)
+  if target ~= 0 and vim.fn.win_getid(target) ~= vim.api.nvim_get_current_win() then
+    vim.cmd('wincmd ' .. direction)
+    return
+  end
+
+  local pane_id = vim.env.HERDR_PANE_ID
+  local binary = vim.env.HERDR_BIN_PATH
+  if not binary or binary == '' or vim.fn.executable(binary) ~= 1 then
+    binary = vim.fn.exepath 'herdr'
+  end
+
+  if not pane_id or pane_id == '' or binary == '' then
+    return
+  end
+
+  vim.system({ binary, 'pane', 'focus', '--pane', pane_id, '--direction', herdr_direction }, { text = true })
+end
+
+for key, direction in pairs { h = 'h', j = 'j', k = 'k', l = 'l' } do
+  local herdr_direction = herdr_directions[key]
+  map({ 'n', 'v' }, '<C-' .. key .. '>', function()
+    navigate(direction, herdr_direction)
+  end, { silent = true, desc = 'Navigate ' .. direction })
+end
+
 -- S = Shift
 -- C = CTRL
 -- D = CMD

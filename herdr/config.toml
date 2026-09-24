@@ -36,13 +36,12 @@ next_tab = "prefix+n"
 switch_tab = "prefix+1..9"
 close_tab = "prefix+shift+x"
 
-# Panes, matching the existing Ctrl+H/J/K/L navigator behavior.
 # Direct Vim-style pane navigation, including Ctrl+J for down.
-# Shift+Enter remains available to Pi for multiline input.
-focus_pane_left = "ctrl+h"
-focus_pane_down = "ctrl+j"
-focus_pane_up = "ctrl+k"
-focus_pane_right = "ctrl+l"
+# Direct bindings are implemented by the custom navigator commands below.
+focus_pane_left = ""
+focus_pane_down = ""
+focus_pane_up = ""
+focus_pane_right = ""
 cycle_pane_next = "prefix+tab"
 cycle_pane_previous = "prefix+shift+tab"
 split_vertical = "cmd+enter"
@@ -64,6 +63,30 @@ navigate_workspace_up = "k"
 navigate_workspace_down = "j"
 navigate_pane_left = "h"
 navigate_pane_right = "l"
+
+[[keys.command]]
+key = "ctrl+h"
+command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" left"""
+type = "shell"
+description = "Navigate left in Neovim or Herdr"
+
+[[keys.command]]
+key = "ctrl+j"
+command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" down"""
+type = "shell"
+description = "Navigate down in Neovim or Herdr"
+
+[[keys.command]]
+key = "ctrl+k"
+command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" up"""
+type = "shell"
+description = "Navigate up in Neovim or Herdr"
+
+[[keys.command]]
+key = "ctrl+l"
+command = """p="$HOME/.config/herdr/config.toml"; while [ -L "$p" ]; do d=$(cd -P "$(dirname "$p")" && pwd) || exit 1; t=$(readlink "$p") || exit 1; case "$t" in /*) p=$t ;; *) p=$d/$t ;; esac; done; repo=$(cd -P "$(dirname "$p")/.." && pwd) || exit 1; exec "$repo/bin/herdr-navigator" right"""
+type = "shell"
+description = "Navigate right in Neovim or Herdr"
 
 [ui]
 tab_bar_position = "bottom"
