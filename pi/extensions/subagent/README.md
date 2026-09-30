@@ -15,7 +15,7 @@ Start independent tracks in parallel early so the parent does not repeat their r
 
 Model selection is orchestrator policy, not extension logic. Set `model` per task according to its shape:
 
-- `openai/gpt-6-sol`: planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning.
+- `openai/gpt-6.1-sol`: planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning.
 - `openai/gpt-6-luna-fast`: implementation, debugging, and mechanical or high-volume evidence gathering and transformation.
 - `anthropic/claude-opus-5.5`: prose and final drafting.
 

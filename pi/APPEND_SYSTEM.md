@@ -42,7 +42,7 @@ Default policy:
 - Evaluate and synthesize handoffs instead of pasting raw output.
 
 Route by task shape:
-- Sol (`openai/gpt-6-sol`): planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning and synthesis.
+- Sol (`openai/gpt-6.1-sol`): planning, review, orchestration, and highest-stakes ambiguous or long-horizon reasoning and synthesis.
 - Luna Fast (`openai/gpt-6-luna-fast`): implementation, debugging, and mechanical or high-volume evidence gathering and transformation.
 - Claude Opus 5.5 (`anthropic/claude-opus-5.5`): prose and final drafting.
 

@@ -5,10 +5,10 @@
   "defaultThinkingLevel": "max",
   "modelThinkingLevels": {
     "vercel-ai-gateway/openai/gpt-6-luna-fast": "max",
-    "vercel-ai-gateway/openai/gpt-6-sol": "max"
+    "vercel-ai-gateway/openai/gpt-6.1-sol": "max"
   },
   "enabledModels": [
-    "vercel-ai-gateway/openai/gpt-6-sol",
+    "vercel-ai-gateway/openai/gpt-6.1-sol",
     "vercel-ai-gateway/openai/gpt-6-luna-fast",
     "vercel-ai-gateway/anthropic/claude-opus-5.5"
   ],
