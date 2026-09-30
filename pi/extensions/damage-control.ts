@@ -6,6 +6,7 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { requestParentApproval } from "./lib/damage-control-approval-broker";
+import { detectBashRisk, isSecretPath } from "./lib/bash-risk";
 import { requestDamageControlApproval } from "./lib/damage-control-approval-ui";
 import {
   detectDestructiveShellRisk,
@@ -16,10 +17,12 @@ import {
 import { inspectProductionDeployment } from "./lib/deployment-safety";
 import {
   classifyGitCommand,
+  detectDestructiveGitOperation,
   detectGitPathspecCwdMistake,
   extractGitInvocationsFromShell,
   hasUninspectableGitShell,
 } from "./lib/git-command-safety";
+import { maskInertShellText } from "./lib/shell-inert-text";
 
 const TOOL_WARN_BYTES = 20 * 1024;
 const TOOL_SUMMARIZE_BYTES = 50 * 1024;
@@ -40,50 +43,7 @@ type TextContent = {
   [key: string]: unknown;
 };
 
-// ─── Category 1: Dangerous Bash Commands ─────────────────────────────────────
-const DANGEROUS_BASH_PATTERNS: RegExp[] = [
-  /\brm\s+(-[^\s]*)*-[rRf]/,
-  /\brm\s+.*--(recursive|force)/,
-  /\bsudo\s+/,
-  /\bchmod\s+(-[^\s]+\s+)*0?777\b/,
-  /\bchmod\s+-[Rr].*0?777/,
-  /\bchown\s+-[Rr].*\broot\b/,
-  /\bkill\s+-9\s+-1\b/,
-  /\bkillall\s+-9\b/,
-  /\bpkill\s+-9\b/,
-  /\bmkfs\./,
-  /\bdd\s+.*of=\/dev\//,
-  /\bhistory\s+-c\b/,
-  /\bcurl\s+.*\|\s*(bash|sh|zsh)\b/,
-  /\bwget\s+.*\|\s*(bash|sh|zsh)\b/,
-  /\bmv\s+.*\/dev\/null/,
-];
-
-// ─── Category 2: Secret/Credential Access (bash) ─────────────────────────────
-const SECRET_BASH_PATTERNS: RegExp[] = [
-  /(cat|vim|nano|less|head|tail|base64|grep|sed|awk|sort|cut)\s+.*\.env\b(?!\.sample|\.example)/,
-  /(cat|vim|nano|less|head|tail|cp|scp|rsync)\s+.*\/(\.(ssh|aws|gcp|gnupg))\//,
-  /(cat|vim|nano|less|head|tail)\s+.*\.(pem|key|p12|pfx)\b/,
-  /(cat|vim|nano|less|head|tail|grep|sed|awk|sort|cut)\s+.*credentials/,
-  /(cp|scp|rsync)\s+.*\.(env|pem|key|p12|pfx)\b/,
-  /(cp|scp|rsync)\s+.*\/(\.(ssh|aws|gcp|gnupg))\//,
-];
-
-// ─── Category 2: Secret/Credential Access (file paths) ───────────────────────
-const SECRET_PATH_PATTERNS: RegExp[] = [
-  /\/\.env(?!\.sample|\.example)/,
-  /\/\.env\.(?!sample|example)/,
-  /\/\.ssh\//,
-  /\/\.aws\//,
-  /\/\.gcp\//,
-  /\/\.gnupg\//,
-  /\/(\.(ssh|aws|gcp|gnupg))\/.*(pem|key|p12|pfx)$/,
-  /\/\.tfstate$/,
-  /\/(\.|^)credentials$/,
-  /\/credentials\.(json|yaml|yml|xml|toml)$/,
-];
-
-// ─── Category 3: Destructive File Paths ──────────────────────────────────────
+// ─── Generated or locked files (write/edit approval) ─────────────────────────
 const DESTRUCTIVE_PATH_PATTERNS: RegExp[] = [
   /\/node_modules\//,
   /\/dist\//,
@@ -99,87 +59,6 @@ const DESTRUCTIVE_PATH_PATTERNS: RegExp[] = [
   /\.bundle\.js$/,
 ];
 
-// ─── Category 4: Cloud CLI Destructive Ops ───────────────────────────────────
-const CLOUD_CLI_PATTERNS: RegExp[] = [
-  /\baws\s+s3\s+rm\s+.*--recursive/,
-  /\baws\s+ec2\s+terminate-instances\b/,
-  /\baws\s+rds\s+delete-db-instance\b/,
-  /\baws\s+cloudformation\s+delete-stack\b/,
-  /\baws\s+dynamodb\s+delete-table\b/,
-  /\bgcloud\s+projects\s+delete\b/,
-  /\bgcloud\s+compute\s+instances\s+delete\b/,
-  /\bgcloud\s+sql\s+instances\s+delete\b/,
-  /\bgcloud\s+container\s+clusters\s+delete\b/,
-  /\bvercel\s+remove\s+.*--yes/,
-  /\bvercel\s+projects\s+rm\b/,
-  /\bdocker\s+system\s+prune\s+.*-a/,
-  /\bdocker\s+volume\s+(rm|prune)\b/,
-  /\bkubectl\s+delete\s+namespace\b/,
-  /\bkubectl\s+delete\s+all\s+--all/,
-  /\bterraform\s+destroy\b/,
-  /\bpulumi\s+destroy\b/,
-  /\bheroku\s+apps:destroy\b/,
-  /\bheroku\s+pg:reset\b/,
-  /\bredis-cli\s+FLUSHALL/,
-  /\bredis-cli\s+FLUSHDB/,
-  /\bgh\s+repo\s+delete\b/,
-  /\bgh\s+pr\s+merge\b/,
-  /\bnpm\s+unpublish\b/,
-];
-
-// ─── Category 4b: Database Destructive Ops ───────────────────────────────────
-const DATABASE_DESTRUCTIVE_PATTERNS: RegExp[] = [
-  /DROP\s+(TABLE|DATABASE)\b/i,
-  /TRUNCATE\s+TABLE\b/i,
-  /DELETE\s+FROM\s+\w+/i,
-];
-
-// ─── Category 5: Git Safety ─────────────────────────────────────────────────
-const GIT_SAFETY_PATTERNS: RegExp[] = [
-  /\bgit\s+reset\s+--hard\b/,
-  /\bgit\s+clean\s+.*-[fFxX]/,
-  /\bgit\s+push\s+.*--force(?!-with-lease|-if-includes)/,
-  /\bgit\s+push\s+.*-[^\s]*f/,
-  /\bgit\s+stash\s+clear\b/,
-  /\bgit\s+reflog\s+expire\b/,
-  /\bgit\s+gc\s+.*--prune=now/,
-  /\bgit\s+filter-branch\b/,
-];
-
-// ─── Category 6: Data Exfiltration ──────────────────────────────────────────
-const EXFILTRATION_PATTERNS: RegExp[] = [
-  /\bcurl\b.*@\S*\/(\.(ssh|aws|gcp|gnupg))\//,
-  /\bcurl\b.*@\S*\.env\b(?!\.sample|\.example)/,
-  /\bcurl\b.*@\S*\.(pem|key|p12|pfx)\b/,
-  /\bcurl\b.*@\S*credentials\b/,
-  /\bcurl\b.*@\S*\bid_(rsa|ed25519|ecdsa|dsa)\b/,
-  /\bcurl\b.*(-T|--upload-file)\s+\S*\/(\.(ssh|aws|gcp|gnupg))\//,
-  /\bcurl\b.*(-T|--upload-file)\s+\S*\.(env|pem|key|p12|pfx)\b/,
-  /\bwget\b.*--post-file\s*=?\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
-  /\bwget\b.*--post-file\s*=?\s*\S*\.(env|pem|key|p12|pfx)\b/,
-  /\b(nc|ncat|socat)\b.*<\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
-  /\b(nc|ncat|socat)\b.*<\s*\S*\.(pem|key|p12|pfx)\b/,
-  /\bopenssl\b.*s_client.*<\s*\S*\/(\.(ssh|aws|gcp|gnupg))\//,
-];
-
-const SENSITIVE_PATH_INDICATORS: RegExp[] = [
-  /\/(\.(ssh|aws|gcp|gnupg))\//,
-  /\.env\b(?!\.sample|\.example)/,
-  /\.(pem|key|p12|pfx)\b/,
-  /\/credentials\b/,
-  /\bid_(rsa|ed25519|ecdsa|dsa)\b/,
-];
-
-const OUTBOUND_INDICATORS: RegExp[] = [
-  /https?:\/\//,
-  /\bcurl\b/,
-  /\bwget\b/,
-  /\b(nc|ncat|netcat)\s+\S+\s+\d+/,
-  /\bsocat\b.*TCP/i,
-  /\bsendmail\b/,
-  /\btelnet\b/,
-];
-
 type Risk = {
   category: string;
   matched: string;
@@ -192,44 +71,6 @@ function testPatterns(value: string, patterns: RegExp[]): RegExp | undefined {
       return pattern;
     }
   }
-  return undefined;
-}
-
-function hasExfiltrationRisk(command: string): boolean {
-  const hasSensitivePath = SENSITIVE_PATH_INDICATORS.some((pattern) =>
-    pattern.test(command),
-  );
-  const hasOutbound = OUTBOUND_INDICATORS.some((pattern) =>
-    pattern.test(command),
-  );
-  return hasSensitivePath && hasOutbound;
-}
-
-function detectBashRisk(command: string): Risk | undefined {
-  const checks: Array<[string, RegExp[]]> = [
-    ["Dangerous bash command", DANGEROUS_BASH_PATTERNS],
-    ["Secret/credential access", SECRET_BASH_PATTERNS],
-    ["Destructive cloud CLI operation", CLOUD_CLI_PATTERNS],
-    ["Destructive database operation", DATABASE_DESTRUCTIVE_PATTERNS],
-    ["Dangerous git operation", GIT_SAFETY_PATTERNS],
-    ["Data exfiltration attempt", EXFILTRATION_PATTERNS],
-  ];
-
-  for (const [category, patterns] of checks) {
-    const match = testPatterns(command, patterns);
-    if (match) {
-      return { category, matched: String(match), subject: command };
-    }
-  }
-
-  if (hasExfiltrationRisk(command)) {
-    return {
-      category: "Potential data exfiltration",
-      matched: "sensitive path + outbound network destination",
-      subject: command,
-    };
-  }
-
   return undefined;
 }
 
@@ -253,11 +94,10 @@ function formatDeploymentState(state: {
 }
 
 function detectReadRisk(path: string): Risk | undefined {
-  const secretPathMatch = testPatterns(path, SECRET_PATH_PATTERNS);
-  if (secretPathMatch) {
+  if (isSecretPath(path)) {
     return {
       category: "Reading secret/credential file",
-      matched: String(secretPathMatch),
+      matched: "path is a conventional secret or credential file",
       subject: path,
     };
   }
@@ -265,11 +105,10 @@ function detectReadRisk(path: string): Risk | undefined {
 }
 
 function detectWriteRisk(path: string): Risk | undefined {
-  const secretPathMatch = testPatterns(path, SECRET_PATH_PATTERNS);
-  if (secretPathMatch) {
+  if (isSecretPath(path)) {
     return {
       category: "Writing to secret/credential file",
-      matched: String(secretPathMatch),
+      matched: "path is a conventional secret or credential file",
       subject: path,
     };
   }
@@ -687,6 +526,21 @@ function warnIfContextIsHigh(ctx: ExtensionContext) {
   );
 }
 
+const pendingToolNotes = new Map<string, string[]>();
+
+function addToolNote(toolCallId: string, note: string) {
+  pendingToolNotes.set(toolCallId, [
+    ...(pendingToolNotes.get(toolCallId) ?? []),
+    note,
+  ]);
+}
+
+function takeToolNotes(toolCallId: string): string[] {
+  const notes = pendingToolNotes.get(toolCallId) ?? [];
+  pendingToolNotes.delete(toolCallId);
+  return notes;
+}
+
 let herdrBlockSequence = 0;
 
 function reportHerdrBlocked(pi: ExtensionAPI, label: string, message?: string) {
@@ -785,44 +639,76 @@ export default function (pi: ExtensionAPI) {
   });
 
   pi.on("agent_end", async (event, ctx) => {
+    pendingToolNotes.clear();
     await handleProviderRecovery(pi, event, ctx);
   });
 
   pi.on("tool_result", async (event) => {
-    return summarizeLargeToolResult(event);
+    const notes = takeToolNotes(event.toolCallId);
+    const summarized = await summarizeLargeToolResult(event);
+    if (notes.length === 0) return summarized;
+    return {
+      ...summarized,
+      content: [
+        ...(summarized?.content ?? event.content),
+        { type: "text" as const, text: notes.join("\n") },
+      ],
+    };
   });
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "bash" && typeof event.input.command === "string") {
-      const temporaryWriteRisk = detectTemporaryShellWrite(event.input.command);
+      const command = event.input.command;
+      // Search patterns, commit messages, comments, and heredoc documents are
+      // text, not commands. Pattern checks only see executed shell code.
+      const inspected = maskInertShellText(command);
+
+      const temporaryWriteRisk = detectTemporaryShellWrite(inspected);
       if (temporaryWriteRisk)
-        return blockCatastrophicRisk(pi, temporaryWriteRisk);
+        return blockCatastrophicRisk(pi, {
+          ...temporaryWriteRisk,
+          subject: command,
+        });
 
       const destructiveRisk = await detectDestructiveShellRisk(
-        event.input.command,
+        inspected,
         ctx.cwd,
       );
-      if (destructiveRisk?.hardBlock)
-        return blockCatastrophicRisk(pi, destructiveRisk);
-      if (destructiveRisk) return requestApproval(pi, ctx, destructiveRisk);
+      if (destructiveRisk) {
+        const risk = { ...destructiveRisk, subject: command };
+        return risk.hardBlock
+          ? blockCatastrophicRisk(pi, risk)
+          : requestApproval(pi, ctx, risk);
+      }
 
-      const risk = detectBashRisk(event.input.command);
+      const gitInvocations = extractGitInvocationsFromShell(inspected);
+      for (const gitInvocation of gitInvocations) {
+        const operation = detectDestructiveGitOperation(gitInvocation, {
+          cwd: ctx.cwd,
+        });
+        if (operation) {
+          return requestApproval(pi, ctx, {
+            category: "Destructive Git operation",
+            matched: `${operation.operation}: ${operation.reason}`,
+            subject: command,
+          });
+        }
+      }
+
+      const risk = detectBashRisk(command, ctx.cwd, inspected);
       if (risk) return requestApproval(pi, ctx, risk);
 
-      const deployment = await inspectProductionDeployment(
-        event.input.command,
-        {
-          cwd: ctx.cwd,
-          interactive: ctx.hasUI,
-        },
-      );
+      const deployment = await inspectProductionDeployment(command, {
+        cwd: ctx.cwd,
+        interactive: ctx.hasUI,
+      });
       if (deployment.isProduction && deployment.hardBlock) {
         const risk = {
           category: "Production deployment blocked",
           matched:
             deployment.remediation ??
             "Production deployment source state is unsafe",
-          subject: event.input.command,
+          subject: command,
           remediation: deployment.remediation,
         };
         return blockCatastrophicRisk(pi, risk);
@@ -833,34 +719,32 @@ export default function (pi: ExtensionAPI) {
           matched: deployment.state
             ? formatDeploymentState(deployment.state)
             : (deployment.remediation ?? "Git state could not be determined"),
-          subject: event.input.command,
+          subject: command,
         });
       }
 
-      if (hasUninspectableGitShell(event.input.command)) {
+      if (hasUninspectableGitShell(inspected)) {
         return requestApproval(pi, ctx, {
           category: "Uninspectable Git shell syntax",
           matched: "Git appears inside unsupported or malformed shell syntax",
-          subject: event.input.command,
+          subject: command,
         });
       }
 
-      const gitInvocations = extractGitInvocationsFromShell(
-        event.input.command,
-      );
+      // A root-relative pathspec from a nested directory silently matches
+      // nothing. That is misleading, not destructive, so tell the model in the
+      // tool result instead of asking the human.
       for (const gitInvocation of gitInvocations) {
         const pathspecWarning = await detectGitPathspecCwdMistake(
           gitInvocation,
-          {
-            cwd: ctx.cwd,
-          },
+          { cwd: ctx.cwd },
         );
         if (pathspecWarning) {
-          return requestApproval(pi, ctx, {
-            category: "Likely Git pathspec/cwd mistake",
-            matched: `${pathspecWarning.path}: ${pathspecWarning.remediation}`,
-            subject: event.input.command,
-          });
+          addToolNote(
+            event.toolCallId,
+            `[damage-control] Note: Git pathspec "${pathspecWarning.path}" does not exist relative to ${ctx.cwd}, so Git may report nothing for it. ${pathspecWarning.remediation}`,
+          );
+          break;
         }
       }
 
@@ -882,7 +766,7 @@ export default function (pi: ExtensionAPI) {
           return requestApproval(pi, ctx, {
             category: "Git command requires approval",
             matched: `${invocationSafety.effect}: ${invocationSafety.remediation}`,
-            subject: event.input.command,
+            subject: command,
           });
         }
       }

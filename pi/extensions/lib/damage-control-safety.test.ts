@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
-import { mkdtemp, mkdir, symlink } from "node:fs/promises"
+import { execFile } from "node:child_process"
+import { mkdtemp, mkdir, symlink, writeFile } from "node:fs/promises"
 import { homedir, tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -63,7 +64,7 @@ test("hard-blocks a literal alias that resolves to home", async () => {
 test("allows approval for a narrow literal recursive cleanup", async () => {
   for (const command of [
     "rm -rf ./dist",
-    "rm -rf ~/Library/Caches/example",
+    "rm -rf ./generated",
     'rm -rf ./dist && echo "$HOME"',
   ]) {
     const risk = await detectDestructiveShellRisk(command, "/tmp/project")
@@ -213,6 +214,138 @@ test("allows managed workspace writes, temporary-path reads, cleanup, and non-te
     "printf ok > /tmp/pi-managed-workspaces/workspace-abc123/result.txt",
   ]) {
     assert.equal(detectTemporaryShellWrite(command), undefined, command)
+  }
+})
+
+test("allows deleting regenerable artifacts without approval", async () => {
+  const root = await mkdtemp(join(tmpdir(), "damage-control-test-"))
+  for (const command of [
+    "rm -rf node_modules",
+    "rm -rf .next node_modules .turbo",
+    "rm -rf apps/web/.next",
+    "rm -rf packages/*/node_modules",
+    "rm -rf node_modules/.cache",
+    "npx rimraf node_modules .next",
+    "rm -rf __pycache__ .pytest_cache",
+    "find . -name node_modules -type d -prune -exec rm -rf {} +",
+    "find . -name '*.pyc' -delete",
+    "find . -name .DS_Store -delete",
+    "rm -rf ~/Library/Caches/example",
+  ]) {
+    assert.equal(await detectDestructiveShellRisk(command, root), undefined, command)
+  }
+})
+
+test("allows deleting build output only when Git ignores it", async () => {
+  const root = await mkdtemp(join(tmpdir(), "damage-control-test-"))
+  await new Promise<void>((resolve, reject) =>
+    execFile("git", ["init", "-q", root], (error) => (error ? reject(error) : resolve())),
+  )
+  await writeFile(join(root, ".gitignore"), "dist/\ncoverage\n")
+  await mkdir(join(root, "dist"))
+  assert.equal(await detectDestructiveShellRisk("rm -rf dist coverage", root), undefined)
+  assert.equal((await detectDestructiveShellRisk("rm -rf build", root))?.category, "Recursive or bulk deletion")
+
+  // A preceding cd changes what `dist` means, so it is checked where it runs.
+  const other = await mkdtemp(join(tmpdir(), "damage-control-test-"))
+  const spaced = join(other, "with space")
+  await mkdir(join(spaced, "dist"), { recursive: true })
+  await mkdir(join(root, "app"))
+  assert.equal(await detectDestructiveShellRisk("cd app && rm -rf dist", root), undefined)
+  for (const command of [
+    `cd ${other} && rm -rf dist`,
+    `cd "${spaced}" && rm -rf dist`,
+    "cd - && rm -rf dist",
+    "(cd app) && rm -rf dist",
+  ]) {
+    assert.equal((await detectDestructiveShellRisk(command, root))?.category, "Recursive or bulk deletion", command)
+  }
+  assert.equal(await detectDestructiveShellRisk("cd app && rm -rf node_modules .next", root), undefined)
+  const findFromHome = "cd ~ && find . -name node_modules -type d -prune -exec rm -rf {} +"
+  assert.equal((await detectDestructiveShellRisk(findFromHome, root))?.category, "Recursive or bulk deletion")
+})
+
+test("still asks when a deletion reaches beyond regenerable artifacts", async () => {
+  const root = await mkdtemp(join(tmpdir(), "damage-control-test-"))
+  await mkdir(join(root, "real"))
+  await symlink(join(root, "real"), join(root, ".next"))
+  for (const command of [
+    "rm -rf node_modules src",
+    "rm -rf node_modules/../src",
+    "rm -rf .next/",
+    "rm -rf dist",
+    "rm -rf packages/*/node_modules/",
+    "rm -rf node_modules*",
+    "find . -name node_modules -o -name src -exec rm -rf {} +",
+    "find / -name node_modules -type d -prune -exec rm -rf {} +",
+    "find . -name src -type d -exec rm -rf {} +",
+    "find . -name node_modules -exec rm -rf {} + -o -delete",
+    "ls | xargs rm -rf",
+    "rm -rf ~/Library/Caches",
+  ]) {
+    const risk = await detectDestructiveShellRisk(command, root)
+    assert.equal(risk?.category, "Recursive or bulk deletion", command)
+  }
+  assert.equal((await detectDestructiveShellRisk("npx rimraf ~", root))?.hardBlock, true)
+  assert.equal((await detectDestructiveShellRisk("rm -rf node_modules ~", root))?.hardBlock, true)
+})
+
+test("asks when symlinks or find options lead outside the workspace", async () => {
+  const base = await mkdtemp(join(tmpdir(), "damage-control-test-"))
+  const project = join(base, "project")
+  const important = join(base, "important with space")
+  await mkdir(join(important, "node_modules"), { recursive: true })
+  await mkdir(join(project, "packages", "real", "node_modules"), { recursive: true })
+  await symlink(important, join(project, "packages", "linked"))
+  await symlink(important, join(project, "external"))
+  await writeFile(join(important, ".gitignore"), "")
+
+  for (const command of [
+    "rm -rf packages/*/node_modules",
+    "rm -rf external/node_modules",
+    "find -L / -name node_modules -exec rm -rf {} +",
+    "find -L external -name node_modules -exec rm -rf {} +",
+    "find external/ -name node_modules -exec rm -rf {} +",
+    "find . -follow -name node_modules -exec rm -rf {} +",
+    `cd "${important}" && rm -rf dist`,
+  ]) {
+    const risk = await detectDestructiveShellRisk(command, project)
+    assert.equal(risk?.category, "Recursive or bulk deletion", command)
+  }
+  assert.equal(await detectDestructiveShellRisk("rm -rf packages/real/node_modules", project), undefined)
+  assert.equal(await detectDestructiveShellRisk("find packages -name node_modules -prune -exec rm -rf {} +", project), undefined)
+})
+
+test("does not mistake hyphenated file names for recursive flags", async () => {
+  for (const command of [
+    "rm pnpm-workspace.yaml",
+    "rm -f foo-bar.txt",
+    "rm my-file-reader.ts",
+    "git checkout -- .gitignore && rm pnpm-workspace.yaml && git status --short",
+    "git rm -r --cached node_modules",
+  ]) {
+    assert.equal(
+      await detectDestructiveShellRisk(command, "/tmp/project"),
+      undefined,
+      command,
+    )
+  }
+})
+
+test("hard-blocks catastrophic targets on later lines and behind a backslash", async () => {
+  for (const command of ["cd /\nrm -rf ~", "\\rm -rf /", "nice rm -rf ~", "rm -rf ./dist && rm -rf ~"]) {
+    const risk = await detectDestructiveShellRisk(command, "/tmp/project")
+    assert.equal(risk?.hardBlock, true, command)
+  }
+})
+
+test("asks before glob deletion unless it only targets disposable artifacts", async () => {
+  for (const command of ["rm -f *", "rm dist/*", "rm -- .*", "rm -f pi/extensions/*.ts", "rm src/*.ts", "rm a.txt && rm -f src/*.ts"]) {
+    const risk = await detectDestructiveShellRisk(command, "/tmp/project")
+    assert.equal(risk?.category, "Bulk file deletion", command)
+  }
+  for (const command of ["rm -f *.log", "rm -f logs/*.log", "rm -f **/.DS_Store", "rm -f a.ts b.ts"]) {
+    assert.equal(await detectDestructiveShellRisk(command, "/tmp/project"), undefined, command)
   }
 })
 

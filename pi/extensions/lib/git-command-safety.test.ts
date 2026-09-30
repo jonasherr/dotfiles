@@ -6,6 +6,7 @@ import test from "node:test"
 
 import {
   classifyGitCommand,
+  detectDestructiveGitOperation,
   detectGitPathspecCwdMistake,
   extractGitInvocationsFromShell,
   hasUninspectableGitShell,
@@ -136,13 +137,81 @@ test("classifies Git commands inside supported substitutions", () => {
   assert.equal(classifyGitCommand(invocations[0], { cwd: "/repo" }).effect, "external-or-remote-mutation")
 })
 
-test("does not classify a direct Git command with shell substitution as read-only", () => {
+test("classifies read-only commands with substitutions and separately inspects nested commands", () => {
   const command = "git show $(git push origin HEAD)"
-  assert.deepEqual(extractGitInvocationsFromShell(command), [
-    "git show $(git push origin HEAD)",
-    "git push origin HEAD",
-  ])
-  assert.equal(classifyGitCommand(command, { cwd: "/repo" }).effect, "unknown")
+  const invocations = extractGitInvocationsFromShell(command)
+  assert.deepEqual(invocations, ["git show $(git push origin HEAD)", "git push origin HEAD"])
+  assert.equal(classifyGitCommand(invocations[0], { cwd: "/repo" }).effect, "read-only")
+  assert.equal(classifyGitCommand(invocations[1], { cwd: "/repo" }).effect, "external-or-remote-mutation")
+})
+
+test("handles transparent shell prefixes, groups, and known data commands", () => {
+  const safe = [
+    "which git", "command -v git >/dev/null && git status --short", "rg -n git src", "ls ~/.config/git",
+    "brew info git", "GIT_PAGER=cat git log --oneline -5", "if git diff --quiet; then echo clean; else git status; fi",
+    "for c in a b; do git show --stat $c; done", "(cd nvim && git status --short)",
+    "{ git status --short; git log -1 --oneline; } 2>&1 | head -20", "time git status",
+    "if ! git diff --quiet; then echo dirty; fi", "git -C ${HOME}/x status",
+    "env -i A=b git status", "nice -n 5 git status", "nohup git status", "timeout 5 git status",
+    "bash -lc 'git push origin main'",
+  ]
+  for (const command of safe) assert.equal(hasUninspectableGitShell(command), false, command)
+  assert.deepEqual(extractGitInvocationsFromShell("which git; command -v git; rg -n git src; brew info git"), [])
+  assert.deepEqual(extractGitInvocationsFromShell("GIT_PAGER=cat git log --oneline -5; for c in a b; do git show --stat $c; done"), ["git log --oneline -5", "git show --stat $c"])
+  assert.deepEqual(extractGitInvocationsFromShell("bash -lc 'git push origin main'"), ["git push origin main"])
+})
+
+test("keeps unknown Git executors and unsupported syntax fail-closed", () => {
+  for (const command of ["xargs git push", "sudo git push", "find . -exec git add {} \\\;", "git status <(git push)", "watch git status", "mise exec -- git push origin HEAD"]) {
+    assert.equal(hasUninspectableGitShell(command), true, command)
+  }
+})
+
+test("classifies read-only Git command families and mutation boundaries", () => {
+  const read = ["git --version", "git --help", "git -h", "git version", "git help status", "git --exec-path", "git describe", "git shortlog", "git name-rev HEAD", "git cherry", "git range-diff a b", "git whatchanged", "git show-branch", "git count-objects", "git fsck", "git verify-commit HEAD", "git verify-tag v1", "git var GIT_EDITOR", "git diff-tree HEAD", "git diff-index HEAD", "git diff-files", "git check-attr x -- file", "git check-ref-format main", "git check-mailmap A", "git annotate file", "git patch-id", "git get-tar-commit-id", "git stash list", "git stash show", "git notes list", "git notes show", "git bisect log", "git bisect view", "git bisect visualize", "git submodule status", "git submodule summary", "git symbolic-ref HEAD", "git apply --check patch", "git format-patch --stdout HEAD", "git archive HEAD"]
+  for (const command of read) assert.equal(classifyGitCommand(command, { cwd: "/repo" }).effect, "read-only", command)
+  const effects: Array<[string, string]> = [
+    ["git config user.email", "read-only"], ["git config user.email x@y", "external-or-remote-mutation"],
+    ["git config --global --show-origin user.email", "read-only"], ["git fetch", "local-repository-mutation"],
+    ["git init -q", "local-repository-mutation"],
+    ["git pull", "local-checkout-mutation"], ["git clone x", "local-checkout-mutation"],
+    ["git submodule foreach git status", "unknown"], ["git submodule update", "local-checkout-mutation"],
+    ["git remote -v", "read-only"], ["git remote add origin x", "local-repository-mutation"],
+    ["git symbolic-ref HEAD refs/heads/x", "local-repository-mutation"], ["git apply --index patch", "local-checkout-mutation"],
+    ["git diff --output=x", "local-checkout-mutation"], ["git log --output x", "local-checkout-mutation"],
+    ["git grep -n pattern $(git for-each-ref --format='%(refname)' refs/remotes/origin) -- ':!pnpm-lock.yaml'", "read-only"],
+    ["git status $(git push)", "read-only"],
+  ]
+  for (const [command, effect] of effects) assert.equal(classifyGitCommand(command, { cwd: "/repo" }).effect, effect, command)
+})
+
+test("detects explicitly destructive Git operations", async () => {
+  const positives = ["git -C . reset --hard", "git -c a=b clean -fdx", "git checkout -- .gitignore", "git checkout .", "git restore src/x.ts", "git stash drop", "git branch -D old", "git push origin +main", "git push origin :old"]
+  for (const command of positives) assert.ok(detectDestructiveGitOperation(command, { cwd: process.cwd() }), command)
+  const negatives = ["git push --follow-tags origin main", "git push origin feature-fix", "git push --force-with-lease", "git restore --staged x", "git log --grep=\"reset --hard\"", "git checkout main", "git checkout -b feature", "git checkout v1.2.3"]
+  for (const command of negatives) assert.equal(detectDestructiveGitOperation(command, { cwd: process.cwd() }), undefined, command)
+  const root = await mkdtemp(join(tmpdir(), "git-command-safety-"))
+  await writeFile(join(root, "src.ts"), "x")
+  assert.ok(detectDestructiveGitOperation("git checkout src.ts", { cwd: root }))
+  assert.ok(detectDestructiveGitOperation("git -C . checkout src.ts", { cwd: root }))
+})
+
+test("treats newlines as command separators", () => {
+  const command = "git status --short\ngit push origin main"
+  assert.deepEqual(extractGitInvocationsFromShell(command), ["git status --short", "git push origin main"])
+  assert.equal(classifyGitCommand("git push origin main", { cwd: "/repo" }).effect, "external-or-remote-mutation")
+})
+
+test("keeps Git text piped into a shell fail-closed", () => {
+  for (const command of ["echo git push origin main | sh", "printf 'git push' | bash"]) {
+    assert.equal(hasUninspectableGitShell(command), true, command)
+  }
+})
+
+test("classifies git clean dry runs as read-only and forced cleans as destructive", () => {
+  assert.equal(classifyGitCommand("git clean -nd", { cwd: "/repo" }).effect, "read-only")
+  assert.equal(detectDestructiveGitOperation("git clean -nd", { cwd: "/repo" }), undefined)
+  assert.equal(detectDestructiveGitOperation("git clean -fd", { cwd: "/repo" })?.operation, "git clean --force")
 })
 
 test("warns about a root-relative pathspec from a nested working directory", async () => {
