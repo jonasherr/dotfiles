@@ -222,6 +222,17 @@ function commandName(segment: ShellSegment): { name: string; args: ShellWord[] }
   return { name: executableName(segment.words[index]?.value), args: segment.words.slice(index + 1) }
 }
 
+function slackWriteRisk(segments: readonly ShellSegment[]): string | undefined {
+  for (const segment of segments) {
+    const { name, args } = commandName(segment)
+    if (name !== "slack-cli") continue
+    const commands = args.map(({ value }) => value).filter((value) => !value.startsWith("-"))
+    if (commands[0] === "messages" && commands[1] === "send") return "slack-cli messages send"
+    if (commands[0] === "reactions" && commands[1] === "add") return "slack-cli reactions add"
+  }
+  return undefined
+}
+
 /** File arguments a reader will open, skipping patterns, scripts, and option values. */
 function readerFileArguments(name: string, args: readonly ShellWord[]): string[] {
   const values = args.map(({ value }) => value)
@@ -596,6 +607,9 @@ export function detectBashRisk(
   }
 
   const parsed = parseShell(command)
+  const slackWrite = parsed.confident ? slackWriteRisk(parsed.segments) : undefined
+  if (slackWrite) return { category: "Slack write action requires approval", matched: slackWrite, subject: command }
+
   const remote = firstMatch(inspected, REMOTE_PUBLISH_PATTERNS) ??
     (parsed.confident ? githubApiWrite(parsed.segments) : undefined)
   if (remote) return { category: "Publishes or changes remote state", matched: remote, subject: command }

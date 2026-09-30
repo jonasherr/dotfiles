@@ -99,6 +99,31 @@ test("flags secret reads, copies, and exfiltration", () => {
   }
 })
 
+test("requires approval for Slack message sends and reaction adds, but not reads", () => {
+  const writes = [
+    'slack-cli messages send general "Hello"',
+    "slack-cli messages send C123ABC Hello --thread-ts 1234567890.123456",
+    "slack-cli reactions add https://vercel.slack.com/archives/C123/p1234567890123456 eyes",
+    "command slack-cli reactions add general thumbsup --timestamp 1234567890.123456",
+    'SLACK_PROFILE=work env slack-cli messages send general "Hello"',
+    'echo "slack-cli messages send general hello"',
+  ]
+  for (const command of writes.slice(0, 5)) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, "Slack write action requires approval", command)
+  }
+  assert.equal(detectBashRisk(writes[5], "/repo"), undefined, writes[5])
+
+  for (const command of [
+    "slack-cli messages list general",
+    "slack-cli messages thread general 1234567890.123456",
+    'slack-cli search "deployment failed"',
+    "slack-cli reactions list general --timestamp 1234567890.123456",
+    "slack-cli auth status",
+  ]) {
+    assert.equal(detectBashRisk(command, "/repo"), undefined, command)
+  }
+})
+
 test("flags publishing and GitHub changes but not reads or dry runs", () => {
   for (const command of [
     "gh pr create --fill",
