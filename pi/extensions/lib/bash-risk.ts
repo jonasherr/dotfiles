@@ -535,8 +535,9 @@ function remoteWriteRisk(segments: readonly ShellSegment[]): string | undefined 
       const methodIndex = values.findIndex((value) => /^(?:POST|PUT|PATCH|DELETE)$/i.test(value))
       const target = values.find((value) => /^https?:\/\//i.test(value)) ??
         values[methodIndex >= 0 ? methodIndex + 1 : 0]
-      // Request items such as `name=x` or `count:=3` imply POST; options do not.
-      const item = values.some((value) => !value.startsWith("-") && /^[^:=\s]+(?::=|=).+/.test(value))
+      // Data items such as `name=x`, `count:=3`, or `file@a.txt` imply POST.
+      // Query parameters (`q==x`), headers (`Accept:json`), and URLs do not.
+      const item = values.some((value) => !value.startsWith("-") && /^[\w.[\]-]+(?::=|=(?!=)|@)/.test(value))
       const method = methodIndex >= 0 ? values[methodIndex].toUpperCase() : item ? "POST" : ""
       const host = extractHost(target)
       if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && (!host || !isLocalHost(host))) return `${name} ${method} ${target ?? "unknown host"}`

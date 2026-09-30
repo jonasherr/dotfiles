@@ -358,3 +358,16 @@ test("allows inline checks that print a label or boolean instead of a secret", (
     assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
   }
 })
+
+test("treats httpie query parameters and headers as reads", () => {
+  const cases: Array<[string, string | undefined]> = [
+    ["http https://api.github.com/search/repositories q==nextjs per_page==5", undefined],
+    ["http example.com/search?q=cache", undefined],
+    ["http GET https://api.example.com/items Accept:application/json", undefined],
+    ["http https://api.example.com/items name=x", "Publishes or changes remote state"],
+    ["http --form https://api.example.com/upload file@report.pdf", "Publishes or changes remote state"],
+  ]
+  for (const [command, category] of cases) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
+  }
+})
