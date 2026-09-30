@@ -90,6 +90,9 @@ test("turns a Git pathspec/cwd mistake into a note instead of a prompt", async (
   const result = await inspectBashCommand("git diff --stat -- pi/extensions", { cwd: nested, interactive: true })
   assert.equal(result.decision, "allow")
   assert.match(result.notes.join("\n"), /Use extensions relative to the current directory/)
+  // After cd the path may be right for where Git actually runs.
+  const afterCd = await inspectBashCommand("cd .. && git diff --stat -- pi/extensions", { cwd: nested, interactive: true })
+  assert.deepEqual(afterCd.notes, [])
 })
 
 test("allows artifact cleanup and asks for everything else", async () => {

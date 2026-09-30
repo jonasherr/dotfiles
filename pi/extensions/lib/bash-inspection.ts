@@ -125,7 +125,8 @@ async function inspect(command: string, context: BashInspectionContext, state: S
 
   // A root-relative pathspec from a nested directory silently matches nothing.
   // That is misleading, not destructive, so the model gets a note instead.
-  if (!nested) {
+  // After cd the directory Git runs in is unclear, so there is no note.
+  if (!nested && !CHANGES_DIRECTORY.test(inspected)) {
     for (const invocation of gitInvocations) {
       const warning = await detectGitPathspecCwdMistake(invocation, { cwd: context.cwd })
       if (warning) {
