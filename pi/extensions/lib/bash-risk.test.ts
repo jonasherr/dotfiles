@@ -145,6 +145,137 @@ test("flags publishing and GitHub changes but not reads or dry runs", () => {
   }
 })
 
+test("flags environment and credential output without flagging safe or captured values", () => {
+  const flagged = [
+    "printenv",
+    "env | grep -i token",
+    'echo "$OPENAI_API_KEY"',
+    "printenv GITHUB_TOKEN",
+    "gh auth token",
+    "gh auth status -t",
+    "gcloud auth print-access-token",
+    "gcloud auth application-default print-access-token",
+    "aws configure get aws_secret_access_key",
+    "aws configure export-credentials",
+    "aws sts get-session-token",
+    "aws sts assume-role --role-arn x --role-session-name y",
+    "az account get-access-token",
+    "security find-generic-password -w -s foo",
+    "kubectl get secret foo -o yaml",
+    "heroku config",
+    "heroku config:get TOKEN",
+    "node -p process.env",
+    "node -e 'console.log(process.env.OPENAI_API_KEY)'",
+    "python3 -c 'print(os.environ.get(\"GITHUB_TOKEN\"))'",
+  ]
+  for (const command of flagged) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, "Secret/credential access", command)
+  }
+  for (const command of [
+    'echo "$PATH"',
+    "echo ${#TOKEN}",
+    "set -euo pipefail",
+    "env FOO=1 node x.js",
+    "curl -G -d a=1 https://api.example.com",
+    "aws configure get region",
+    "http POST localhost:3000/x x=y",
+    "wget --method=PUT http://localhost/x",
+    "TOKEN=$(gh auth token)",
+    'GH_TOKEN="$(gh auth token)" curl https://api.github.com/user',
+    "gh auth token | docker login ghcr.io -u me --password-stdin",
+    'curl -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user',
+    'op item get "GitHub Token" --fields password',
+    "node -e 'console.log(process.env.NODE_ENV)'",
+    "node -e 'console.log(Object.keys(process.env))'",
+    "env | wc -l",
+  ]) {
+    assert.equal(detectBashRisk(command, "/repo"), undefined, command)
+  }
+})
+
+test("flags local and hosted database wipe commands, not maintenance reads", () => {
+  for (const command of [
+    "prisma migrate reset",
+    "prisma db push --force-reset",
+    "prisma db push --accept-data-loss",
+    "supabase db reset",
+    "supabase db reset --linked",
+    "dropdb app",
+    "rails db:drop",
+    "rake db:reset",
+    "bin/rails db:migrate:reset",
+    "rails db:schema:load",
+    "rails db:purge",
+    "rails db:truncate_all",
+    "db.dropDatabase()",
+    "turso db destroy prod",
+    "neonctl branches delete main",
+    "neonctl projects delete p1",
+    "neonctl databases delete d1",
+    "pscale database delete app main",
+    "pscale branch delete app dev",
+    "wrangler d1 delete app",
+  ]) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, "Destructive database operation", command)
+  }
+  for (const command of ["prisma migrate dev", "supabase db diff", "echo prisma migrate reset; echo ok"]) {
+    assert.equal(detectBashRisk(command, "/repo"), undefined, command)
+  }
+})
+
+test("flags remote HTTP writes and cloud mutations, while allowing local and read-only calls", () => {
+  for (const command of [
+    `curl -X POST https://hooks.slack.com/services/x -d '{"text":"hi"}'`,
+    "curl -d a=1 https://api.example.com",
+    'curl -X DELETE "$API_URL/items/1"',
+    "curl -XPATCH https://api.example.com/resource",
+    "curl -T file.json https://api.example.com/upload",
+    "curl --json '{}' https://api.example.com",
+    "wget --post-data=x https://api.example.com",
+    "wget --method=DELETE https://api.example.com/x",
+    "http POST https://api.example.com/items name=hi",
+    "xh https://api.example.com/items name=hi",
+    "vercel env add API_KEY",
+    "vercel env rm API_KEY",
+    "vercel env update API_KEY",
+    "vercel domains add example.com",
+    "vercel dns delete example.com",
+    "vercel alias set x y",
+    "vercel promote",
+    "vercel rollback",
+    "vercel redeploy",
+    "kubectl delete pod x",
+    "helm uninstall app",
+    "aws s3 sync s3://a s3://b --delete",
+    "aws s3 rb s3://bucket",
+  ]) {
+    const category = /^(kubectl|helm|aws) /.test(command) ? "Destructive cloud CLI operation" : "Publishes or changes remote state"
+    assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
+  }
+  for (const command of [
+    "curl -X POST http://localhost:3000/api/x -d '{}'",
+    "curl -X POST http://127.0.0.1/api/x -d '{}'",
+    "curl -X POST https://api.example.local/x -d '{}'",
+    "curl -s https://api.example.com/items",
+    `curl -X POST https://api.github.com/graphql -d '{"query":"query { viewer { login } }"}'`,
+    "wget https://api.example.com/read",
+    "vercel ls",
+    "vercel inspect x",
+    "vercel logs x",
+    "vercel env ls",
+    "vercel domains ls",
+    "vercel whoami",
+    "vercel pull",
+    "vercel link",
+    "vercel build",
+    "vercel dev",
+    "vercel deploy",
+    "kubectl get pods",
+  ]) {
+    assert.equal(detectBashRisk(command, "/repo"), undefined, command)
+  }
+})
+
 test("only flags overwriting a secret file when it already exists", async () => {
   const root = await mkdtemp(join(tmpdir(), "bash-risk-"))
   assert.equal(detectBashRisk("cp .env.example .env", root), undefined)
@@ -167,5 +298,63 @@ test("recognizes conventional secret paths", () => {
     "~/.ssh/id_rsa.pub", "~/.aws/config", "process.env.API_KEY", ".key", "keys.ts",
   ]) {
     assert.equal(isSecretPath(path), false, path)
+  }
+})
+
+test("handles assignment prefixes, httpie items, and kubectl options", () => {
+  const cases: Array<[string, string | undefined]> = [
+    ["DEBUG=1 printenv", "Secret/credential access"],
+    ['DEBUG=1 echo "$OPENAI_API_KEY"', "Secret/credential access"],
+    ["GH_TOKEN=$(gh auth token) gh api user", undefined],
+    ["http POST https://api.example.com/items status=done", "Publishes or changes remote state"],
+    ["http --auth=me:pass https://api.example.com/items", undefined],
+    ["kubectl -n prod delete pod web-1", "Destructive cloud CLI operation"],
+    ["kubectl logs delete-job-123", undefined],
+    ['echo "$SSH_AUTH_SOCK"', undefined],
+    ['echo "$NEXT_PUBLIC_SUPABASE_ANON_KEY"', undefined],
+    ['echo "$NEXTAUTH_SECRET"', "Secret/credential access"],
+  ]
+  for (const [command, category] of cases) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
+  }
+})
+
+test("does not exempt secrets saved to files or copied with tee", () => {
+  for (const command of [
+    'echo "$TOKEN" >env.txt',
+    "printenv > env.txt",
+    "gh auth token | tee token.log | wc -c",
+    'echo "$OPENAI_API_KEY" > output.txt && cat output.txt',
+  ]) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, "Secret/credential access", command)
+  }
+})
+
+test("checks every curl URL and only real GraphQL mutations", () => {
+  const remote = "Publishes or changes remote state"
+  const cases: Array<[string, string | undefined]> = [
+    ["curl -X POST https://api.example.com/items -d x=1 --url http://localhost", remote],
+    ["curl -X POST --url=https://api.example.com/items -d x=1", remote],
+    ['curl -X POST https://api.example.com/graphql -d \'{"query":"query { a }","variables":{"mutation":1}}\'', undefined],
+    ['curl -X POST https://api.example.com/graphql -d \'{"query":"mutation { addStar { id } }"}\'', remote],
+    ["gh api graphql -f query='query { viewer { login } }' -F mutation=1", undefined],
+  ]
+  for (const [command, category] of cases) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
+  }
+})
+
+test("allows inline checks that print a label or boolean instead of a secret", () => {
+  const cases: Array<[string, string | undefined]> = [
+    ["node -e \"console.log(process.env.OPENAI_API_KEY ? 'configured' : 'missing')\"", undefined],
+    ['node -e "console.log(!!process.env.OPENAI_API_KEY)"', undefined],
+    ['node -p "process.env.OPENAI_API_KEY?.length"', undefined],
+    ["python3 -c \"import os; print(os.getenv('OPENAI_API_KEY') is not None)\"", undefined],
+    ["node -e \"console.log(process.env.OPENAI_API_KEY ?? 'none')\"", "Secret/credential access"],
+    ['node -p "process.env.OPENAI_API_KEY"', "Secret/credential access"],
+    ["python3 -c \"import os; print(os.environ['OPENAI_API_KEY'])\"", "Secret/credential access"],
+  ]
+  for (const [command, category] of cases) {
+    assert.equal(detectBashRisk(command, "/repo")?.category, category, command)
   }
 })

@@ -793,9 +793,9 @@ export function classifyGitCommand(
     ? "unknown"
     : classify(parsed.command, parsed.args)
   const actualCwd = commandDirectory(words, context.cwd)
-  const targetsPrimaryCheckout = Boolean(
-    context.primaryCheckout && resolve(context.primaryCheckout) === actualCwd,
-  )
+  // Anything inside the primary checkout counts, not just its root.
+  const primary = context.primaryCheckout ? resolve(context.primaryCheckout) : undefined
+  const targetsPrimaryCheckout = Boolean(primary && (actualCwd === primary || isDescendant(primary, actualCwd)))
   const requiresApproval = effect !== "read-only"
   const remediation = effect === "read-only"
     ? "Git inspection is read-only."

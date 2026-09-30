@@ -201,6 +201,24 @@ async function isGitIgnored(path: string): Promise<boolean> {
   }
 }
 
+const LOCKFILE =
+  /(?:^|\/)(?:package-lock\.json|npm-shrinkwrap\.json|yarn\.lock|pnpm-lock\.yaml|bun\.lockb?|Cargo\.lock|poetry\.lock|uv\.lock|Gemfile\.lock|composer\.lock|go\.sum)$/
+const BUNDLED_FILE = /\.(?:min\.(?:js|css)|bundle\.js)$/
+
+/**
+ * True for lockfiles, bundles, and files inside regenerable or Git-ignored
+ * output directories. Edits there are usually overwritten, but not destructive.
+ */
+export async function isGeneratedPath(path: string, cwd: string): Promise<boolean> {
+  if (LOCKFILE.test(path) || BUNDLED_FILE.test(path)) return true
+  const absolute = resolve(cwd, path.replace(/^~(?=\/|$)/, homedir()))
+  const parts = absolute.split(sep)
+  if (parts.some((part) => REGENERABLE_DIRECTORIES.has(part))) return true
+  // `dist` or `build` can be source folders, so ask Git whether they are output.
+  const output = parts.findIndex((part, index) => index < parts.length - 1 && IGNORED_OUTPUT_DIRECTORIES.has(part))
+  return output >= 0 && (await isGitIgnored(parts.slice(0, output + 1).join(sep)))
+}
+
 async function isCacheDirectory(path: string): Promise<boolean> {
   const home = await canonicalizeExisting(homedir())
   return [join(home, "Library", "Caches"), join(home, ".cache")].some((root) => isInside(root, path))
@@ -346,7 +364,7 @@ const CD_ARGUMENT = /^cd(?:\s+("(?:[^"\\]|\\.)*"|'[^']*'|[^\s;&|'"]+))?\s*(?:$|[
  * Undefined when it cannot be known (`cd -`, variables, subshells, pushd, or
  * anything that does not parse completely).
  */
-function directoryAt(command: string, index: number, cwd: string): string | undefined {
+export function directoryAt(command: string, index: number, cwd: string): string | undefined {
   const before = command.slice(0, index)
   if (!/(?:^|[;&|(){}\n])\s*(?:cd|pushd|popd)(?:\s|$)/.test(before)) return cwd
   if (/[(){}]|\b(?:pushd|popd)\b/.test(before)) return undefined

@@ -6,23 +6,14 @@ import type {
   ExtensionContext,
 } from "@mariozechner/pi-coding-agent";
 import { requestParentApproval } from "./lib/damage-control-approval-broker";
-import { detectBashRisk, isSecretPath } from "./lib/bash-risk";
 import { requestDamageControlApproval } from "./lib/damage-control-approval-ui";
+import { isSecretPath } from "./lib/bash-risk";
+import { inspectBashCommand } from "./lib/bash-inspection";
 import {
-  detectDestructiveShellRisk,
   detectTemporaryPathWrite,
-  detectTemporaryShellWrite,
+  isGeneratedPath,
   TEMPORARY_WORKSPACE_POLICY,
 } from "./lib/damage-control-safety";
-import { inspectProductionDeployment } from "./lib/deployment-safety";
-import {
-  classifyGitCommand,
-  detectDestructiveGitOperation,
-  detectGitPathspecCwdMistake,
-  extractGitInvocationsFromShell,
-  hasUninspectableGitShell,
-} from "./lib/git-command-safety";
-import { maskInertShellText } from "./lib/shell-inert-text";
 
 const TOOL_WARN_BYTES = 20 * 1024;
 const TOOL_SUMMARIZE_BYTES = 50 * 1024;
@@ -43,55 +34,11 @@ type TextContent = {
   [key: string]: unknown;
 };
 
-// ─── Generated or locked files (write/edit approval) ─────────────────────────
-const DESTRUCTIVE_PATH_PATTERNS: RegExp[] = [
-  /\/node_modules\//,
-  /\/dist\//,
-  /\/build\//,
-  /\/\.next\//,
-  /\/__pycache__\//,
-  /\/\.venv\//,
-  /package-lock\.json$/,
-  /yarn\.lock$/,
-  /pnpm-lock\.yaml$/,
-  /bun\.lockb$/,
-  /\.min\.(js|css)$/,
-  /\.bundle\.js$/,
-];
-
 type Risk = {
   category: string;
   matched: string;
   subject: string;
 };
-
-function testPatterns(value: string, patterns: RegExp[]): RegExp | undefined {
-  for (const pattern of patterns) {
-    if (pattern.test(value)) {
-      return pattern;
-    }
-  }
-  return undefined;
-}
-
-function formatDeploymentState(state: {
-  repositoryRoot: string;
-  deploymentDirectory: string;
-  revision: string;
-  branch?: string;
-  staged: number;
-  modified: number;
-  conflicted: number;
-  untracked: number;
-}): string {
-  const revision = state.branch ?? `detached at ${state.revision.slice(0, 12)}`;
-  return [
-    `repository: ${state.repositoryRoot}`,
-    `source: ${revision}`,
-    `deployment directory: ${state.deploymentDirectory}`,
-    `changes: staged ${state.staged}, modified ${state.modified}, conflicted ${state.conflicted}, untracked ${state.untracked}`,
-  ].join("\n");
-}
 
 function detectReadRisk(path: string): Risk | undefined {
   if (isSecretPath(path)) {
@@ -112,16 +59,6 @@ function detectWriteRisk(path: string): Risk | undefined {
       subject: path,
     };
   }
-
-  const destructivePathMatch = testPatterns(path, DESTRUCTIVE_PATH_PATTERNS);
-  if (destructivePathMatch) {
-    return {
-      category: "Writing to generated/locked file",
-      matched: String(destructivePathMatch),
-      subject: path,
-    };
-  }
-
   return undefined;
 }
 
@@ -658,118 +595,16 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("tool_call", async (event, ctx) => {
     if (event.toolName === "bash" && typeof event.input.command === "string") {
-      const command = event.input.command;
-      // Search patterns, commit messages, comments, and heredoc documents are
-      // text, not commands. Pattern checks only see executed shell code.
-      const inspected = maskInertShellText(command);
-
-      const temporaryWriteRisk = detectTemporaryShellWrite(inspected);
-      if (temporaryWriteRisk)
-        return blockCatastrophicRisk(pi, {
-          ...temporaryWriteRisk,
-          subject: command,
-        });
-
-      const destructiveRisk = await detectDestructiveShellRisk(
-        inspected,
-        ctx.cwd,
-      );
-      if (destructiveRisk) {
-        const risk = { ...destructiveRisk, subject: command };
-        return risk.hardBlock
-          ? blockCatastrophicRisk(pi, risk)
-          : requestApproval(pi, ctx, risk);
-      }
-
-      const gitInvocations = extractGitInvocationsFromShell(inspected);
-      for (const gitInvocation of gitInvocations) {
-        const operation = detectDestructiveGitOperation(gitInvocation, {
-          cwd: ctx.cwd,
-        });
-        if (operation) {
-          return requestApproval(pi, ctx, {
-            category: "Destructive Git operation",
-            matched: `${operation.operation}: ${operation.reason}`,
-            subject: command,
-          });
-        }
-      }
-
-      const risk = detectBashRisk(command, ctx.cwd, inspected);
-      if (risk) return requestApproval(pi, ctx, risk);
-
-      const deployment = await inspectProductionDeployment(command, {
+      const inspection = await inspectBashCommand(event.input.command, {
         cwd: ctx.cwd,
         interactive: ctx.hasUI,
+        primaryCheckout: process.env.PI_PRIMARY_CHECKOUT,
       });
-      if (deployment.isProduction && deployment.hardBlock) {
-        const risk = {
-          category: "Production deployment blocked",
-          matched:
-            deployment.remediation ??
-            "Production deployment source state is unsafe",
-          subject: command,
-          remediation: deployment.remediation,
-        };
-        return blockCatastrophicRisk(pi, risk);
-      }
-      if (deployment.isProduction && deployment.requiresApproval) {
-        return requestApproval(pi, ctx, {
-          category: "Production deployment source state",
-          matched: deployment.state
-            ? formatDeploymentState(deployment.state)
-            : (deployment.remediation ?? "Git state could not be determined"),
-          subject: command,
-        });
-      }
-
-      if (hasUninspectableGitShell(inspected)) {
-        return requestApproval(pi, ctx, {
-          category: "Uninspectable Git shell syntax",
-          matched: "Git appears inside unsupported or malformed shell syntax",
-          subject: command,
-        });
-      }
-
-      // A root-relative pathspec from a nested directory silently matches
-      // nothing. That is misleading, not destructive, so tell the model in the
-      // tool result instead of asking the human.
-      for (const gitInvocation of gitInvocations) {
-        const pathspecWarning = await detectGitPathspecCwdMistake(
-          gitInvocation,
-          { cwd: ctx.cwd },
-        );
-        if (pathspecWarning) {
-          addToolNote(
-            event.toolCallId,
-            `[damage-control] Note: Git pathspec "${pathspecWarning.path}" does not exist relative to ${ctx.cwd}, so Git may report nothing for it. ${pathspecWarning.remediation}`,
-          );
-          break;
-        }
-      }
-
-      const primaryCheckout = process.env.PI_PRIMARY_CHECKOUT;
-      for (const gitInvocation of gitInvocations) {
-        const isolatedTask = Boolean(primaryCheckout);
-        const invocationSafety = classifyGitCommand(gitInvocation, {
-          cwd: ctx.cwd,
-          primaryCheckout,
-          isolatedTask,
-        });
-        if (
-          invocationSafety.effect === "external-or-remote-mutation" ||
-          invocationSafety.effect === "unknown" ||
-          (isolatedTask && invocationSafety.effect !== "read-only") ||
-          (invocationSafety.targetsPrimaryCheckout &&
-            invocationSafety.effect !== "read-only")
-        ) {
-          return requestApproval(pi, ctx, {
-            category: "Git command requires approval",
-            matched: `${invocationSafety.effect}: ${invocationSafety.remediation}`,
-            subject: command,
-          });
-        }
-      }
+      for (const note of inspection.notes) addToolNote(event.toolCallId, note);
+      if (inspection.decision === "block")
+        return blockCatastrophicRisk(pi, inspection.risk);
+      if (inspection.decision === "ask")
+        return requestApproval(pi, ctx, inspection.risk);
     }
 
     if (event.toolName === "read" && typeof event.input.path === "string") {
@@ -787,6 +622,15 @@ export default function (pi: ExtensionAPI) {
 
       const risk = detectWriteRisk(event.input.path);
       if (risk) return requestApproval(pi, ctx, risk);
+
+      // Editing generated output or a lockfile is not destructive, just
+      // usually overwritten, so the model gets a note instead of a prompt.
+      if (await isGeneratedPath(event.input.path, ctx.cwd)) {
+        addToolNote(
+          event.toolCallId,
+          `[damage-control] Note: ${event.input.path} is generated output or a lockfile. Edits are usually overwritten; change the source or rerun the tool that generates it.`,
+        );
+      }
     }
 
     return undefined;

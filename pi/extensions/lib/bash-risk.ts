@@ -58,6 +58,10 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
   /\bdocker(?:-compose|\s+compose)\b[^;&|\n]*\sdown\b[^;&|\n]*\s(?:-v|--volumes)\b/,
   /\bkubectl\s+delete\s+(?:namespace|ns)\b/,
   /\bkubectl\s+delete\s+all\s+--all/,
+  /\bkubectl\b[^;&|\n]*\sdelete\s/,
+  /\bhelm\s+(?:uninstall|delete)\b/,
+  /\baws\s+s3\s+sync\b[^;&|\n]*--delete\b/,
+  /\baws\s+s3\s+rb\b/,
   /\bterraform\s+destroy\b/,
   /\bpulumi\s+destroy\b/,
   /\bheroku\s+apps:destroy\b/,
@@ -65,6 +69,12 @@ const CLOUD_CLI_PATTERNS: RegExp[] = [
   /\bredis-cli\b[^;&|\n]*\bFLUSH(?:ALL|DB)\b/i,
   /\bgh\s+repo\s+delete\b/,
   /\bnpm\s+unpublish\b/,
+]
+
+const VERCEL_WRITE_PATTERNS: RegExp[] = [
+  /\bvercel\s+env\s+(?:add|rm|remove|update)\b/,
+  /\bvercel\s+(?:domains|dns|alias|certs|blob|integration|teams|project|projects)\s+(?:add|rm|remove|delete|del|set|move|transfer|transfer-in|buy)\b/,
+  /\bvercel\s+(?:promote|rollback|redeploy)\b/,
 ]
 
 // Visible, hard-to-undo remote actions: publishing packages or images and
@@ -108,6 +118,16 @@ const DATABASE_DESTRUCTIVE_PATTERNS: RegExp[] = [
   /\bDROP\s+(?:TABLE|DATABASE|SCHEMA)\b/,
   /\bTRUNCATE\s+(?:TABLE\s+)?[A-Za-z_"`]/,
   /\bDELETE\s+FROM\s+[A-Za-z_"`]/,
+  /\bprisma\s+migrate\s+reset\b/,
+  /\bprisma\s+db\s+push\b[^;&|\n]*--(?:force-reset|accept-data-loss)\b/,
+  /\bsupabase\s+db\s+reset\b/,
+  /\bdropdb\b/,
+  /\b(?:rails|rake|bin\/rails)\s+db:(?:drop|reset|migrate:reset|schema:load|purge|truncate_all)\b/,
+  /\bdropDatabase\s*\(/,
+  /\bturso\s+db\s+destroy\b/,
+  /\bneonctl\s+(?:branches|projects|databases)\s+delete\b/,
+  /\bpscale\s+(?:database|branch)\s+delete\b/,
+  /\bwrangler\s+d1\s+delete\b/,
 ]
 
 const EXFILTRATION_PATTERNS: RegExp[] = [
@@ -304,7 +324,7 @@ function githubApiWrite(segments: readonly ShellSegment[]): string | undefined {
     }
     if (!values.some((value) => GH_API_FIELD_OPTION.test(value))) continue
     // GraphQL reads are POSTed too; only mutations change state.
-    if (endpoint === "graphql" && !values.some((value) => /\bmutation\b/.test(value))) continue
+    if (endpoint === "graphql" && !values.some((value) => GRAPHQL_MUTATION.test(value))) continue
     return endpoint === "graphql" ? "gh api graphql mutation" : `gh api ${endpoint ?? ""} with fields (POST)`
   }
   return undefined
@@ -313,6 +333,249 @@ function githubApiWrite(segments: readonly ShellSegment[]): string | undefined {
 function databaseRisk(inspected: string): string | undefined {
   const flags = DATABASE_CLIENT.test(inspected) ? "i" : ""
   return firstMatch(inspected, DATABASE_DESTRUCTIVE_PATTERNS.map((pattern) => new RegExp(pattern.source, flags)))
+}
+
+// A GraphQL mutation operation, not a variable or field named "mutation".
+const GRAPHQL_MUTATION = /\bmutation\s*[({A-Za-z]/
+
+const SECRET_ENV_PARTS = new Set([
+  "KEY", "KEYS", "TOKEN", "TOKENS", "SECRET", "SECRETS", "PASSWORD", "PASSWD", "PASS",
+  "CREDENTIAL", "CREDENTIALS", "CREDS", "PAT", "DSN", "PRIVATE", "APIKEY", "AUTH", "COOKIE",
+])
+const SAFE_ENV_NAMES = new Set([
+  "PWD", "OLDPWD", "PATH", "HOME", "USER", "SHELL", "NODE_ENV", "TERM", "LANG", "EDITOR",
+  "SSH_AUTH_SOCK",
+])
+
+function isSecretEnvName(name: string): boolean {
+  const upper = name.toUpperCase()
+  // NEXT_PUBLIC_*, PUBLIC_*, and similar values ship to browsers by design.
+  if (SAFE_ENV_NAMES.has(upper) || upper.split("_").includes("PUBLIC")) return false
+  return /^(?:DATABASE_URL|.+_DATABASE_URL|POSTGRES.*_URL|REDIS_URL|MONGO_URI|MONGODB_URI|CONNECTION_STRING)$/.test(upper) ||
+    upper.split("_").some((part) => SECRET_ENV_PARTS.has(part))
+}
+
+function secretVariableReferences(value: string): string[] {
+  const names = new Set<string>()
+  const pattern = /\$([A-Za-z_][A-Za-z0-9_]*)|\$\{([A-Za-z_][A-Za-z0-9_]*)(?::[^}]*)?\}/g
+  for (const match of value.matchAll(pattern)) {
+    const name = match[1] ?? match[2]
+    if (isSecretEnvName(name)) names.add(name)
+  }
+  return [...names]
+}
+
+function pipelineGroups(segments: readonly ShellSegment[]): ShellSegment[][] {
+  const groups: ShellSegment[][] = []
+  for (const segment of segments) {
+    if (segment.operatorBefore.startsWith("|") && segment.operatorBefore !== "||" && groups.length) {
+      groups[groups.length - 1].push(segment)
+    } else groups.push([segment])
+  }
+  return groups
+}
+
+
+function printingSecret(segment: ShellSegment): string | undefined {
+  // Assignments such as `TOKEN=$(gh auth token)` capture output instead of
+  // printing it; substitutions only count below when echo or printf prints them.
+  const commandIndex = commandWordIndex(segment.words)
+  const parsedCommand = commandName(segment)
+  const name = segment.words[0]?.value === "env" && commandIndex >= segment.words.length ? "env" : parsedCommand.name
+  const args = parsedCommand.args
+  const values = args.map(({ value }) => value)
+  if (["env", "printenv", "export", "set", "declare", "typeset"].includes(name)) {
+    const options = values.filter((value) => value.startsWith("-"))
+    const operands = values.filter((value) => !value.startsWith("-"))
+    const dumps = (name === "env" || name === "printenv") && operands.length === 0 ||
+      name === "export" && (operands.length === 0 || values.length === 1 && values[0] === "-p") ||
+      name === "set" && options.length === 0 && operands.length === 0 ||
+      (name === "declare" || name === "typeset") && options.some((value) => /^-[px]+$/.test(value)) && operands.length === 0
+    if (dumps) return `${name} prints environment values`
+  }
+  if (["echo", "printf", "printenv"].includes(name)) {
+    const printed = values
+    for (const value of printed) {
+      const reference = secretVariableReferences(value)[0]
+      if (reference) return `${name} prints ${reference}`
+      const substitution = value.match(/\$\(([^()]*)\)/)
+      if (substitution) {
+        const nested = parseShell(substitution[1])
+        for (const command of nested.segments) {
+          const nestedRisk = credentialCliRisk(commandName(command).name, commandName(command).args.map(({ value: item }) => item))
+          if (nestedRisk) return `${name} prints command substitution (${nestedRisk})`
+        }
+      }
+    }
+    if (name === "printenv" && values.some(isSecretEnvName)) return `printenv prints ${values.find(isSecretEnvName)}`
+  }
+  const cli = credentialCliRisk(name, values)
+  if (cli) return cli
+  const code = inlineEnvironmentPrint(name, values)
+  if (code) return code
+  return undefined
+}
+
+function credentialCliRisk(name: string, values: string[]): string | undefined {
+  const args = values.join(" ")
+  if (name === "gh" && /^auth\s+token(?:\s|$)/.test(args)) return "gh auth token"
+  if (name === "gh" && /^auth\s+status\b/.test(args) && /(?:^|\s)(?:-t|--show-token)(?:\s|$)/.test(args)) return "gh auth status --show-token"
+  if (name === "gcloud" && /^(?:auth\s+print-(?:access|identity)-token|auth\s+application-default\s+print-access-token)\b/.test(args)) return "gcloud prints an access token"
+  if (name === "aws" && /^configure\s+export-credentials\b/.test(args)) return "aws configure export-credentials"
+  if (name === "aws" && /^configure\s+get\s+[^\s]+/.test(args) && /secret|key|token/i.test(args.replace(/^configure\s+get\s+/, ""))) return "aws configure get credential"
+  if (name === "aws" && /^sts\s+(?:get-session-token|assume-role)\b/.test(args)) return "aws sts prints credentials"
+  if (name === "az" && /^account\s+get-access-token\b/.test(args)) return "az account get-access-token"
+  if (name === "security" && /^find-(?:generic|internet)-password\b/.test(args) && /(?:^|\s)(?:-w|-g)(?:\s|$)/.test(args)) return "security prints a stored password"
+  if (name === "kubectl" && /^get\s+secrets?\b/.test(args) && /(?:^|\s)-o(?:\s|=)(?:yaml|json|jsonpath|go-template)/.test(args)) return "kubectl prints a secret"
+  if (name === "heroku" && /^config(?::get)?(?:\s|$)/.test(args)) return "heroku prints config values"
+  // `op` is intentionally exempt: the dedicated Agent vault is a secrets workflow.
+  return undefined
+}
+
+// Checks such as `process.env.KEY ? "configured" : "missing"`, `!!process.env.KEY`,
+// or `os.getenv("KEY") is None` print a label or boolean, not the value.
+const VALUE_TEST_BEFORE = /(?:!!|\bBoolean\(\s*|\bbool\(\s*|\btypeof\s+)$/
+const VALUE_TEST_AFTER = /^\s*(?:\?(?![.?])|[!=]==?|\??\.length\b|is\s+(?:not\s+)?None\b)/
+
+/** The first secret-looking variable whose value the code emits, if any. */
+function emittedSecretVariable(code: string, pattern: RegExp): string | undefined {
+  for (const match of code.matchAll(pattern)) {
+    const variable = match[1] ?? match[2]
+    if (!variable || !isSecretEnvName(variable)) continue
+    const before = code.slice(0, match.index)
+    const after = code.slice((match.index ?? 0) + match[0].length)
+    if (!VALUE_TEST_BEFORE.test(before) && !VALUE_TEST_AFTER.test(after)) return variable
+  }
+  return undefined
+}
+
+function inlineEnvironmentPrint(name: string, values: string[]): string | undefined {
+  if (!["node", "bun", "deno", "python", "python3"].includes(name)) return undefined
+  const flagIndex = values.findIndex((value) => ["-e", "--eval", "-p", "--print", "-c"].includes(value))
+  if (flagIndex < 0) return undefined
+  const flag = values[flagIndex]
+  const code = values.slice(flagIndex + 1).join(" ")
+  const alwaysPrints = flag === "-p" || flag === "--print"
+  if (!alwaysPrints && !/(?:console\.(?:log|dir)|process\.stdout\.write|\bprint\s*\(|sys\.stdout\.write|pprint)/.test(code)) return undefined
+  if (["node", "bun", "deno"].includes(name)) {
+    if (/process\.env(?![.\[\w])/.test(code) && !/Object\.keys\s*\(\s*process\.env\s*\)/.test(code)) return `${name} prints process.env`
+    const variable = emittedSecretVariable(
+      code,
+      /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[\s*["']([A-Za-z_][A-Za-z0-9_]*)["']\s*\])/g,
+    )
+    if (variable) return `${name} prints ${variable}`
+  } else if (/os\.environ(?:\s*(?:\[|\.get\s*\())|os\.getenv\s*\(/.test(code)) {
+    if (/os\.environ(?!\s*(?:\[|\.get\s*\())/.test(code)) return `${name} prints os.environ`
+    const variable = emittedSecretVariable(
+      code,
+      /(?:os\.environ\s*\[\s*|os\.environ\.get\s*\(\s*|os\.getenv\s*\(\s*)["']([A-Za-z_][A-Za-z0-9_]*)["']\s*[\])]?/g,
+    )
+    if (variable) return `${name} prints ${variable}`
+  }
+  return undefined
+}
+
+function remoteWriteRisk(segments: readonly ShellSegment[]): string | undefined {
+  for (const segment of segments) {
+    const { name, args } = commandName(segment)
+    const values = args.map(({ value }) => value)
+    if (name === "vercel") {
+      const match = firstMatch(["vercel", ...values].join(" "), VERCEL_WRITE_PATTERNS)
+      if (match) return match
+    }
+    if (name === "curl") {
+      let method = "GET"
+      let explicit = false
+      let forceGet = false
+      let forceHead = false
+      let data = ""
+      const urls: string[] = []
+      for (let index = 0; index < values.length; index += 1) {
+        const value = values[index]
+        if (value === "-X" || value === "--request") {
+          method = values[index + 1]?.toUpperCase() ?? ""
+          explicit = true
+          index += 1
+        } else if (/^-X.+/i.test(value)) { method = value.slice(2).toUpperCase(); explicit = true }
+        else if (/^--request=/i.test(value)) { method = value.slice(value.indexOf("=") + 1).toUpperCase(); explicit = true }
+        else if (["-d", "--data", "--data-raw", "--data-binary", "--data-urlencode", "--json", "-F", "--form", "--form-string", "-T", "--upload-file"].includes(value)) {
+          if (!explicit) method = value === "-T" || value === "--upload-file" ? "PUT" : "POST"
+          data += `${values[index + 1] ?? ""} `
+          index += 1
+        } else if (/^(?:--data(?:-raw|-binary|-urlencode)?|--json|--form(?:-string)?|--upload-file)=/.test(value)) {
+          if (!explicit) method = /upload-file/.test(value) ? "PUT" : "POST"
+          data += `${value.slice(value.indexOf("=") + 1)} `
+        } else if (value === "-G" || value === "--get") forceGet = true
+        else if (value === "-I" || value === "--head") forceHead = true
+        else if (value === "--url") {
+          if (values[index + 1] !== undefined) urls.push(values[index + 1])
+          index += 1
+        } else if (value.startsWith("--url=")) urls.push(value.slice("--url=".length))
+        else if (/^(?:https?:\/\/|\/\/|\$)/i.test(value) || !value.startsWith("-") && index === values.length - 1) urls.push(value)
+      }
+      if (forceGet) method = "GET"
+      else if (forceHead) method = "HEAD"
+      if (!["POST", "PUT", "PATCH", "DELETE"].includes(method)) continue
+      // curl transfers to every URL, so one remote URL is enough to ask.
+      const remote = urls.length === 0 ? "unknown host" : urls.find((url) => !isLocalHost(extractHost(url) ?? ""))
+      if (!remote) continue
+      const graphqlRead = urls.every((url) => url.includes("/graphql")) && /\bquery\b/.test(data) && !GRAPHQL_MUTATION.test(data)
+      if (graphqlRead) continue
+      return `curl ${method} ${remote}`
+    }
+    if (["wget"].includes(name)) {
+      const method = values.find((value) => /^--method=/i.test(value))?.split("=")[1]?.toUpperCase()
+      const posts = values.some((value) => ["--post-data", "--post-file", "--body-data"].includes(value) || /^(?:--post-data|--post-file|--body-data)=/.test(value))
+      const verb = method ?? (posts ? "POST" : "")
+      const url = values.find((value) => /^https?:\/\//i.test(value))
+      const host = extractHost(url)
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(verb) && (!host || !isLocalHost(host))) return `wget ${verb} ${url ?? "unknown host"}`
+    }
+    if (["http", "https", "xh", "xhs"].includes(name)) {
+      const methodIndex = values.findIndex((value) => /^(?:POST|PUT|PATCH|DELETE)$/i.test(value))
+      const target = values.find((value) => /^https?:\/\//i.test(value)) ??
+        values[methodIndex >= 0 ? methodIndex + 1 : 0]
+      // Request items such as `name=x` or `count:=3` imply POST; options do not.
+      const item = values.some((value) => !value.startsWith("-") && /^[^:=\s]+(?::=|=).+/.test(value))
+      const method = methodIndex >= 0 ? values[methodIndex].toUpperCase() : item ? "POST" : ""
+      const host = extractHost(target)
+      if (["POST", "PUT", "PATCH", "DELETE"].includes(method) && (!host || !isLocalHost(host))) return `${name} ${method} ${target ?? "unknown host"}`
+    }
+  }
+  return undefined
+}
+
+function extractHost(url: string | undefined): string | undefined {
+  if (!url) return undefined
+  const match = url.match(/^(?:[a-z][a-z0-9+.-]*:)?\/\/(\[[^\]]+\]|[^/:?#]+)/i)
+  const host = match?.[1] ?? url.split(/[/:?#]/)[0]
+  return host.replace(/:\d+$/, "")
+}
+
+function isLocalHost(host: string): boolean {
+  return /^(?:localhost|(?:[^.]+\.)*localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[?::1\]?|host\.docker\.internal|(?:[^.]+\.)*local)$/i.test(host)
+}
+
+function secretOutputRisk(segments: readonly ShellSegment[]): string | undefined {
+  for (const pipeline of pipelineGroups(segments)) {
+    for (let index = 0; index < pipeline.length; index += 1) {
+      const segment = pipeline[index]
+      const risk = printingSecret(segment)
+      // Redirecting to a file is not an exemption: the secret lands on disk
+      // and a later read prints it.
+      if (!risk) continue
+      const sinks = pipeline.slice(index + 1)
+      // tee saves a copy, so a pipeline through tee never counts as a sink.
+      const tees = sinks.some((sink) => commandName(sink).name === "tee")
+      const suppressed = !tees && sinks.some((sink) => {
+        const { name, args } = commandName(sink)
+        const values = args.map(({ value }) => value)
+        return name === "wc" || name === "pbcopy" || values.includes("--password-stdin") || values.includes("--with-token")
+      })
+      if (!suppressed) return risk
+    }
+  }
+  return undefined
 }
 
 /** Detects destructive, secret-reading, or exfiltrating bash commands. */
@@ -343,12 +606,17 @@ export function detectBashRisk(
     const matched = firstMatch(parsed.source, UNPARSED_SECRET_PATTERNS)
     if (matched) return { category: "Secret/credential access", matched, subject: command }
   } else {
+    const printed = secretOutputRisk(parsed.segments)
+    if (printed) return { category: "Secret/credential access", matched: printed, subject: command }
     const secret = secretAccess(parsed.segments, cwd)
     if (secret) return { ...secret, subject: command }
   }
 
   const exfiltration = firstMatch(inspected, EXFILTRATION_PATTERNS)
   if (exfiltration) return { category: "Data exfiltration attempt", matched: exfiltration, subject: command }
+
+  const remoteWrite = parsed.confident ? remoteWriteRisk(parsed.segments) : undefined
+  if (remoteWrite) return { category: "Publishes or changes remote state", matched: remoteWrite, subject: command }
 
   const generic = parsed.confident ? genericExfiltration(parsed.segments) : undefined
   if (generic) return { category: "Potential data exfiltration", matched: generic, subject: command }
