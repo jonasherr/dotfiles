@@ -6,6 +6,13 @@ onboarding = false
 name = "terminal"
 
 auto_switch = false
+
+[theme.custom]
+# The terminal theme highlights rows with color8, which hides the sidebar text.
+# Use darker Everforest backgrounds so the selected agent stays readable.
+active_row_bg = "#475258"
+selection_bg = "#505a60"
+
 [terminal]
 shell_mode = "login"
 new_cwd = "follow"
@@ -99,6 +106,14 @@ pane_gaps = true
 
 agent_panel_sort = "priority"
 status_indicators = "symbols"
+
+[ui.sidebar.agents]
+# Lead with the agent session title instead of the workspace name.
+# Workspace and tab move to a dimmed second line for context.
+rows = [
+  ["state_icon", { token = "terminal_title_stripped", bold = true }],
+  [{ token = "workspace", dim = true }, { token = "tab", dim = true }],
+]
 
 [session]
 # Restore supported Pi integrations after a Herdr server restart.
