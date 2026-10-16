@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Next.js "open in editor" wrapper: opens the file in Neovim in a new Herdr tab
+# inside Kitty.
+#
+# Next.js calls this as: nvim +LINE FILE
+#
+# The file must be named "nvim" and REACT_EDITOR must be its absolute path:
+# Next.js only passes +LINE for an editor whose basename is "nvim", and it only
+# forces Terminal.app when REACT_EDITOR is exactly "nvim".
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  echo "next-editor: no file given" >&2
+  exit 2
+fi
+
+herdr_bin=${HERDR_BIN_PATH:-herdr}
+file=${*: -1}
+
+ws_args=()
+if [[ -n "${HERDR_WORKSPACE_ID:-}" ]]; then
+  ws_args=(--workspace "$HERDR_WORKSPACE_ID")
+fi
+
+if ! response=$("$herdr_bin" tab create "${ws_args[@]}" \
+  --cwd "$(dirname "$file")" --label "$(basename "$file")" --focus); then
+  echo "next-editor: herdr tab create failed (is herdr running?)" >&2
+  exit 1
+fi
+
+pane=$(jq -r '.result.root_pane.pane_id // empty' <<<"$response")
+if [[ -z "$pane" ]]; then
+  echo "next-editor: could not read pane id from herdr response" >&2
+  exit 1
+fi
+
+# "command nvim" skips this wrapper and any alias in the target shell.
+"$herdr_bin" pane run "$pane" "$(printf '%q ' command nvim "$@")"
+open -a kitty

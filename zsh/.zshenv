@@ -38,6 +38,10 @@ fi
 # LM Studio
 export PATH="$PATH:$HOME/.lmstudio/bin"
 
+# Next.js "open in editor": Neovim in a new Herdr tab in Kitty.
+# Must be the absolute path to a file named nvim (see bin/next-editor/nvim).
+export REACT_EDITOR="$DOTFILES/bin/next-editor/nvim"
+
 # Notes directory
 export NOTES="$HOME/Library/Mobile Documents/iCloud~md~obsidian/Documents/Notes"
 
