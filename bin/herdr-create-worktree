@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+# Create a Git worktree for the active Herdr workspace without blocking the UI.
+#
+# Run from a Herdr popup keybinding: it asks for a branch name, hands the work
+# to a background worker, and closes immediately. The worker registers the
+# worktree without checking out files, opens it as a grouped Herdr space right
+# away, and shows a $creating spinner on that space (see herdr/config.toml)
+# while Git checks out the files. Compatible with the macOS system Bash 3.2.
+#
+# Usage: herdr-create-worktree [WORKSPACE_ID]
+#        herdr-create-worktree --worker WORKSPACE_ID BRANCH
+herdr_bin=${HERDR_BIN_PATH:-herdr}
+log_file=${XDG_STATE_HOME:-$HOME/.local/state}/herdr-create-worktree.log
+metadata_source=herdr-create-worktree
+spinner_pid=
+new_workspace_id=
+
+notify() {
+  echo "notify: $1 - $2"
+  "$herdr_bin" notification show "$1" --body "$2" --sound "${3:-none}" >/dev/null 2>&1 || true
+}
+
+# Print the source workspace checkout as "repo_root<TAB>repo_name<TAB>checkout".
+resolve_source() {
+  "$herdr_bin" workspace get "$1" 2>/dev/null |
+    jq -r '.result.workspace.worktree // empty | [.repo_root, .repo_name, .checkout_path] | @tsv'
+}
+
+prompt() {
+  local source_id=${1:-${HERDR_ACTIVE_WORKSPACE_ID:-}} source branch
+  source=$(resolve_source "$source_id")
+  if [[ -z "$source" ]]; then
+    echo "Workspace ${source_id:-<none>} is not a Git checkout."
+    read -r -n 1 -s -p "Press any key to close."
+    exit 1
+  fi
+
+  printf 'New worktree from %s\n' "$(cut -f2 <<<"$source")"
+  read -r -p "Branch (empty for a random name): " branch || exit 1
+  if [[ -z "$branch" ]]; then
+    branch="worktree/$(LC_ALL=C tr -dc 'a-z' </dev/urandom | head -c 5)-$(LC_ALL=C tr -dc '0-9a-f' </dev/urandom | head -c 4)"
+  fi
+  if ! git check-ref-format --branch "$branch" >/dev/null 2>&1; then
+    echo "Invalid branch name: $branch"
+    read -r -n 1 -s -p "Press any key to close."
+    exit 1
+  fi
+
+  # The popup closes when this script exits. Ignore SIGHUP before spawning
+  # (inherited by the worker) and start the worker in its own process group so
+  # signals sent to the popup cannot reach it.
+  trap '' HUP
+  set -m
+  nohup "$0" --worker "$source_id" "$branch" </dev/null >/dev/null 2>&1 &
+}
+
+fail() {
+  notify "Worktree not created" "$1" request
+  exit 1
+}
+
+spin() {
+  local frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏) i=0
+  while :; do
+    "$herdr_bin" workspace report-metadata "$new_workspace_id" --source "$metadata_source" \
+      --token "creating=${frames[i % 10]} creating" --ttl-ms 1500 >/dev/null 2>&1 || return
+    i=$((i + 1))
+    sleep 0.15
+  done
+}
+
+stop_spinner() {
+  [[ -n "$spinner_pid" ]] || return 0
+  kill "$spinner_pid" 2>/dev/null
+  wait "$spinner_pid" 2>/dev/null
+  spinner_pid=
+  "$herdr_bin" workspace report-metadata "$new_workspace_id" --source "$metadata_source" \
+    --clear-token creating >/dev/null 2>&1 || true
+}
+
+worker() {
+  local source_id=$1 branch=$2 source repo_root repo_name checkout base path result
+  mkdir -p "$(dirname "$log_file")"
+  exec >>"$log_file" 2>&1
+  echo "--- $(date '+%F %T') source=$source_id branch=$branch"
+  trap stop_spinner EXIT
+
+  source=$(resolve_source "$source_id")
+  [[ -n "$source" ]] || fail "Workspace $source_id is not a Git checkout."
+  IFS=$'\t' read -r repo_root repo_name checkout <<<"$source"
+
+  # Match Herdr's layout: <worktrees.directory>/<repo>/<branch-slug>.
+  path="$HOME/.herdr/worktrees/$repo_name/$(tr '/' '-' <<<"$branch")"
+  echo "repo=$repo_root path=$path"
+  [[ ! -e "$path" ]] || fail "$path already exists."
+  mkdir -p "$(dirname "$path")"
+
+  # Register the worktree without checking out files; this is instant.
+  if git -C "$repo_root" show-ref --verify --quiet "refs/heads/$branch"; then
+    result=$(git -C "$repo_root" worktree add --no-checkout "$path" "$branch" 2>&1)
+  else
+    base=$(git -C "$checkout" rev-parse HEAD) || fail "Cannot resolve HEAD of $checkout."
+    result=$(git -C "$repo_root" worktree add --no-checkout -b "$branch" "$path" "$base" 2>&1)
+  fi
+  [[ $? -eq 0 ]] || fail "$branch: $result"
+
+  # HERDR_CREATE_WORKTREE_FOCUS=0 keeps focus on the current space (used in tests).
+  local focus=--focus
+  [[ "${HERDR_CREATE_WORKTREE_FOCUS:-1}" != 0 ]] || focus=--no-focus
+  result=$("$herdr_bin" worktree open --workspace "$source_id" --path "$path" "$focus" 2>&1)
+  new_workspace_id=$(jq -r '.result.workspace.workspace_id // empty' <<<"$result" 2>/dev/null)
+  echo "herdr: $(head -c 300 <<<"$result")"
+  if [[ -n "$new_workspace_id" ]]; then
+    spin &
+    spinner_pid=$!
+  fi
+
+  # Fill in the working tree; this is the slow part on large repos.
+  if ! result=$(git -C "$path" reset --hard -q 2>&1); then
+    fail "$branch: checkout failed: $result"
+  fi
+
+  stop_spinner
+  [[ -n "$new_workspace_id" ]] || fail "$branch checked out at $path, but Herdr could not open it."
+  notify "Worktree created" "$branch" done
+}
+
+if [[ "${1:-}" == "--worker" ]]; then
+  worker "$2" "$3"
+else
+  prompt "${1:-}"
+fi

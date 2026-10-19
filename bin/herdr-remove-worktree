@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+set -uo pipefail
+
+# Remove the Git worktree checkout behind a Herdr workspace without the
+# blocking confirmation popup. Herdr passes the active workspace to custom
+# commands; an explicit workspace id can be given as the first argument.
+#
+# While the removal runs, the Spaces sidebar shows a spinner through the
+# $removing workspace token (see herdr/config.toml). Foreground processes in
+# the workspace panes (dev servers, agents) are stopped first so they cannot
+# keep writing into the checkout while Git deletes it.
+#
+# Large checkouts (node_modules, .next) can take longer to delete than the
+# Herdr API waits, so a failed `herdr worktree remove` is verified against Git
+# before reporting. Git refuses dirty checkouts; this never forces a removal
+# and never deletes branches. Compatible with the macOS system Bash 3.2.
+herdr_bin=${HERDR_BIN_PATH:-herdr}
+workspace_id=${1:-${HERDR_ACTIVE_WORKSPACE_ID:-}}
+log_file=${XDG_STATE_HOME:-$HOME/.local/state}/herdr-remove-worktree.log
+metadata_source=herdr-remove-worktree
+spinner_pid=
+
+mkdir -p "$(dirname "$log_file")"
+exec >>"$log_file" 2>&1
+echo "--- $(date '+%F %T') workspace=${workspace_id:-<none>}"
+
+notify() {
+  echo "notify: $1 - $2"
+  "$herdr_bin" notification show "$1" --body "$2" --sound "${3:-none}" >/dev/null 2>&1 || true
+}
+
+fail() {
+  notify "Worktree not removed" "$1" request
+  exit 1
+}
+
+# Animate the $removing Space token. The short TTL clears it on its own if this
+# script dies; the delay keeps fast removals from flashing a spinner.
+spin() {
+  local frames=(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏) i=0
+  sleep 1
+  while :; do
+    "$herdr_bin" workspace report-metadata "$workspace_id" --source "$metadata_source" \
+      --token "removing=${frames[i % 10]} removing" --ttl-ms 1500 >/dev/null 2>&1 || return
+    i=$((i + 1))
+    sleep 0.15
+  done
+}
+
+stop_spinner() {
+  [[ -n "$spinner_pid" ]] || return 0
+  kill "$spinner_pid" 2>/dev/null
+  wait "$spinner_pid" 2>/dev/null
+  spinner_pid=
+  "$herdr_bin" workspace report-metadata "$workspace_id" --source "$metadata_source" \
+    --clear-token removing >/dev/null 2>&1 || true
+}
+trap stop_spinner EXIT
+
+# True while Git still lists the checkout as a worktree of the repo.
+is_registered() {
+  git -C "$repo_root" worktree list --porcelain 2>/dev/null |
+    grep -Fxq -e "worktree $path" -e "worktree $real_path"
+}
+
+# Stop the foreground job of every pane in the workspace. Shells stay alive;
+# Herdr hangs them up when it closes the workspace after the removal.
+stop_processes() {
+  local panes pane info group shell groups=()
+  panes=$("$herdr_bin" pane list --workspace "$workspace_id" | jq -r '.result.panes[]?.pane_id')
+  for pane in $panes; do
+    info=$("$herdr_bin" pane process-info --pane "$pane" 2>/dev/null) || continue
+    group=$(jq -r '.result.process_info.foreground_process_group_id // empty' <<<"$info")
+    shell=$(jq -r '.result.process_info.shell_pid // empty' <<<"$info")
+    if [[ -n "$group" && "$group" != "$shell" && "$group" != "$$" ]]; then
+      echo "stopping pane $pane process group $group"
+      kill -TERM -- "-$group" 2>/dev/null && groups+=("$group")
+    fi
+  done
+  [[ ${#groups[@]} -gt 0 ]] || return 0
+
+  local waited=0 alive
+  while [[ $waited -lt 50 ]]; do
+    alive=
+    for group in "${groups[@]}"; do
+      kill -0 -- "-$group" 2>/dev/null && alive=1
+    done
+    [[ -n "$alive" ]] || return 0
+    sleep 0.1
+    waited=$((waited + 1))
+  done
+  for group in "${groups[@]}"; do
+    echo "killing process group $group"
+    kill -KILL -- "-$group" 2>/dev/null
+  done
+}
+
+[[ -n "$workspace_id" ]] || fail "No active Herdr workspace."
+
+# Resolve the workspace id to its checkout from Herdr's own provenance. This
+# still works when an earlier attempt already made Git forget the worktree.
+# The main checkout is never a linked worktree, so it cannot be removed here.
+workspace=$("$herdr_bin" workspace get "$workspace_id") ||
+  fail "Workspace $workspace_id not found."
+worktree=$(jq -c '.result.workspace.worktree // empty | select(.is_linked_worktree)' <<<"$workspace")
+[[ -n "$worktree" ]] || fail "Workspace $workspace_id is not a linked worktree checkout."
+
+path=$(jq -r '.checkout_path' <<<"$worktree")
+repo_root=$(jq -r '.repo_root' <<<"$worktree")
+real_path=$(/bin/realpath -q "$path" || echo "$path")
+label=$(jq -r '.result.workspace.label // empty' <<<"$workspace")
+branch=$(git -C "$real_path" branch --show-current 2>/dev/null)
+branch=${branch:-${label:-$path}}
+echo "path=$path branch=$branch repo=$repo_root"
+
+[[ -n "$path" && "$real_path" != "/" && "$real_path" != "$(/bin/realpath -q "$repo_root")" ]] ||
+  fail "Refusing to remove $path."
+
+spin &
+spinner_pid=$!
+
+if ! is_registered; then
+  result="already removed from git"
+else
+  # Fail before stopping anything when Git would refuse the removal anyway.
+  changes=$(git -C "$real_path" status --porcelain 2>&1 | head -n 3)
+  [[ -z "$changes" ]] || fail "$branch has uncommitted or untracked files: $changes"
+  stop_processes
+  result=$("$herdr_bin" worktree remove --workspace "$workspace_id" 2>&1)
+fi
+echo "herdr: $result"
+if jq -e '.result.type == "worktree_removed"' <<<"$result" >/dev/null 2>&1; then
+  stop_spinner
+  notify "Worktree removed" "$branch (branch kept)" done
+  exit 0
+fi
+
+# Herdr may have stopped waiting while Git is still deleting files.
+while pgrep -f "worktree remove $path" >/dev/null || pgrep -f "worktree remove $real_path" >/dev/null; do
+  sleep 2
+done
+
+if is_registered; then
+  message=$(jq -r '.error.message // empty' <<<"$result" 2>/dev/null)
+  fail "$branch: ${message:-$result}"
+fi
+
+# Git dropped the worktree. Close the workspace so remaining processes stop,
+# then clear anything they recreated during the deletion.
+stop_spinner
+"$herdr_bin" workspace close "$workspace_id" >/dev/null 2>&1 || true
+sleep 1
+if [[ -e "$real_path" ]]; then
+  echo "clearing leftovers in $real_path"
+  rm -rf -- "$real_path"
+fi
+git -C "$repo_root" worktree prune
+notify "Worktree removed" "$branch (branch kept)" done
